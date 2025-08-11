@@ -12,6 +12,7 @@ package:
   before_script:
     - echo "${MELANGE_RSA}" > melange.rsa
   script:
+    - echo 15000 > /proc/sys/user/max_user_namespaces
     - 'mkdir ~/.docker && echo -n "{\"auths\": {\"${CI_REGISTRY}\": {\"auth\": \"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD}
       | base64)\"}}}" > ~/.docker/config.json'
     - melange build --workspace-dir="$CI_PROJECT_DIR" --arch=aarch64,x86_64 --signing-key=melange.rsa --generate-index=false
