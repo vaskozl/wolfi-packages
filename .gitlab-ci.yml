@@ -2,7 +2,7 @@ package:
   stage: build
   parallel:
     matrix:
-      - ARCH: [amd64]
+      - ARCH: [amd64, arm64]
         PKG:
           - anubis.yaml
           - redis.yaml
@@ -11,6 +11,7 @@ package:
     - changes:
         - $PKG
         - .gitlab-ci.yml
+  tags: ["$ARCH"]
   services:
     - cgr.dev/chainguard/docker-dind:latest@sha256:082499cdb039997fe869fce18dcec55e421e9da69651dd8775e2f0a1cb844432
   image:
@@ -20,7 +21,7 @@ package:
   before_script:
     - echo "${MELANGE_RSA}" > melange.rsa
   script:
-    - melange build --workspace-dir="$CI_PROJECT_DIR" --arch="$ARCH" --runner=docker --signing-key=melange.rsa --generate-index=false
+    - melange build --workspace-dir="$CI_PROJECT_DIR" --arch="$ARCH" --runner=docker --signing-key=melange.rsa --out-dir /apks
       "$PKG"
   artifacts:
     paths:
