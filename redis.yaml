@@ -1,0 +1,82 @@
+package:
+  name: redis
+  version: "8.2.0"
+  epoch: 0
+  description: Advanced key-value store
+  copyright:
+    - license: BSD-3-Clause
+  dependencies:
+    provides:
+      - redis=${{package.full-version}}
+    runtime:
+      - posix-libc-utils # `getent` is required on startup in ha mode for ip introspection cluster formation
+environment:
+  contents:
+    keyring:
+      - https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
+    repositories:
+      - https://packages.wolfi.dev/os
+    packages:
+      - autoconf
+      - automake
+      - bash
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - linux-headers
+      - openssl-dev
+pipeline:
+  - uses: fetch
+    with:
+      expected-sha256: ff95b83b7cf2f7a33af3be1e52fdf2e791c259f8272465c3b09f9e6bc901b604
+      uri: https://download.redis.io/releases/redis-${{package.version}}.tar.gz
+  - runs: |
+      export CFLAGS="$CFLAGS -DUSE_MALLOC_USABLE_SIZE"
+        make USE_JEMALLOC=no \
+        MALLOC=libc \
+        BUILD_TLS=yes \
+        all -j$(nproc)
+      make install PREFIX=/usr INSTALL_BIN="${{targets.destdir}}/usr/bin"
+  - uses: strip
+subpackages:
+  - name: redis-cli
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}"/usr/bin
+          mv "${{targets.destdir}}"/usr/bin/redis-cli "${{targets.subpkgdir}}"/usr/bin/redis-cli
+    description: redis-cli is the command line interface utility to talk with Redis.
+    dependencies:
+      provides:
+        - redis-cli=${{package.full-version}}
+  - name: redis-benchmark
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}"/usr/bin
+          mv "${{targets.destdir}}"/usr/bin/redis-benchmark "${{targets.subpkgdir}}"/usr/bin/redis-benchmark
+    description: redis-benchmark utility that simulates running commands done by N clients while at the same time sending M total queries.
+    dependencies:
+      provides:
+        - redis-benchmark=${{package.full-version}}
+update:
+  enabled: true
+  github:
+    identifier: redis/redis
+test:
+  environment:
+    contents:
+      packages:
+        - redis-cli
+  pipeline:
+    - runs: |
+        cat <<EOF >> /tmp/redis.conf
+        dbfilename dump.rdb
+        pidfile /tmp/redis_6379.pid
+        dir /tmp/
+        EOF
+
+        redis-server /tmp/redis.conf &
+        sleep 2 # wait for redis to start
+        redis-cli SET bike:1 "Process 134" || exit 1
+        redis-cli GET bike:1 | grep 'Process 134' || exit 1
+        redis-cli exists bike:1 | grep 1 || exit 1
+        redis-cli exists bike:2 | grep 0 || exit 1

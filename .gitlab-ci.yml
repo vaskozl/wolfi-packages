@@ -5,6 +5,7 @@ package:
       - ARCH: [amd64]
         PKG:
           - anubis.yaml
+          - redis.yaml
           - tailscale.yaml
   rules:
     - changes:
