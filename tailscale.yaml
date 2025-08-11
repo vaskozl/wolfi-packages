@@ -1,0 +1,113 @@
+package:
+  name: tailscale
+  version: "1.86.2"
+  epoch: 0
+  description: The easiest, most secure way to use WireGuard and 2FA.
+  copyright:
+    - license: BSD-3-Clause
+  dependencies:
+    runtime:
+      - merged-usrsbin
+      - wolfi-baselayout
+
+environment:
+  contents:
+    keyring:
+      - https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
+    repositories:
+      - https://packages.wolfi.dev/os
+    packages:
+      - bash
+      - busybox
+      - ca-certificates-bundle
+      - curl
+      - go
+
+pipeline:
+  - uses: git-checkout
+    with:
+      expected-commit: d72494bac7a2fb6b6a01715cfc5bcc903dbd7594
+      repository: https://github.com/tailscale/tailscale
+      tag: v${{package.version}}
+
+  - runs: |
+      ./build_dist.sh tailscale.com/cmd/containerboot
+      ./build_dist.sh tailscale.com/cmd/${{package.name}}
+      ./build_dist.sh tailscale.com/cmd/${{package.name}}d
+
+  - runs: |
+      install -Dm755 containerboot "${{targets.destdir}}"/usr/bin/containerboot
+      install -Dm755 ${{package.name}} "${{targets.destdir}}"/usr/bin/${{package.name}}
+      install -Dm755 ${{package.name}}d "${{targets.destdir}}"/usr/bin/${{package.name}}d
+
+  - uses: strip
+
+subpackages:
+  - name: ${{package.name}}-compat
+    description: "Compatibility package to provide parity with upstream Tailscale binary locations"
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}"/usr/local/bin
+          mkdir -p "${{targets.subpkgdir}}"/usr/local/sbin
+          ln -sf /usr/bin/containerboot "${{targets.subpkgdir}}"/usr/local/bin/containerboot
+          ln -sf /usr/bin/${{package.name}} "${{targets.subpkgdir}}"/usr/local/bin/${{package.name}}
+          ln -sf /usr/bin/${{package.name}}d "${{targets.subpkgdir}}"/usr/local/sbin/${{package.name}}d
+    dependencies:
+      runtime:
+        - merged-usrsbin
+        - wolfi-baselayout
+  - name: ${{package.name}}-operator
+    description: "Tailscale Kubernetes Operator"
+    pipeline:
+      - runs: |
+          ./build_dist.sh -o operator tailscale.com/cmd/k8s-operator
+      - runs: |
+          install -Dm755 operator "${{targets.destdir}}"/usr/bin/operator
+    dependencies:
+      runtime:
+        - merged-usrsbin
+        - wolfi-baselayout
+  - name: ${{package.name}}-operator-compat
+    description: "Compatibility package to provide parity with upstream Tailscale binary locations"
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}"/usr/local/bin
+          ln -sf /usr/bin/operator "${{targets.subpkgdir}}"/usr/local/bin/operator
+
+
+update:
+  enabled: true
+  github:
+    identifier: tailscale/tailscale
+    strip-prefix: v
+
+test:
+  environment:
+    contents:
+      packages:
+        - ${{package.name}}-compat
+  pipeline:
+    - name: Verify Tailscale Version
+      runs: |
+        # Package tests
+        tailscale version
+        tailscale --version
+        tailscale --help
+        tailscaled --version
+        tailscaled --help
+
+        # Compat validity tests
+        stat /usr/local/bin/containerboot
+        stat /usr/local/bin/tailscale
+        stat /usr/local/sbin/tailscaled
+        /usr/local/bin/tailscale --version
+        /usr/local/sbin/tailscaled --version
+    - name: Containerboot Test
+      runs: |
+        containerboot &
+        sleep 2
+    - name: Tailscale Daemon Test
+      runs: |
+        tailscaled -tun=userspace-networking -socket=tailscaled.socket > /dev/null 2>&1 &
+        sleep 2
+        tailscale --socket=tailscaled.socket status | grep -q 'Logged out.'
