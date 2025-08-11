@@ -14,7 +14,7 @@ package:
   script:
     - 'mkdir ~/.docker && echo -n "{\"auths\": {\"${CI_REGISTRY}\": {\"auth\": \"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD}
       | base64)\"}}}" > ~/.docker/config.json'
-    - melange build --workspace-dir="$CI_PROJECT_DIR" --runner=kubernetes --signing-key=melange.rsa --generate-index=false
+    - melange build --workspace-dir="$CI_PROJECT_DIR" --arch=arm64,x86_64 --signing-key=melange.rsa --generate-index=false
       "$PKG"
   artifacts:
     paths:
