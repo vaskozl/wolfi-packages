@@ -21,6 +21,7 @@ package:
   before_script:
     - echo "${MELANGE_RSA}" > melange.rsa
   script:
+    - until [ -S /var/run/docker.sock ]; do sleep 1; done
     - melange build --workspace-dir="$CI_PROJECT_DIR" --arch="$ARCH" --runner=docker --signing-key=melange.rsa --out-dir /apks
       "$PKG"
   artifacts:
