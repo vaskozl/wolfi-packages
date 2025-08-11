@@ -10,7 +10,7 @@ package:
     name: ghcr.io/vaskozl/melange:0.28.0@sha256:ac001d419c2425634a5870dc4cd2bfe3aa5287f99f4fd0ac377b75b7281e3456
     entrypoint: [""]
   before_script:
-    - cat "${MELANGE_RSA}" > melange.rsa
+    - echo "${MELANGE_RSA}" > melange.rsa
   script:
     - 'mkdir ~/.docker && echo -n "{\"auths\": {\"${CI_REGISTRY}\": {\"auth\": \"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD}
       | base64)\"}}}" > ~/.docker/config.json'
