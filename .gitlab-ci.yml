@@ -2,7 +2,9 @@ package:
   stage: build
   parallel:
     matrix:
-      - PKG: tailscale.yaml
+      - ARCH: [amd64]
+        PKG:
+          - tailscale.yaml
   rules:
     - changes:
         - $PKG
@@ -16,7 +18,8 @@ package:
   before_script:
     - echo "${MELANGE_RSA}" > melange.rsa
   script:
-    - melange build --workspace-dir="$CI_PROJECT_DIR" --arch=aarch64,x86_64 --runner=docker --signing-key=melange.rsa --generate-index=false "$PKG"
+    - melange build --workspace-dir="$CI_PROJECT_DIR" --arch="$ARCH" --runner=docker --signing-key=melange.rsa --generate-index=false
+      "$PKG"
   artifacts:
     paths:
       - ./packages
