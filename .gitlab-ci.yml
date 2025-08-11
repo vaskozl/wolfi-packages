@@ -1,13 +1,3 @@
-default:
-  image: docker:24.0.5
-  services:
-    - docker:24.0.5-dind
-  before_script:
-    - docker info
-
-variables:
-  DOCKER_TLS_CERTDIR: "/certs"
-
 package:
   stage: build
   parallel:
@@ -16,6 +6,9 @@ package:
   rules:
     - changes:
         - $PKG
+        - .gitlab-ci.yml
+  services:
+    - cgr.dev/chainguard/docker-dind:latest@sha256:082499cdb039997fe869fce18dcec55e421e9da69651dd8775e2f0a1cb844432
   image:
     name: ghcr.io/vaskozl/melange:0.28.0@sha256:ac001d419c2425634a5870dc4cd2bfe3aa5287f99f4fd0ac377b75b7281e3456
     entrypoint: [""]
