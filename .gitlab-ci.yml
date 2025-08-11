@@ -4,6 +4,7 @@ package:
     matrix:
       - ARCH: [amd64]
         PKG:
+          - anubis.yaml
           - tailscale.yaml
   rules:
     - changes:

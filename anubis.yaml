@@ -1,0 +1,39 @@
+# Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/anubis/APKBUILD
+package:
+  name: anubis
+  version: 1.21.3
+  epoch: 0
+  description: Block AI scrapers using a sha256 proof-of-work challenge
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    keyring:
+      - https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
+    repositories:
+      - https://packages.wolfi.dev/os
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+pipeline:
+  - uses: git-checkout
+    with:
+      expected-commit: ""
+      repository: https://github.com/TecharoHQ/anubis
+      tag: v${{package.version}}
+  - uses: go/build
+    with:
+      packages: ./cmd/anubis
+      output: anubis
+update:
+  enabled: true
+  manual: false
+  require-sequential: false
+  github:
+    identifier: TecharoHQ/anubis
+test:
+  pipeline:
+    - name: Verify anubis installation, please improve the test as needed
+      runs: anubis --version || exit 1
