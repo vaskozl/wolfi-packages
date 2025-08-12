@@ -16,8 +16,8 @@ environment:
 pipeline:
   - uses: fetch
     with:
-      expected-sha256: ""
       uri: https://cpan.metacpan.org/authors/id/D/DA/DAGOLDEN/Path-Tiny-${{package.version}}.tar.gz
+      expected-sha256: ""
   - uses: perl/make
   - uses: autoconf/make
   - uses: autoconf/make-install
