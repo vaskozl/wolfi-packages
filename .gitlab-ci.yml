@@ -11,6 +11,7 @@ package:
           - perl-timedate.yaml
           - redis.yaml
           - sonarr.yaml
+          - radarr.yaml
           - tailscale.yaml
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
