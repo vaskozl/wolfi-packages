@@ -1,0 +1,26 @@
+{
+  "enabled": true,
+  "semanticCommits": "disabled",
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Renovate Dashboard",
+  "suppressNotifications": ["prIgnoreNotification"],
+  "rebaseWhen": "conflicted",
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "to {{newVersion}}",
+  "automerge": true,
+  "ignoreTests": true,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "version:\\s*(?<currentValue>\\S+).*?repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\/\\s]+\\/[^\s]+)"
+      ],
+      "datasourceTemplate": "github-tags",
+      "extractVersionTemplate": "^v?(?<version>.*)$",
+      "versioningTemplate": "loose"
+    }
+  ],
+}
