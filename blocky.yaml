@@ -1,0 +1,43 @@
+# Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/community/blocky/APKBUILD
+package:
+  name: blocky
+  version: 0.26.2
+  epoch: 0
+  description: DNS proxy as ad-blocker for local network
+  copyright:
+    - license: Apache-2.0
+environment:
+  contents:
+    keyring:
+      - https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
+    repositories:
+      - https://packages.wolfi.dev/os
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+pipeline:
+  - uses: git-checkout
+    with:
+      expected-commit: ""
+      repository: https://github.com/0xERR0R/blocky
+      tag: v${{package.version}}
+  - uses: patch
+    with:
+      patches: blocky/busybox-date.patch
+  - uses: autoconf/make
+    with:
+      opts: VERSION=${{package.version}} build
+  - runs: |
+      install -Dm755 bin/blocky -t "${{targets.destdir}}"/usr/bin/
+update:
+  enabled: true
+  manual: false
+  require-sequential: false
+  github:
+    identifier: 0xERR0R/blocky
+test:
+  pipeline:
+    - name: Verify blocky installation, please improve the test as needed
+      runs: blocky version || exit 1
