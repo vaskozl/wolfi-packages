@@ -35,6 +35,5 @@ package:
     OUT_DIR: /apks
   script:
     - until [ -S /var/run/docker.sock ]; do sleep 1; done
-    - melange build "$PKG" $MELANGE_FLAGS --signing-key=melange.rsa --out-dir "$OUT_DIR"
-    - melange test "$PKG" $MELANGE_FLAGS \
-        --test-package-append busybox
+    - melange build "$PKG" $MELANGE_FLAGS
+    - melange test "$PKG" $MELANGE_FLAGS --test-package-append=busybox
