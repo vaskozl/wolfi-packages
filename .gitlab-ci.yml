@@ -35,10 +35,9 @@ package:
       --apk-cache-dir=/apks/apks-cache
       --repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os
       --keyring-append melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
-      --source-dir=${PKG%.yaml}
       --env-file=common.env
     OUT_DIR: /apks
   script:
     - until [ -S /var/run/docker.sock ]; do sleep 1; done
-    - melange build "$PKG" $MELANGE_FLAGS
+    - melange build "$PKG" $MELANGE_FLAGS --source-dir=${PKG%.yaml}
     - melange test "$PKG" $MELANGE_FLAGS --test-package-append=busybox
