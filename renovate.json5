@@ -22,7 +22,7 @@
       ],
       "datasourceTemplate": "github-tags",
       "extractVersionTemplate": "^v?(?<version>.*)$",
-      "versioningTemplate": "loose"
+      "versioningTemplate": "semver"
     }
   ]
 }
