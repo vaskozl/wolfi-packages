@@ -30,11 +30,10 @@ package:
       --cache-dir=/apks/melange-cache
       --apk-cache-dir=/apks/apks-cache
     OUT_DIR: /apks
-    REPOS: "$OUT_DIR,https://packages.wolfi.dev/os"
   script:
     - until [ -S /var/run/docker.sock ]; do sleep 1; done
     - melange build "$PKG" $MELANGE_FLAGS --signing-key=melange.rsa --out-dir "$OUT_DIR"
     - melange test "$PKG" $MELANGE_FLAGS \
-        --repository-append "$REPOS" \
+        --repository-append="$OUT_DIR,https://packages.wolfi.dev/os" \
         --ignore-signatures \
         --test-package-append busybox
