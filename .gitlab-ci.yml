@@ -9,8 +9,10 @@ package:
           - tailscale.yaml
           - blocky.yaml
   rules:
-    - changes:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
         - $PKG
+    - when: never
   tags: ["$ARCH"]
   services:
     - cgr.dev/chainguard/docker-dind:latest@sha256:082499cdb039997fe869fce18dcec55e421e9da69651dd8775e2f0a1cb844432
