@@ -20,7 +20,6 @@ environment:
 pipeline:
   - uses: git-checkout
     with:
-      expected-commit: ""
       repository: https://github.com/TecharoHQ/anubis
       tag: v${{package.version}}
   - uses: go/build

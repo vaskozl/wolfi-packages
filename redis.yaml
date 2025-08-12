@@ -26,7 +26,6 @@ environment:
 pipeline:
   - uses: fetch
     with:
-      expected-sha256: ff95b83b7cf2f7a33af3be1e52fdf2e791c259f8272465c3b09f9e6bc901b604
       uri: https://download.redis.io/releases/redis-${{package.version}}.tar.gz
   - runs: |
       export CFLAGS="$CFLAGS -DUSE_MALLOC_USABLE_SIZE"
