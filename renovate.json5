@@ -1,4 +1,5 @@
 {
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "enabled": true,
   "semanticCommits": "disabled",
   "dependencyDashboard": true,
@@ -13,14 +14,17 @@
   "ignoreTests": true,
   "customManagers": [
     {
-      "customType": "regex",
+      "customType": "jsonata",
+      "fileFormat": "yaml",
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
-      "matchStringsStrategy": "combination",
       "matchStrings": [
-        "version:\\s*\(?<currentValue>.*\)",
-        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>.*)"
+        "{ 'depName': package.name, \
+          'currentValue': package.version, \
+          'datasource': $exists(update.github) ? 'github-tags' : \
+                        ($exists(update.\"release-monitor\") ? 'release-monitoring' : \
+                        ($exists(update.git) ? 'git-tags' : null)), \
+          'update': update }"
       ],
-      "datasourceTemplate": "github-tags",
       "extractVersionTemplate": "^v?(?<version>.*)$",
       "versioningTemplate": "semver"
     }
