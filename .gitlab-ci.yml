@@ -22,4 +22,4 @@ package:
   script:
     - until [ -S /var/run/docker.sock ]; do sleep 1; done
     - melange build --workspace-dir="$CI_PROJECT_DIR" --arch="$ARCH" --runner=docker --signing-key=melange.rsa --out-dir /apks
-      "$PKG"
+      --cache-dir=/apks/melange-cache --apk-cache-dir=/apks/apks-cache "$PKG"
