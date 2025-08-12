@@ -10,7 +10,6 @@ package:
   rules:
     - changes:
         - $PKG
-        - .gitlab-ci.yml
   tags: ["$ARCH"]
   services:
     - cgr.dev/chainguard/docker-dind:latest@sha256:082499cdb039997fe869fce18dcec55e421e9da69651dd8775e2f0a1cb844432
@@ -24,6 +23,3 @@ package:
     - until [ -S /var/run/docker.sock ]; do sleep 1; done
     - melange build --workspace-dir="$CI_PROJECT_DIR" --arch="$ARCH" --runner=docker --signing-key=melange.rsa --out-dir /apks
       "$PKG"
-  artifacts:
-    paths:
-      - ./packages
