@@ -24,9 +24,10 @@ environment:
       - linux-headers
       - openssl-dev
 pipeline:
-  - uses: fetch
+  - uses: git-checkout
     with:
-      uri: https://download.redis.io/releases/redis-${{package.version}}.tar.gz
+      repository: https://github.com/redis/redis
+      tag: ${{package.version}}
   - runs: |
       export CFLAGS="$CFLAGS -DUSE_MALLOC_USABLE_SIZE"
         make USE_JEMALLOC=no \
