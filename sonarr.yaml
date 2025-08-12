@@ -39,30 +39,41 @@ pipeline:
           # remove upstream dotnet version
           rm global.json
       - runs: |
+          # map arch to dotnet
+          case "${{build.arch}}" in
+              x86_64) _dotnet_arch="x64" ;;
+              aarch64) _dotnet_arch="arm64" ;;
+              armv7) _dotnet_arch="arm" ;;
+              *) _dotnet_arch="$CARCH" ;;
+          esac
+
+          _artifacts="${{vars.output}}/net${{vars.dotnet_version}}.0/linux-$_dotnet_arch/publish"
+
           dotnet build src \
           -p:AssemblyConfiguration="master" \
           -p:AssemblyVersion="${{package.version}}" \
-          -p:RuntimeIdentifiers="linux-${{build.goarch}}" \
+          -p:RuntimeIdentifiers="linux-$_dotnet_arch" \
           -p:Configuration=Release \
           -p:SelfContained=false \
           -t:PublishAllRids
 
           NODE_OPTIONS="--max-old-space-size=512" NEXT_JS_WORKER_THREADS=1 yarn build --env production --no-stats
 
-          chmod +x "${{vars.output}}/net6.0/linux-${{build.goarch}}/publish/ffprobe"
+          chmod +x "$_artifacts/ffprobe"
 
           # cleanup
-          find "${{vars.output}}/net6.0/linux-${{build.goarch}}/publish/" \( \
+          find "$_artifacts" \( \
               -name "ServiceUninstall.*" -o \
               -name "ServiceInstall.*" -o \
               -name "Sonarr.Windows.*" \) -delete
 
-          mv "${{vars.output}}"/UI "${{vars.output}}/net6.0/linux-${{build.goarch}}/publish/"
+          mv "${{vars.output}}"/UI "$_artifacts"
+          mv "$_artifacts" bin
   - runs: |
       install -Dm644 package_info "${{targets.destdir}}"/usr/lib/sonarr/package_info
       echo "PackageVersion=${{package.version}}-r${{package.epoch}}" >>"${{targets.destdir}}"/usr/lib/sonarr/package_info
 
-      cp -af "${{vars.output}}/net6.0/linux-${{build.goarch}}/publish" "${{targets.destdir}}"/usr/lib/sonarr/bin
+      cp -af bin "${{targets.destdir}}"/usr/lib/sonarr/bin
   - uses: strip
 update:
   enabled: true
