@@ -1,0 +1,34 @@
+# Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/main/perl-timedate/APKBUILD
+package:
+  name: perl-timedate
+  version: "2.33"
+  epoch: 0
+  description: Perl module for TimeDate
+  copyright:
+    - license: GPL-1.0-or-later OR Artistic-1.0-Perl
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - perl
+pipeline:
+  - uses: fetch
+    with:
+      expected-sha256: ""
+      uri: https://cpan.metacpan.org/authors/id/A/AT/ATOOMIC/TimeDate-${{package.version}}.tar.gz
+  - uses: perl/make
+  - uses: autoconf/make
+  - uses: autoconf/make-install
+  - uses: perl/cleanup
+  - uses: strip
+subpackages:
+  - name: perl-timedate-doc
+    pipeline:
+      - uses: split/manpages
+    description: perl-timedate manpages
+test:
+  pipeline:
+    - name: Verify perl-timedate installation, please improve the test as needed
+      runs: perl -MTimeDate 'print 1' | exit 1

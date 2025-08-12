@@ -16,6 +16,7 @@ environment:
 pipeline:
   - uses: fetch
     with:
+      expected-sha256: ""
       uri: https://cpan.metacpan.org/authors/id/S/SR/SRI/Mojolicious-${{package.version}}.tar.gz
   - uses: perl/make
   - uses: autoconf/make
