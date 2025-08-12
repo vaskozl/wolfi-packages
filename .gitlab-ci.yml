@@ -21,5 +21,6 @@ package:
     - echo "${MELANGE_RSA}" > melange.rsa
   script:
     - until [ -S /var/run/docker.sock ]; do sleep 1; done
-    - melange build --workspace-dir="$CI_PROJECT_DIR" --arch="$ARCH" --runner=docker --signing-key=melange.rsa --out-dir /apks
-      --cache-dir=/apks/melange-cache --apk-cache-dir=/apks/apks-cache "$PKG"
+    - melange build "$PKG" --workspace-dir="$CI_PROJECT_DIR" --arch="$ARCH" --runner=docker --signing-key=melange.rsa --cache-dir=/apks/melange-cache --apk-cache-dir=/apks/apks-cache --out-dir /apks
+    - melange test "$PKG" --workspace-dir="$CI_PROJECT_DIR" --arch="$ARCH" --runner=docker --cache-dir=/apks/melange-cache --apk-cache-dir=/apks/apks-cache --repository-append /apks,https://packages.wolfi.dev/os --ignore-signatures --test-package-append busybox
+
