@@ -6,8 +6,6 @@ package:
   copyright:
     - license: BSD-3-Clause
   dependencies:
-    provides:
-      - redis=${{package.full-version}}
     runtime:
       - posix-libc-utils # `getent` is required on startup in ha mode for ip introspection cluster formation
 environment:
@@ -45,18 +43,12 @@ subpackages:
           mkdir -p "${{targets.subpkgdir}}"/usr/bin
           mv "${{targets.destdir}}"/usr/bin/redis-cli "${{targets.subpkgdir}}"/usr/bin/redis-cli
     description: redis-cli is the command line interface utility to talk with Redis.
-    dependencies:
-      provides:
-        - redis-cli=${{package.full-version}}
   - name: redis-benchmark
     pipeline:
       - runs: |
           mkdir -p "${{targets.subpkgdir}}"/usr/bin
           mv "${{targets.destdir}}"/usr/bin/redis-benchmark "${{targets.subpkgdir}}"/usr/bin/redis-benchmark
     description: redis-benchmark utility that simulates running commands done by N clients while at the same time sending M total queries.
-    dependencies:
-      provides:
-        - redis-benchmark=${{package.full-version}}
 update:
   enabled: true
   github:
