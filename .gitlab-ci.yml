@@ -6,10 +6,11 @@ package:
         PKG:
           - anubis.yaml
           - blocky.yaml
-          - perl-timedate.yaml
           - perl-mojolicious.yaml
           - perl-path-tiny.yaml
+          - perl-timedate.yaml
           - redis.yaml
+          - sonarr.yaml
           - tailscale.yaml
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
@@ -34,6 +35,8 @@ package:
       --apk-cache-dir=/apks/apks-cache
       --repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os
       --keyring-append melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
+      --source-dir=${PKG%.yaml}
+      --env-file=common.env
     OUT_DIR: /apks
   script:
     - until [ -S /var/run/docker.sock ]; do sleep 1; done

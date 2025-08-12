@@ -21,7 +21,7 @@ pipeline:
       tag: v${{package.version}}
   - uses: patch
     with:
-      patches: blocky/busybox-date.patch
+      patches: busybox-date.patch
   - uses: autoconf/make
     with:
       opts: VERSION=${{package.version}} build

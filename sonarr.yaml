@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/sonarr/APKBUILD
+package:
+  name: sonarr
+  version: 4.0.15.2941
+  epoch: 0
+  description: TV download automation for usenet and torrents.
+  copyright:
+    - license: GPL-3.0-only
+  dependencies:
+    runtime:
+      - aspnet-${{vars.dotnet_version}}-runtime
+      - sqlite-libs
+
+vars:
+  dotnet_version: "6"
+  output: '_output'
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - yarn
+      - nodejs
+      - aspnet-${{vars.dotnet_version}}-runtime
+      - dotnet-${{vars.dotnet_version}}-sdk
+      - sqlite-libs
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/Sonarr/Sonarr
+      tag: v${{package.version}}
+  - pipeline:
+      - runs: |
+          export BROWSERSLIST_IGNORE_OLD_DATA=true
+          yarn install --frozen-lockfile --network-timeout 120000
+
+          # remove upstream dotnet version
+          rm global.json
+      - runs: |
+          dotnet build src \
+          -p:AssemblyConfiguration="master" \
+          -p:AssemblyVersion="${{package.version}}" \
+          -p:RuntimeIdentifiers="linux-${{build.goarch}}" \
+          -p:Configuration=Release \
+          -p:SelfContained=false \
+          -t:PublishAllRids
+
+          NODE_OPTIONS="--max-old-space-size=512" NEXT_JS_WORKER_THREADS=1 yarn build --env production --no-stats
+
+          chmod +x "${{vars.output}}/net6.0/linux-${{build.goarch}}/publish/ffprobe"
+
+          # cleanup
+          find "${{vars.output}}/net6.0/linux-${{build.goarch}}/publish/" \( \
+              -name "ServiceUninstall.*" -o \
+              -name "ServiceInstall.*" -o \
+              -name "Sonarr.Windows.*" \) -delete
+
+          mv "${{vars.output}}"/UI "${{vars.output}}/net6.0/linux-${{build.goarch}}/publish/"
+  - runs: |
+      install -Dm644 package_info "${{targets.destdir}}"/usr/lib/sonarr/package_info
+      echo "PackageVersion=${{package.version}}-r${{package.epoch}}" >>"${{targets.destdir}}"/usr/lib/sonarr/package_info
+
+      cp -af "${{vars.output}}/net6.0/linux-${{build.goarch}}/publish" "${{targets.destdir}}"/usr/lib/sonarr/bin
+  - uses: strip
+update:
+  enabled: true
+  manual: false
+  require-sequential: false
+  github:
+    identifier: Sonarr/Sonarr
+test:
+  pipeline:
+    - name: Verify sonarr installation, please improve the test as needed
+      runs: sonarr --version || exit 1
