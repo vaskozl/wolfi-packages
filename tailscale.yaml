@@ -1,6 +1,6 @@
 package:
   name: tailscale
-  version: "1.86.2"
+  version: "1.86.4"
   epoch: 0
   description: The easiest, most secure way to use WireGuard and 2FA.
   copyright:
@@ -9,7 +9,6 @@ package:
     runtime:
       - merged-usrsbin
       - wolfi-baselayout
-
 environment:
   contents:
     keyring:
@@ -22,26 +21,20 @@ environment:
       - ca-certificates-bundle
       - curl
       - go
-
 pipeline:
   - uses: git-checkout
     with:
-      expected-commit: d72494bac7a2fb6b6a01715cfc5bcc903dbd7594
       repository: https://github.com/tailscale/tailscale
       tag: v${{package.version}}
-
   - runs: |
       ./build_dist.sh tailscale.com/cmd/containerboot
       ./build_dist.sh tailscale.com/cmd/${{package.name}}
       ./build_dist.sh tailscale.com/cmd/${{package.name}}d
-
   - runs: |
       install -Dm755 containerboot "${{targets.destdir}}"/usr/bin/containerboot
       install -Dm755 ${{package.name}} "${{targets.destdir}}"/usr/bin/${{package.name}}
       install -Dm755 ${{package.name}}d "${{targets.destdir}}"/usr/bin/${{package.name}}d
-
   - uses: strip
-
 subpackages:
   - name: ${{package.name}}-compat
     description: "Compatibility package to provide parity with upstream Tailscale binary locations"
@@ -73,14 +66,11 @@ subpackages:
       - runs: |
           mkdir -p "${{targets.subpkgdir}}"/usr/local/bin
           ln -sf /usr/bin/operator "${{targets.subpkgdir}}"/usr/local/bin/operator
-
-
 update:
   enabled: true
   github:
     identifier: tailscale/tailscale
     strip-prefix: v
-
 test:
   environment:
     contents:
