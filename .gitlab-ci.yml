@@ -6,7 +6,9 @@ package:
         PKG:
           - anubis.yaml
           - blocky.yaml
+          - perl-timedate.yaml
           - perl-mojolicious.yaml
+          - perl-path-tiny.yaml
           - redis.yaml
           - tailscale.yaml
   rules:
