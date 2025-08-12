@@ -12,10 +12,6 @@ package:
       - wolfi-baselayout
 environment:
   contents:
-    keyring:
-      - https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
-    repositories:
-      - https://packages.wolfi.dev/os
     packages:
       - bash
       - busybox

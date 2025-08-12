@@ -11,10 +11,6 @@ package:
       - posix-libc-utils # `getent` is required on startup in ha mode for ip introspection cluster formation
 environment:
   contents:
-    keyring:
-      - https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
-    repositories:
-      - https://packages.wolfi.dev/os
     packages:
       - autoconf
       - automake
