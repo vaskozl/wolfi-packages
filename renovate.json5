@@ -15,8 +15,10 @@
     {
       "customType": "regex",
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
+      "matchStringsStrategy": "combination",
       "matchStrings": [
-        "version:\\s*(?<currentValue>\\S+).*?repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\/\\s]+\\/[^\s]+)"
+        "version:\\s*\(?<currentValue>.*\)",
+        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>.*)"
       ],
       "datasourceTemplate": "github-tags",
       "extractVersionTemplate": "^v?(?<version>.*)$",
