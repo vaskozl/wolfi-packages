@@ -18,7 +18,8 @@
       "fileFormat": "yaml",
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
       "matchStrings": [
-        "{ 'depName': package.name, \
+        "{ \
+          'depName': package.name, \
           'currentValue': package.version, \
           'datasource': $exists(update.github) ? 'github-tags' : \
                         ($exists(update.\"release-monitor\") ? 'release-monitoring' : \
