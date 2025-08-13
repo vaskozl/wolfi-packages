@@ -34,9 +34,6 @@ pipeline:
       - runs: |
           export BROWSERSLIST_IGNORE_OLD_DATA=true
           yarn install --frozen-lockfile --network-timeout 120000
-
-          # remove upstream dotnet version
-          rm global.json
       - runs: |
           # map arch to dotnet
           case "${{build.arch}}" in
