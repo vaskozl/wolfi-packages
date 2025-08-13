@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/kubeconform/APKBUILD
+package:
+  name: kubeconform
+  version: 0.6.6
+  epoch: 0
+  description: A FAST Kubernetes manifests validator, with support for Custom Resources!
+  copyright:
+    - license: Apache-2.0
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/yannh/kubeconform
+      tag: v${{package.version}}
+  - uses: go/build
+    with:
+      packages: ./cmd/kubeconform
+      output: kubeconform
+  - uses: strip
+test:
+  pipeline:
+    - name: Verify kubeconform installation, please improve the test as needed
+      runs: kubeconform version || exit 1

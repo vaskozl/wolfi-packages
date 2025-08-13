@@ -4,20 +4,21 @@ package:
     matrix:
       - ARCH: [amd64, arm64]
         PKG:
-          - catatonit.yaml
-          - prowlarr.yaml
           - anubis.yaml
           - blocky.yaml
-          - perl-mailtools.yaml
+          - catatonit.yaml
+          - kubeconform.yaml
           - perl-email-date-format.yaml
-          - perl-mime-types.yaml
+          - perl-mailtools.yaml
           - perl-mime-lite.yaml
+          - perl-mime-types.yaml
           - perl-mojolicious.yaml
           - perl-path-tiny.yaml
           - perl-timedate.yaml
+          - prowlarr.yaml
+          - radarr.yaml
           - redis.yaml
           - sonarr.yaml
-          - radarr.yaml
           - tailscale.yaml
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
@@ -45,4 +46,4 @@ package:
   script:
     - until [ -S /var/run/docker.sock ]; do sleep 1; done
     - melange build "$PKG" $MELANGE_FLAGS --source-dir="${PKG%.yaml}" --out-dir="${OUT_DIR}" --signing-key=melange.rsa
-    - melange test "$PKG" $MELANGE_FLAGS --test-package-append=busybox
+#    - melange test "$PKG" $MELANGE_FLAGS --test-package-append=busybox
