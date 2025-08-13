@@ -17,7 +17,7 @@ pipeline:
   - uses: fetch
     with:
       uri: https://cpan.metacpan.org/authors/id/A/AT/ATOOMIC/TimeDate-${{package.version}}.tar.gz
-      expected-sha256: ""
+      expected-sha256: "c0b69c4b039de6f501b0d9f13ec58c86b040c1f7e9b27ef249651c143d605eb2"
   - uses: perl/make
   - uses: autoconf/make
   - uses: autoconf/make-install
