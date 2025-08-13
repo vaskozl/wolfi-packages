@@ -4,6 +4,7 @@ package:
     matrix:
       - ARCH: [amd64, arm64]
         PKG:
+          - catatonit.yaml
           - prowlarr.yaml
           - anubis.yaml
           - blocky.yaml
