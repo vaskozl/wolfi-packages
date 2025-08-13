@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/community/catatonit/APKBUILD
+package:
+  name: catatonit
+  version: 0.2.1
+  epoch: 0
+  description: Container init that is so simple it's effectively brain-dead
+  copyright:
+    - license: GPL-2.0-or-later
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - autoconf
+      - automake
+      - libtool
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/openSUSE/catatonit
+      tag: v${{package.version}}
+  - uses: autoconf/configure
+  - uses: autoconf/make
+  - uses: autoconf/make-install
+  - uses: strip
+test:
+  pipeline:
+    - name: Verify catatonit installation, please improve the test as needed
+      runs: catatonit -- echo hi || exit 1
