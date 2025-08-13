@@ -27,7 +27,8 @@
           'packageName': $exists(update.github) ? update.github.identifier : null, \
           'update': update }"
       ],
-      "versioningTemplate": "semver-coerced"
+      "versioningTemplate": "loose",
+      "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
     }
   ]
 }
