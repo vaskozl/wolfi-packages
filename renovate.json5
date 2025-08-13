@@ -21,11 +21,8 @@
         "{ \
           'depName': package.name, \
           'currentValue': package.version, \
-          'datasource': $exists(update.github) ? 'github-tags' : \
-                        ($exists(update.\"release-monitor\") ? 'release-monitoring' : \
-                        ($exists(update.git) ? 'git-tags' : null)), \
-          'packageName': $exists(update.github) ? update.github.identifier : null, \
-          'update': update }"
+          'datasource': 'github-tags', \
+          'packageName': update.github.identifier}"
       ],
       "versioningTemplate": "loose",
       "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
