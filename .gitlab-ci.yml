@@ -2,8 +2,7 @@ package:
   stage: build
   parallel:
     matrix:
-      - ARCH: [amd64, arm64]
-        PKG:
+      - PKG:
           - anubis.yaml
           - blocky.yaml
           - catatonit.yaml
@@ -25,25 +24,41 @@ package:
       changes:
         - $PKG
     - when: never
-  tags: ["$ARCH"]
-  services:
-    - cgr.dev/chainguard/docker-dind:latest@sha256:a03edb3fedc4361629302bdebaf096242f3b318082e67a2c3424158a04410027
   image:
-    name: ghcr.io/vaskozl/melange:0.28.0@sha256:423aa376b20f976b4eb3902cdbed71976c81976597d27b430410dab94ac9eb8f
+    name: ghcr.io/wolfi-dev/sdk:latest
     entrypoint: [""]
   before_script:
     - echo "${MELANGE_RSA}" > melange.rsa
   variables:
     MELANGE_FLAGS: >-
       --workspace-dir="$CI_PROJECT_DIR"
-      --arch="$ARCH"
+      --arch="amd64,arm64"
       --runner=docker
       --cache-dir=/apks/melange-cache
       --apk-cache-dir=/apks/apks-cache
       --repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os
       --keyring-append melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
+    DRIVER_OPTS: >-
+      --driver-opt key=/tmp/key.pem
+      --driver-opt cert=/tmp/cert.pem
+      --driver-opt cacert=/tmp/ca.pem
     OUT_DIR: /apks
   script:
-    - until [ -S /var/run/docker.sock ]; do sleep 1; done
+    - echo "$BUILDKIT_CA"   > /tmp/ca.pem
+    - echo "$BUILDKIT_KEY"  > /tmp/key.pem
+    - echo "$BUILDKIT_CERT" > /tmp/cert.pem
+    # Add build hosts
+    - >
+      docker buildx create --use --name buildkitd
+      --platform linux/arm64
+      --driver remote tcp://buildkitd-arm64:1234
+      $DRIVER_OPTS
+    - >
+      docker buildx create --append --name buildkitd
+      --platform linux/amd64
+      --driver remote tcp://buildkitd-amd64:1234
+      $DRIVER_OPTS
+    # Helps identify errors as build just hangs on misconfiguration
+    - docker buildx du > /dev/null
     - melange build "$PKG" $MELANGE_FLAGS --source-dir="${PKG%.yaml}" --out-dir="${OUT_DIR}" --signing-key=melange.rsa
 #    - melange test "$PKG" $MELANGE_FLAGS --test-package-append=busybox
