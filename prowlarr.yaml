@@ -55,8 +55,6 @@ pipeline:
 
           NODE_OPTIONS="--max-old-space-size=512" NEXT_JS_WORKER_THREADS=1 yarn build --env production --no-stats
 
-          chmod +x "$_artifacts/ffprobe"
-
           # cleanup
           find "$_artifacts" \( \
               -name "ServiceUninstall.*" -o \
