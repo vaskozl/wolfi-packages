@@ -26,8 +26,7 @@
                         ($exists(update.git) ? 'git-tags' : null)), \
           'update': update }"
       ],
-      "extractVersionTemplate": "^v?(?<version>.*)$",
-      "versioningTemplate": "semver"
+      "versioningTemplate": "semver-coerced"
     }
   ]
 }
