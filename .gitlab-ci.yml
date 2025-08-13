@@ -8,6 +8,10 @@ package:
           - prowlarr.yaml
           - anubis.yaml
           - blocky.yaml
+          - perl-mailtools.yaml
+          - perl-email-date-format.yaml
+          - perl-mime-types.yaml
+          - perl-mime-lite.yaml
           - perl-mojolicious.yaml
           - perl-path-tiny.yaml
           - perl-timedate.yaml

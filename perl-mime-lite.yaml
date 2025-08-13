@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/wolfi-dev/melange/main/pkg/config/melange.schema.json
+# Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/main/perl-mime-lite/APKBUILD
+package:
+  name: perl-mime-lite
+  version: "3.033"
+  epoch: 0
+  description: low-calorie MIME generator
+  copyright:
+    - license: GPL-1.0-or-later OR Artistic-1.0-Perl
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - perl
+      - perl-mime-types
+      - perl-email-date-format
+      - perl-mailtools
+      - perl-test-pod-coverage
+pipeline:
+  - uses: fetch
+    with:
+      expected-sha256: 78a279f1d2e242551c347ef97a13fc675766602cb84c2a80c569400f4f368bab
+      uri: https://cpan.metacpan.org/authors/id/R/RJ/RJBS/MIME-Lite-${{package.version}}.tar.gz
+  - uses: perl/make
+  - uses: autoconf/make
+  - uses: autoconf/make-install
+  - uses: perl/cleanup
+  - uses: strip
+subpackages:
+  - name: perl-mime-lite-doc
+    pipeline:
+      - uses: split/manpages
+    description: perl-mime-lite manpages
+test:
+  pipeline:
+    - name: Verify perl-mime-lite installation
+      runs: perl -MMIME::Lite -e 'print 1' || exit 1

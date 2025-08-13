@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/wolfi-dev/melange/main/pkg/config/melange.schema.json
+# Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/main/perl-mailtools/APKBUILD
+package:
+  name: perl-mailtools
+  version: "2.22"
+  epoch: 0
+  description: Various ancient e-mail related modules
+  copyright:
+    - license: GPL-1.0-or-later OR Artistic-1.0-Perl
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - perl
+      - perl-timedate
+pipeline:
+  - uses: fetch
+    with:
+      expected-sha256: 3bf68bb212298fa699a52749dddff35583a74f36a92ca89c843b854f29d87c77
+      uri: https://cpan.metacpan.org/authors/id/M/MA/MARKOV/MailTools-${{package.version}}.tar.gz
+  - uses: perl/make
+  - uses: autoconf/make
+  - uses: autoconf/make-install
+  - uses: perl/cleanup
+  - uses: strip
+subpackages:
+  - name: perl-mailtools-doc
+    pipeline:
+      - uses: split/manpages
+    description: perl-mailtools manpages
+test:
+  pipeline:
+    - name: Verify perl-mailtools installation
+      runs: perl -MMail::Address -e 'print 1' || exit 1

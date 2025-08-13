@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/wolfi-dev/melange/main/pkg/config/melange.schema.json
+# Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/main/perl-email-date-format/APKBUILD
+package:
+  name: perl-email-date-format
+  version: "1.008"
+  epoch: 0
+  description: produce RFC 2822 date strings
+  copyright:
+    - license: GPL-1.0-or-later OR Artistic-1.0-Perl
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - perl-dev
+      - perl
+pipeline:
+  - uses: fetch
+    with:
+      expected-sha256: 432b7c83ff88749af128003f5257c573aec1a463418db90ed22843cbbc258b4f
+      uri: https://cpan.metacpan.org/authors/id/R/RJ/RJBS/Email-Date-Format-${{package.version}}.tar.gz
+  - uses: perl/make
+  - uses: autoconf/make
+  - uses: autoconf/make-install
+  - uses: perl/cleanup
+  - uses: strip
+subpackages:
+  - name: perl-email-date-format-doc
+    pipeline:
+      - uses: split/manpages
+    description: perl-email-date-format manpages
+test:
+  pipeline:
+    - name: Verify perl-email-date-format installation
+      runs: perl -MEmail::Date::Format -e 'print 1' || exit 1

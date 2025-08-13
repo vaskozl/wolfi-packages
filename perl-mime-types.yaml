@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/wolfi-dev/melange/main/pkg/config/melange.schema.json
+# Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/main/perl-mime-types/APKBUILD
+package:
+  name: perl-mime-types
+  version: "2.28"
+  epoch: 0
+  description: Definition of MIME types
+  copyright:
+    - license: GPL-1.0-or-later OR Artistic-1.0-Perl
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - perl
+pipeline:
+  - uses: fetch
+    with:
+      expected-sha256: 7099cb5133401acc92d8fb0fd398cac682140be0680e7dfcb4aaf40315a2dfca
+      uri: https://cpan.metacpan.org/authors/id/M/MA/MARKOV/MIME-Types-${{package.version}}.tar.gz
+  - uses: perl/make
+  - uses: autoconf/make
+  - uses: autoconf/make-install
+  - uses: perl/cleanup
+  - uses: strip
+subpackages:
+  - name: perl-mime-types-doc
+    pipeline:
+      - uses: split/manpages
+    description: perl-mime-types manpages
+test:
+  pipeline:
+    - name: Verify perl-mime-types installation
+      runs: perl -MMIME::Types -e 'print 1' || exit 1
