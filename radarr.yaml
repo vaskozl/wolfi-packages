@@ -61,7 +61,7 @@ pipeline:
           find "$_artifacts" \( \
               -name "ServiceUninstall.*" -o \
               -name "ServiceInstall.*" -o \
-              -name "Sonarr.Windows.*" \) -delete
+              -name "Radarr.Windows.*" \) -delete
 
           mv "${{vars.output}}"/UI "$_artifacts"
           mv "$_artifacts" bin
@@ -76,7 +76,7 @@ update:
   manual: false
   require-sequential: false
   github:
-    identifier: Sonarr/Sonarr
+    identifier: Radarr/Radarr
 test:
   pipeline:
     - name: Verify radarr installation, please improve the test as needed
