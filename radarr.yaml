@@ -28,7 +28,7 @@ environment:
 pipeline:
   - uses: git-checkout
     with:
-      repository: https://github.com/Sonarr/Sonarr
+      repository: https://github.com/Radarr/Radarr
       tag: v${{package.version}}
   - pipeline:
       - runs: |
