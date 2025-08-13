@@ -8,6 +8,7 @@ package:
           - blocky.yaml
           - catatonit.yaml
           - kubeconform.yaml
+          - lidarr.yaml
           - perl-email-date-format.yaml
           - perl-mailtools.yaml
           - perl-mime-lite.yaml

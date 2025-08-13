@@ -56,7 +56,7 @@ pipeline:
           -p:SelfContained=false \
           -t:PublishAllRids
 
-          NODE_OPTIONS="--max-old-space-size=512" NEXT_JS_WORKER_THREADS=1 yarn build --env production --no-stats
+          yarn build --env production --no-stats
 
           chmod +x "$_artifacts/ffprobe"
 
