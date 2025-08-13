@@ -14,16 +14,14 @@
   "ignoreTests": true,
   "customManagers": [
     {
-      "customType": "jsonata",
-      "fileFormat": "yaml",
+      "customType": "regex",
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
+      "matchStringsStrategy": "combination",
       "matchStrings": [
-        "{ \
-          'depName': package.name, \
-          'currentValue': package.version, \
-          'datasource': 'github-tags', \
-          'packageName': update.github.identifier}"
+        "version:\\s*\(?<currentValue>.*\)",
+        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>.*)"
       ],
+      "datasourceTemplate": "github-tags",
       "versioningTemplate": "loose",
       "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
     }
