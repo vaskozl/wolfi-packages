@@ -27,12 +27,6 @@ pipeline:
       opts: VERSION=${{package.version}} build
   - runs: |
       install -Dm755 bin/blocky -t "${{targets.destdir}}"/usr/bin/
-update:
-  enabled: true
-  manual: false
-  require-sequential: false
-  github:
-    identifier: 0xERR0R/blocky
 test:
   pipeline:
     - name: Verify blocky installation, please improve the test as needed

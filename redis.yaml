@@ -46,10 +46,6 @@ subpackages:
           mkdir -p "${{targets.subpkgdir}}"/usr/bin
           mv "${{targets.destdir}}"/usr/bin/redis-benchmark "${{targets.subpkgdir}}"/usr/bin/redis-benchmark
     description: redis-benchmark utility that simulates running commands done by N clients while at the same time sending M total queries.
-update:
-  enabled: true
-  github:
-    identifier: redis/redis
 test:
   environment:
     contents:

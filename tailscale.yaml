@@ -64,11 +64,6 @@ subpackages:
       - runs: |
           mkdir -p "${{targets.subpkgdir}}"/usr/local/bin
           ln -sf /usr/bin/operator "${{targets.subpkgdir}}"/usr/local/bin/operator
-update:
-  enabled: true
-  github:
-    identifier: tailscale/tailscale
-    strip-prefix: v
 test:
   environment:
     contents:

@@ -23,12 +23,6 @@ pipeline:
     with:
       packages: ./cmd/anubis
       output: anubis
-update:
-  enabled: true
-  manual: false
-  require-sequential: false
-  github:
-    identifier: TecharoHQ/anubis
 test:
   pipeline:
     - name: Verify anubis installation, please improve the test as needed

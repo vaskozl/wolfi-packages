@@ -71,12 +71,6 @@ pipeline:
 
       cp -af bin "${{targets.destdir}}"/usr/lib/radarr/bin
   - uses: strip
-update:
-  enabled: true
-  manual: false
-  require-sequential: false
-  github:
-    identifier: Radarr/Radarr
 test:
   pipeline:
     - name: Verify radarr installation, please improve the test as needed
