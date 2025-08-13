@@ -4,6 +4,7 @@ package:
     matrix:
       - ARCH: [amd64, arm64]
         PKG:
+          - prowlarr.yaml
           - anubis.yaml
           - blocky.yaml
           - perl-mojolicious.yaml
