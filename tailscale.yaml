@@ -54,6 +54,14 @@ subpackages:
       - runs: |
           install -Dm755 operator "${{targets.destdir}}"/usr/bin/operator
       - uses: strip
+  - name: ${{package.name}}-idp
+    description: "Tailscale Kubernetes Operator"
+    pipeline:
+      - runs: |
+          ./build_dist.sh -o tsidp tailscale.com/cmd/tsidp
+      - runs: |
+          install -Dm755 tsidp "${{targets.destdir}}"/usr/bin/tsidp
+      - uses: strip
     dependencies:
       runtime:
         - merged-usrsbin
