@@ -2,7 +2,7 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/kubeconform/APKBUILD
 package:
   name: kubeconform
-  version: 0.6.6
+  version: 0.7.0
   epoch: 0
   description: A FAST Kubernetes manifests validator, with support for Custom Resources!
   copyright:
