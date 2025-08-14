@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: golink
+  version: 1.0.0
+  epoch: 0
+  description: A private shortlink service for tailnets
+  copyright:
+    - license: BSD-3-Clause
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/tailscale/golink
+      tag: v${{package.version}}
+  - uses: go/build
+    with:
+      packages: ./cmd/golink
+      output: golink
+  - uses: strip
+test:
+  pipeline:
+    - name: Verify golink installation
+      runs: golink --help || exit 1
