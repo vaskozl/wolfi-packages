@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: kromgo
+  version: 0.7.1
+  epoch: 0
+  description: Expose prometheus metrics safely to a public source.
+  copyright:
+    - license: Apache-2.0
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/kashalls/kromgo
+      tag: v${{package.version}}
+  - uses: go/build
+    with:
+      packages: ./cmd/kromgo
+      output: kromgo
+  - uses: strip
+test:
+  pipeline:
+    - name: Verify kromgo installation, please improve the test as needed
+      runs: kromgo -help || exit 1
