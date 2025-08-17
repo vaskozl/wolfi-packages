@@ -18,7 +18,7 @@
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
       "matchStringsStrategy": "combination",
       "matchStrings": [
-        "version:\\s*\(?<currentValue>.*\)",
+        "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
         "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>.*)"
       ],
       "datasourceTemplate": "github-tags",
