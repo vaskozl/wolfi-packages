@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: redis
-  version: 8.2.0
+  version: 8.2.1
   epoch: 0
   description: Advanced key-value store
   copyright:
