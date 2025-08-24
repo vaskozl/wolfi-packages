@@ -2,7 +2,7 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/prowlarr/APKBUILD
 package:
   name: prowlarr
-  version: 1.37.0.5076
+  version: 2.0.5.5160
   epoch: 0
   description: TV download automation for usenet and torrents.
   copyright:
