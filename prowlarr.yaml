@@ -38,12 +38,13 @@ pipeline:
           # remove upstream dotnet version
           rm global.json
       - runs: |
-          _artifacts="${{vars.output}}/net${{vars.dotnet_version}}.0/publish"
+          _framework="net${{vars.dotnet_version}}.0"
+          _artifacts="${{vars.output}}/$_framework/publish"
 
           dotnet publish src \
           -p:AssemblyConfiguration="master" \
           -p:AssemblyVersion="${{package.version}}" \
-          --framework "net${{vars.dotnet_version}}.0/" \
+          --framework "$_framework" \
           --no-self-contained \
           --use-current-runtime \
           --configuration Release
