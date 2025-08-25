@@ -1,0 +1,16 @@
+diff --git a/pkg/trafficmngr/nftables/nftables.go b/pkg/trafficmngr/nftables/nftables.go
+index 42ab5750..e0cc08b0 100644
+--- a/pkg/trafficmngr/nftables/nftables.go
++++ b/pkg/trafficmngr/nftables/nftables.go
+@@ -208,10 +208,7 @@ func (nftm *NFTablesManager) addMasqRules(ctx context.Context,
+ 	tx *knftables.Transaction,
+ 	clusterCidr, podCidr string,
+ 	family knftables.Family) error {
+-	masquerade := "masquerade fully-random"
+-	if !nftm.checkRandomfully(ctx) {
+-		masquerade = "masquerade"
+-	}
++	masquerade := "masquerade"
+ 
+ 	multicastCidr := "224.0.0.0/4"
+ 	if family == knftables.IPv6Family {

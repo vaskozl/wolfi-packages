@@ -7,6 +7,7 @@ package:
           - anubis.yaml
           - blocky.yaml
           - catatonit.yaml
+          - flannel.yaml
           - golink.yaml
           - kromgo.yaml
           - kubeconform.yaml
