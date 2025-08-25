@@ -2,7 +2,7 @@
 package:
   name: tailscale
   version: 1.86.5
-  epoch: 2
+  epoch: 0
   description: The easiest, most secure way to use WireGuard and 2FA.
   copyright:
     - license: BSD-3-Clause
