@@ -12,7 +12,7 @@ package:
       - aspnet-${{vars.dotnet_version}}-runtime
       - sqlite-libs
 vars:
-  dotnet_version: "6"
+  dotnet_version: "8"
   output: '_output'
 environment:
   contents:
@@ -34,24 +34,19 @@ pipeline:
       - runs: |
           export BROWSERSLIST_IGNORE_OLD_DATA=true
           yarn install --frozen-lockfile --network-timeout 120000
+
+          # remove upstream dotnet version
+          rm global.json
       - runs: |
-          # map arch to dotnet
-          case "${{build.arch}}" in
-              x86_64) _dotnet_arch="x64" ;;
-              aarch64) _dotnet_arch="arm64" ;;
-              armv7) _dotnet_arch="arm" ;;
-              *) _dotnet_arch="$CARCH" ;;
-          esac
+          _artifacts="${{vars.output}}/net${{vars.dotnet_version}}.0/publish"
 
-          _artifacts="${{vars.output}}/net${{vars.dotnet_version}}.0/linux-$_dotnet_arch/publish"
-
-          dotnet build src \
+          dotnet publish src \
           -p:AssemblyConfiguration="master" \
           -p:AssemblyVersion="${{package.version}}" \
-          -p:RuntimeIdentifiers="linux-$_dotnet_arch" \
-          -p:Configuration=Release \
-          -p:SelfContained=false \
-          -t:PublishAllRids
+          --framework "net${{vars.dotnet_version}}.0/" \
+          --no-self-contained \
+          --use-current-runtime \
+          --configuration Release
 
           yarn build --env production --no-stats
 
