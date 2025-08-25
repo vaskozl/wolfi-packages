@@ -35,23 +35,16 @@ pipeline:
           export BROWSERSLIST_IGNORE_OLD_DATA=true
           yarn install --frozen-lockfile --network-timeout 120000
       - runs: |
-          # map arch to dotnet
-          case "${{build.arch}}" in
-              x86_64) _dotnet_arch="x64" ;;
-              aarch64) _dotnet_arch="arm64" ;;
-              armv7) _dotnet_arch="arm" ;;
-              *) _dotnet_arch="$CARCH" ;;
-          esac
+          _framework="net${{vars.dotnet_version}}.0"
+          _artifacts="${{vars.output}}/$_framework/publish"
 
-          _artifacts="${{vars.output}}/net${{vars.dotnet_version}}.0/linux-$_dotnet_arch/publish"
-
-          dotnet build src \
+          dotnet publish src \
           -p:AssemblyConfiguration="master" \
           -p:AssemblyVersion="${{package.version}}" \
-          -p:RuntimeIdentifiers="linux-$_dotnet_arch" \
-          -p:Configuration=Release \
-          -p:SelfContained=false \
-          -t:PublishAllRids
+          --framework "$_framework" \
+          --no-self-contained \
+          --use-current-runtime \
+          --configuration Release
 
           yarn build --env production --no-stats
 

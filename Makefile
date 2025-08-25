@@ -19,8 +19,6 @@ PACKAGES := $(wildcard *.yaml)
 MELANGE_FLAGS := --workspace-dir="$(WORKSPACE_DIR)" \
                 --arch="$(ARCH)" \
                 --runner=$(RUNNER) \
-                --cache-dir=/tmp/melange-cache \
-                --apk-cache-dir=/tmp/apks-cache \
                 --repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os \
                 --keyring-append melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub \
                 --env-file common.env
