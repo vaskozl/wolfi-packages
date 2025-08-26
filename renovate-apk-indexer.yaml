@@ -20,8 +20,8 @@ pipeline:
       tag: v${{package.version}}
   - uses: go/build
     with:
-      packages: ./cmd/renovate-apk-indexer
-      output: golink
+      packages: .
+      output: renovate-apk-indexer
   - uses: strip
 test:
   pipeline:
