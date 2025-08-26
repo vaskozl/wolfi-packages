@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: renovate-apk-indexer
+  version: 0.1.0
+  epoch: 0
+  description: APK custom datasource HTTP server for renovate
+  copyright:
+    - license: Apache-2.0
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/hown3d/renovate-apk-indexer
+      tag: v${{package.version}}
+  - uses: go/build
+    with:
+      packages: ./cmd/renovate-apk-indexer
+      output: golink
+  - uses: strip
+test:
+  pipeline:
+    - name: Verify renovate-apk-indexer installation
+      runs: renovate-apk-indexer -h || exit 1

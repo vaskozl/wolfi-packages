@@ -24,6 +24,7 @@ package:
           - redis.yaml
           - sonarr.yaml
           - tailscale.yaml
+          - renovate-apk-indexer.yaml
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       changes:
