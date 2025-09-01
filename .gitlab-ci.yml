@@ -10,6 +10,7 @@ package:
           - flannel.yaml
           - golink.yaml
           - kromgo.yaml
+          - kube-network-policies.yaml
           - kubeconform.yaml
           - lidarr.yaml
           - perl-email-date-format.yaml
@@ -22,9 +23,9 @@ package:
           - prowlarr.yaml
           - radarr.yaml
           - redis.yaml
+          - renovate-apk-indexer.yaml
           - sonarr.yaml
           - tailscale.yaml
-          - renovate-apk-indexer.yaml
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       changes:

@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: kube-network-policies
+  version: 0.9.1
+  epoch: 0
+  description: Kubernetes network policies
+  copyright:
+    - license: Apache-2.0
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+      - automake
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/kubernetes-sigs/kube-network-policies
+      tag: v${{package.version}}
+  - uses: autoconf/make
+    with:
+      opts: build-standard build-kube-ip-tracker-standard
+  - runs: |
+      install -Dm755 bin/kube-network-policies-standard "${{targets.destdir}}"/usr/bin/kube-network-policies
+  - uses: strip
+subpackages:
+  - name: kube-ip-tracker
+    description: "IP cache for kube-network policies"
+    pipeline:
+      - runs: |
+          mkdir -p ${{targets.subpkgdir}}/usr/bin
+          install -Dm755 bin/kube-ip-tracker-standard "${{targets.subpkgdir}}"/usr/bin/kube-ip-tracker
+      - uses: strip
+test:
+  pipeline:
+    - name: Verify kube-network-policies installation, please improve the test as needed
+      runs: kube-network-policies -h || exit 1
