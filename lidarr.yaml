@@ -38,15 +38,23 @@ pipeline:
           # increase max opened files
           ulimit -n 4096
 
+          # map arch to dotnet
+          case "${{build.arch}}" in
+              x86_64) _dotnet_arch="x64" ;;
+              aarch64) _dotnet_arch="arm64" ;;
+              armv7) _dotnet_arch="arm" ;;
+              *) _dotnet_arch="$CARCH" ;;
+          esac
+
           _framework="net${{vars.dotnet_version}}.0"
-          _artifacts="${{vars.output}}/$_framework/publish"
+          _artifacts="${{vars.output}}/$_framework/linux-$_dotnet_arch/publish"
 
           dotnet publish src \
           -p:AssemblyConfiguration="master" \
           -p:AssemblyVersion="${{package.version}}" \
           --framework "$_framework" \
           --no-self-contained \
-          --use-current-runtime \
+          --runtime linux-$_dotnet_arch \
           --configuration Release
 
           yarn build --env production --no-stats
