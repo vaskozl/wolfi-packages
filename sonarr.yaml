@@ -52,6 +52,7 @@ pipeline:
           dotnet publish src \
           -p:AssemblyConfiguration="master" \
           -p:AssemblyVersion="${{package.version}}" \
+          -p:TreatWarningsAsErrors=false \
           --framework "$_framework" \
           --no-self-contained \
           --runtime linux-$_dotnet_arch \
