@@ -23,6 +23,7 @@ pipeline:
     with:
       packages: ./cmd/anubis
       output: anubis
+      tags: limitedsupportability
 test:
   pipeline:
     - name: Verify anubis installation, please improve the test as needed
