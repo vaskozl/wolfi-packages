@@ -14,11 +14,19 @@ environment:
       - busybox
       - ca-certificates-bundle
       - go
+      - esbuild
+      - npm
+      - nodejs
+      - zstd
+      - brotli
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/TecharoHQ/anubis
       tag: v${{package.version}}
+  - uses: autoconf/make
+    with:
+      opts: assets
   - uses: go/build
     with:
       packages: ./cmd/anubis
