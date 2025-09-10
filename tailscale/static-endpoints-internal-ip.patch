@@ -1,0 +1,13 @@
+diff --git a/cmd/k8s-operator/proxygroup.go b/cmd/k8s-operator/proxygroup.go
+index debeb5c6b..af9e59efd 100644
+--- a/cmd/k8s-operator/proxygroup.go
++++ b/cmd/k8s-operator/proxygroup.go
+@@ -951,7 +951,7 @@ func (r *ProxyGroupReconciler) findStaticEndpoints(ctx context.Context, existing
+ 	newAddrs := []netip.AddrPort{}
+ 	for _, n := range nodes.Items {
+ 		for _, a := range n.Status.Addresses {
+-			if a.Type == corev1.NodeExternalIP {
++			if a.Type == corev1.NodeInternalIP {
+ 				addr := getStaticEndpointAddress(&a, port)
+ 				if addr == nil {
+ 					logger.Debugf("failed to parse %q address on node %q: %q", corev1.NodeExternalIP, n.Name, a.Address)

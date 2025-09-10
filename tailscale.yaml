@@ -2,7 +2,7 @@
 package:
   name: tailscale
   version: 1.86.5
-  epoch: 0
+  epoch: 1
   description: The easiest, most secure way to use WireGuard and 2FA.
   copyright:
     - license: BSD-3-Clause
@@ -23,6 +23,9 @@ pipeline:
     with:
       repository: https://github.com/tailscale/tailscale
       tag: v${{package.version}}
+  - uses: patch
+    with:
+      patches: static-endpoints-internal-ip.patch
   - runs: |
       ./build_dist.sh tailscale.com/cmd/containerboot
       ./build_dist.sh tailscale.com/cmd/${{package.name}}
