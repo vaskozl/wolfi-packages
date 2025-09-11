@@ -23,9 +23,9 @@ pipeline:
     with:
       repository: https://github.com/tailscale/tailscale
       tag: v${{package.version}}
-  - uses: patch
-    with:
-      patches: static-endpoints-internal-ip.patch
+#  - uses: patch
+#    with:
+#      patches: static-endpoints-internal-ip.patch
   - runs: |
       ./build_dist.sh tailscale.com/cmd/containerboot
       ./build_dist.sh tailscale.com/cmd/${{package.name}}
