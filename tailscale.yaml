@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: tailscale
-  version: 1.86.5
+  version: 1.88.1
   epoch: 3
   description: The easiest, most secure way to use WireGuard and 2FA.
   copyright:
