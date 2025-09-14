@@ -25,5 +25,11 @@
       "versioningTemplate": "loose",
       "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
     }
+  ],
+  "packageRules": [
+    {
+      "matchDatasources": ["github-tags"],
+      "groupName": "github-tags",
+    }
   ]
 }
