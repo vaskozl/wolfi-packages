@@ -2,7 +2,7 @@
 package:
   name: renovate-apk-indexer
   version: 0.1.0
-  epoch: 0
+  epoch: 1
   description: APK custom datasource HTTP server for renovate
   copyright:
     - license: Apache-2.0
@@ -17,7 +17,7 @@ pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/hown3d/renovate-apk-indexer
-      tag: v${{package.version}}
+      branch: master
   - uses: go/build
     with:
       packages: .
