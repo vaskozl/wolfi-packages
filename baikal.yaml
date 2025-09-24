@@ -27,6 +27,8 @@ environment:
     packages:
       - php-${{vars.php-version}}
       - php-${{vars.php-version}}-phar
+      - php-${{vars.php-version}}-dom
+      - php-${{vars.php-version}}-pdo
       - composer
       - rsync
       - bash
