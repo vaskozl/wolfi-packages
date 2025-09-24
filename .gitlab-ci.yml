@@ -5,7 +5,6 @@ package:
       - ARCH: [amd64, arm64]
         PKG:
           - anubis.yaml
-          - baikal.yaml
           - blocky.yaml
           - catatonit.yaml
           - flannel.yaml
