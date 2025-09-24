@@ -45,7 +45,7 @@ pipeline:
         build/baikal
   - name: Install dependencies with composer
     runs: |
-      php-${{vars.php-version}} -d memory_limit=512M /usr/bin/composer install --no-interaction --no-dev -d build/baikal
+      php -d memory_limit=512M /usr/bin/composer install --no-interaction --no-dev -d build/baikal
   - name: Install into destdir
     runs: |
       mkdir -p ${{targets.destdir}}/usr/share/webapps
