@@ -21,7 +21,7 @@ package:
     provides:
       - baikal=${{package.full-version}}
 vars:
-  php-version: ${{vars.php-version}}
+  php-version: 8.4
 environment:
   contents:
     packages:
