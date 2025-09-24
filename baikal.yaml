@@ -13,7 +13,6 @@ package:
       - php-${{vars.php-version}}-iconv
       - php-${{vars.php-version}}-openssl
       - php-${{vars.php-version}}-pdo
-      - php-${{vars.php-version}}-session
       - php-${{vars.php-version}}-simplexml
       - php-${{vars.php-version}}-tokenizer
       - php-${{vars.php-version}}-xmlreader
@@ -33,7 +32,6 @@ environment:
       - php-${{vars.php-version}}-iconv
       - php-${{vars.php-version}}-openssl
       - php-${{vars.php-version}}-pdo
-      - php-${{vars.php-version}}-session
       - php-${{vars.php-version}}-simplexml
       - php-${{vars.php-version}}-tokenizer
       - php-${{vars.php-version}}-xmlreader
