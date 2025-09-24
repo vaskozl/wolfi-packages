@@ -1,0 +1,99 @@
+package:
+  name: baikal
+  version: "0.10.1"
+  epoch: 0
+  description: "Baïkal is a Calendar+Contacts server"
+  copyright:
+    - license: GPL-3.0-only
+  dependencies:
+    runtime:
+      - php-${{vars.php-version}}
+      - php-${{vars.php-version}}-curl
+      - php-${{vars.php-version}}-dom
+      - php-${{vars.php-version}}-iconv
+      - php-${{vars.php-version}}-openssl
+      - php-${{vars.php-version}}-pdo
+      - php-${{vars.php-version}}-session
+      - php-${{vars.php-version}}-simplexml
+      - php-${{vars.php-version}}-tokenizer
+      - php-${{vars.php-version}}-xmlreader
+      - php-${{vars.php-version}}-xmlwriter
+    provides:
+      - baikal=${{package.full-version}}
+
+vars:
+  php-version: ${{vars.php-version}}
+
+environment:
+  contents:
+    packages:
+      - php-${{vars.php-version}}
+      - php-${{vars.php-version}}-phar
+      - composer
+      - rsync
+      - bash
+      - busybox
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/sabre-io/Baikal
+      tag: ${{package.version}}
+  - name: Prepare builddir
+    runs: |
+      mkdir -p build/baikal/Specific/db build/baikal/config
+      rsync -av \
+        Core html LICENSE README.md composer.json \
+        --exclude="*.swp" \
+        build/baikal
+
+  - name: Install dependencies with composer
+    runs: |
+      php-${{vars.php-version}} -d memory_limit=512M /usr/bin/composer install --no-interaction --no-dev -d build/baikal
+
+  - name: Install into destdir
+    runs: |
+      mkdir -p ${{targets.destdir}}/usr/share/webapps
+      cp -r build/baikal ${{targets.destdir}}/usr/share/webapps
+      ln -s html ${{targets.destdir}}/usr/share/webapps/baikal/htm
+      chgrp www-data ${{targets.destdir}}/usr/share/webapps/baikal/config \
+                    ${{targets.destdir}}/usr/share/webapps/baikal/Specific/db || true
+      chmod 775 ${{targets.destdir}}/usr/share/webapps/baikal/config \
+                ${{targets.destdir}}/usr/share/webapps/baikal/Specific/db || true
+
+subpackages:
+  - name: baikal-mysql
+    description: "Baïkal (MySQL backend)"
+    dependencies:
+      runtime:
+        - baikal
+        - php-${{vars.php-version}}-pdo_mysql
+    pipeline:
+      - runs: mkdir -p "${{targets.subpkgdir}}"
+
+  - name: baikal-pgsql
+    description: "Baïkal (PostgreSQL backend)"
+    dependencies:
+      runtime:
+        - baikal
+        - php-${{vars.php-version}}-pdo_pgsql
+    pipeline:
+      - runs: mkdir -p "${{targets.subpkgdir}}"
+
+  - name: baikal-sqlite
+    description: "Baïkal (SQLite backend)"
+    dependencies:
+      runtime:
+        - baikal
+        - php-${{vars.php-version}}-pdo_sqlite
+    pipeline:
+      - runs: mkdir -p "${{targets.subpkgdir}}"
+
+test:
+  pipeline:
+    - name: Ensure Baikal files exist
+      runs: |
+        test -d /usr/share/webapps/baikal/html
+        test -f /usr/share/webapps/baikal/composer.json
+        test -d /usr/share/webapps/baikal/config
+
