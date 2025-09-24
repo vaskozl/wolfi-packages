@@ -27,8 +27,17 @@ environment:
     packages:
       - php-${{vars.php-version}}
       - php-${{vars.php-version}}-phar
+      - php-${{vars.php-version}}
+      - php-${{vars.php-version}}-curl
       - php-${{vars.php-version}}-dom
+      - php-${{vars.php-version}}-iconv
+      - php-${{vars.php-version}}-openssl
       - php-${{vars.php-version}}-pdo
+      - php-${{vars.php-version}}-session
+      - php-${{vars.php-version}}-simplexml
+      - php-${{vars.php-version}}-tokenizer
+      - php-${{vars.php-version}}-xmlreader
+      - php-${{vars.php-version}}-xmlwriter
       - composer
       - rsync
       - bash
