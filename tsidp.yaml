@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: tsidp
+  version: 0.0.3
+  epoch: 0
+  description: A simple OIDC / OAuth Identity Provider (IdP) server for your tailnet.
+  copyright:
+    - license: BSD-3-Clause
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/tailscale/tsidp
+      tag: v${{package.version}}
+  - uses: go/build
+    with:
+      packages: ./
+      output: tsidp-server
+  - uses: strip
+test:
+  pipeline:
+    - name: Verify tsidp installation
+      runs: tsidp-server --help || exit 1

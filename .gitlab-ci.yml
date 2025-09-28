@@ -26,6 +26,7 @@ package:
           - renovate-apk-indexer.yaml
           - sonarr.yaml
           - tailscale.yaml
+          - tsidp.yaml
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       changes:
