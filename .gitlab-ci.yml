@@ -34,7 +34,7 @@ package:
     - when: never
   tags: ["$ARCH"]
   services:
-    - cgr.dev/chainguard/docker-dind:latest@sha256:9b7c4108708d3e99c15f3985bb25932c36c56f15480767c2664f35957daaf16a
+    - cgr.dev/chainguard/docker-dind:latest@sha256:a832042fbbb07cdbcee74a620a0bd3a7313d89dced11a4d8001c7a56a27305cf
   image:
     name: ghcr.io/vaskozl/melange:0.28.0@sha256:bfc9df7d92c4f25a4ccbe0d9863d845bdc9a7917d3a94744fb6ed569b42950a9
     entrypoint: [""]
