@@ -2,7 +2,7 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/lidarr/APKBUILD
 package:
   name: lidarr
-  version: 2.13.3.4711
+  version: 2.14.5.4836
   epoch: 0
   description: Music download automation for usenet and torrents.
   copyright:
