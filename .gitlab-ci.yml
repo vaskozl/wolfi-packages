@@ -27,6 +27,7 @@ package:
           - sonarr.yaml
           - tailscale.yaml
           - tsidp.yaml
+          - wolfi-scanner.yaml
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       changes:
