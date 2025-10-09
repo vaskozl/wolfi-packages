@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: wolfi-scanner
-  version: 0.0.1
+  version: 0.0.2
   epoch: 0
   description: In cluster wolfi scanner.
   copyright:
