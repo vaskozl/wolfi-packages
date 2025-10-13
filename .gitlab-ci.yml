@@ -7,7 +7,6 @@ package:
           - anubis.yaml
           - blocky.yaml
           - catatonit.yaml
-          - flannel.yaml
           - golink.yaml
           - kromgo.yaml
           - kube-network-policies.yaml
