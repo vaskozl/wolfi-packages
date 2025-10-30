@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: zsh-history-substring-search
+  version: 1.1.0
+  epoch: 0
+  description: Zsh port of the Fish shell's history search
+  copyright:
+    - license: BSD-3-Clause
+  dependencies:
+    runtime:
+      - zsh
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/zsh-users/zsh-history-substring-search
+      tag: v${{package.version}}
+  - runs: |
+      install -Dm644 *.zsh -t "${{targets.destdir}}"/usr/share/zsh/plugins/"${{package.name}}"

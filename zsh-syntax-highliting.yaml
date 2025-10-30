@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: zsh-syntax-highlighting
+  version: 0.8.0
+  epoch: 0
+  description: Fish shell like syntax highlighting for zsh
+  copyright:
+    - license: BSD-3-Clause
+  dependencies:
+    runtime:
+      - zsh
+environment:
+  contents:
+    packages:
+      - busybox
+      - automake
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/zsh-users/zsh-syntax-highlighting
+      tag: ${{package.version}}
+  - uses: autoconf/make-install
+    with:
+      opts: SHARE_DIR="${{targets.destdir}}/usr/share/zsh/plugins/${{package.name}}"
+

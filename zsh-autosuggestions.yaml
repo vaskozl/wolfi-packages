@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: zsh-autosuggestions
+  version: 0.7.1
+  epoch: 0
+  description: Fish-like autosuggestions for zsh
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime:
+      - zsh
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/zsh-users/zsh-autosuggestions
+      tag: v${{package.version}}
+  - runs: |
+      install -Dm644 *.zsh -t "${{targets.destdir}}"/usr/share/zsh/plugins/"${{package.name}}"
