@@ -39,7 +39,7 @@ package:
   services:
     - cgr.dev/chainguard/docker-dind:latest@sha256:a7048944d47bdd47734899844284861d57c5a07b4d39a34a9be54914ff385171
   image:
-    name: ghcr.io/vaskozl/melange:0.31.9@sha256:866795080c0a00b7cf7429a4786bd3a576525c54b2690660fd19374e2f51bf72
+    name: ghcr.io/vaskozl/melange:0.32.0@sha256:49859ec8cabfe5cb25f4a413d3c91960d6bf03301dca510f208ff354539b2fb1
     entrypoint: [""]
   before_script:
     - echo "${MELANGE_RSA}" > melange.rsa
