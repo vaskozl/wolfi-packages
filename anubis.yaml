@@ -2,7 +2,7 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/anubis/APKBUILD
 package:
   name: anubis
-  version: 1.23.0
+  version: 1.23.1
   epoch: 0
   description: Block AI scrapers using a sha256 proof-of-work challenge
   copyright:
