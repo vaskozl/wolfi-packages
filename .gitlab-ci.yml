@@ -4,20 +4,21 @@ package:
     matrix:
       - ARCH: [amd64, arm64]
         PKG:
+          - anubis.yaml
+          - blocky.yaml
           - bootc-baselayout.yaml
           - bootc.yaml
           - bootupd.yaml
+          - catatonit.yaml
           - composefs-rs.yaml
           - composefs.yaml
           - dracut.yaml
-          - anubis.yaml
-          - blocky.yaml
-          - catatonit.yaml
           - golink.yaml
           - kromgo.yaml
           - kube-network-policies.yaml
           - kubeconform.yaml
           - lidarr.yaml
+          - ostree.yaml
           - perl-email-date-format.yaml
           - perl-mailtools.yaml
           - perl-mime-lite.yaml
