@@ -13,6 +13,7 @@ package:
           - composefs.yaml
           - dracut.yaml
           - golink.yaml
+          - kernel.yaml
           - kromgo.yaml
           - kube-network-policies.yaml
           - kubeconform.yaml

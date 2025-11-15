@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
-
 package:
   name: kernel
   version: 6.17.8
@@ -10,7 +9,6 @@ package:
   dependencies:
     runtime:
       - zstd
-
 environment:
   contents:
     packages:
@@ -34,34 +32,26 @@ environment:
       - openssl
       - xz
       - zstd
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/gregkh/linux
       tag: v${{package.version}}
-
   - runs: mv config-${{build.arch}}* .config
-
   - uses: autoconf/make
     with:
       opts: prepare
-
   - uses: autoconf/make
     with:
       opts: modules_prepare
-
   - uses: autoconf/make
-
   - uses: autoconf/make
     with:
       opts: headers_install INSTALL_HDR_PATH=${{targets.destdir}}/usr
-
   - runs: |
       install -Dpm0644 ./arch/${{build.arch}}/boot/bzImage "${{targets.destdir}}/usr/lib/modules/${{package.version}}/vmlinuz"
       install -Dpm0644 .config ${{targets.destdir}}/usr/lib/modules/${{package.version}}/config
       install -Dpm0644 -t "${{targets.destdir}}/usr/lib/modules/${{package.version}}/" ./System.map
-
 subpackages:
   - name: kernel-modules
     description: Kernel modules
@@ -84,7 +74,6 @@ subpackages:
               print "%s" "Found uncompressed kernel object files" >&2
               exit 1
             fi
-
   - name: kernel-dev
     description: Kernel headers
     pipeline:
