@@ -21,6 +21,7 @@ MELANGE_FLAGS := --workspace-dir="$(WORKSPACE_DIR)" \
                 --runner=$(RUNNER) \
                 --repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os \
                 --keyring-append melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub \
+				--pipeline-dir ./pipelines \
                 --env-file common.env
 
 # Default target

@@ -1,55 +1,48 @@
 package:
   name: ostree
-  version: "2025.6"
+  version: "2025.7"
   epoch: 0
-  description: Operating system and container binary deployment and upgrades
+  description: "Operating system and container binary deployment and upgrades"
   copyright:
-    - license: LGPL-2.0-or-later
-  dependencies:
-    runtime:
-      - ca-certificates-bundle
+    - license: GPL-2.0-only
 
 environment:
   contents:
     packages:
-      - bash
       - bison
       - build-base
-      - busybox
-      - ca-certificates-bundle
+      - composefs-dev
       - curl-dev
       - e2fsprogs-dev
       - fuse3-dev
       - glib-dev
-      - glib-gir
-      - gobject-introspection-dev
       - gpgme-dev
-      - gtk-doc
       - libarchive-dev
-      - libxslt
-      - libxslt-dev
-      - linux-headers
-      - openssl-dev
-      - xz-dev
+      - libselinux-dev
+      - libtool
+      - pkgconf-dev
+      - systemd-dev
 
 pipeline:
-  - uses: fetch
+  - uses: git-checkout
     with:
-      uri: https://github.com/ostreedev/ostree/releases/download/v${{package.version}}/libostree-${{package.version}}.tar.xz
-      expected-sha512: ca321175a9272cc7f6c3d7a3989d90d2cbb53def41ac2984ce6a60a05007b5760960a1bf4e9a5f13adc246c7061214424f21a5a284c201d8c4a4f5c619c6e02d
+      repository: https://github.com/ostreedev/ostree.git
+      tag: v${{package.version}}
+      expected-commit: 1a9350c94395cf743fc43e715931998fd67c520b
+
+  - runs: env NOCONFIGURE=1 ./autogen.sh
 
   - uses: autoconf/configure
     with:
       opts: |
-        --sbindir=/usr/bin \
-        --libexecdir=/usr/lib \
+        --disable-silent-rules \
         --enable-gtk-doc \
-        --enable-introspection \
-        --disable-static \
-        --disable-glibtest \
+        --with-selinux \
         --with-curl \
         --with-openssl \
-        --without-soup
+        --without-soup \
+        --with-composefs \
+        --with-dracut=yesbutnoconf
 
   - uses: autoconf/make
 
@@ -59,24 +52,47 @@ pipeline:
 
 subpackages:
   - name: ostree-dev
-    description: ostree development headers
+    description: Headers and dev libraries from ostree
     pipeline:
       - uses: split/dev
-    dependencies:
-      runtime:
-        - ostree
-  - name: ostree-doc
-    description: ostree documentation
-    pipeline:
-      - uses: split/manpages
+    test:
+      pipeline:
+        - uses: test/tw/ldd-check
 
-  - name: ostree-bash-completion
-    description: bash completion for ostree
-    pipeline:
-      - runs: |
-          mkdir -p "${{targets.subpkgdir}}"/usr/share/bash-completion
-          mv "${{targets.destdir}}"/usr/share/bash-completion/completions \
-            "${{targets.subpkgdir}}"/usr/share/bash-completion/
-    dependencies:
-      runtime:
-        - ostree
+test:
+  pipeline:
+    - runs: |
+        set -o pipefail
+        ostree --help | grep -F -e "Commands for managing a host system booted with ostree"
+        ostree --version | grep -F -e "${{package.version}}"
+    - name: Ensure expected modules are installed
+      runs: |
+        set -o pipefail
+        MODULES_OUTPUT=$(mktemp)
+        ostree --version 2>&1 | tee "${MODULES_OUTPUT}"
+        grep_file() {
+          grep -F -e $@ "${MODULES_OUTPUT}"
+        }
+        grep_file "inode64"
+        grep_file "initial-var"
+        grep_file "libcurl"
+        # TODO: enable this one libsoup is packaged
+        # grep_file "libsoup3"
+        grep_file "gpgme"
+        grep_file "composefs"
+        grep_file "ex-fsverity"
+        grep_file "libarchive"
+        grep_file "selinux"
+        grep_file "openssl"
+        grep_file "sign-ed25519"
+        grep_file "sign-spki"
+        grep_file "libmount"
+        grep_file "systemd"
+        grep_file "release"
+        grep_file "p2p"
+
+update:
+  enabled: true
+  github:
+    identifier: ostreedev/ostree
+    strip-prefix: v
