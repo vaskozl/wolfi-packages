@@ -40,6 +40,7 @@ package:
     - if: $CI_COMMIT_BRANCH == "main"
       changes:
         - $PKG
+        - ${PKG%.yaml}/*
     - when: never
   tags: ["$ARCH"]
   services:
