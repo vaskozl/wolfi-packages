@@ -5,37 +5,29 @@ package:
   description: The reliability of disk images, the flexibility of files
   copyright:
     - license: GPL-2.0-or-later OR Apache-2.0
-
 environment:
   contents:
     packages:
       - build-base
       - fuse3-dev
       - openssl-dev
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/containers/composefs.git
       tag: v${{package.version}}
-
   - uses: meson/configure
     with:
       opts: |
         --default-library=shared \
         -Dfuse=enabled
-
   - uses: meson/compile
-
   - uses: meson/install
-
   - runs: |
       mkdir -p "${{targets.destdir}}/usr/bin"
       mv "${{targets.destdir}}"/usr/sbin/* "${{targets.destdir}}/usr/bin"
       rm -r "${{targets.destdir}}/usr/sbin"
-
   - uses: strip
-
 subpackages:
   - name: ${{package.name}}-dev
     description: Headers and dev libraries from ${{package.name}}
@@ -44,7 +36,6 @@ subpackages:
     test:
       pipeline:
         - uses: test/tw/ldd-check
-
   - name: ${{package.name}}-static
     description: Static libraries for ${{package.name}}
     pipeline:
@@ -52,7 +43,6 @@ subpackages:
     test:
       pipeline:
         - uses: test/tw/ldd-check
-
 test:
   pipeline:
     - runs: |

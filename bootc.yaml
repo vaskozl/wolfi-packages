@@ -13,32 +13,25 @@ package:
       - mount
       - umount
       - util-linux-misc
-
 environment:
   contents:
     packages:
       - ostree-dev
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/bootc-dev/bootc.git
       branch: composefs-backend
-
   - uses: patch
     with:
       patches: 0001-install-pass-through-bootupd-bootloader-args.patch
-
   - uses: cargo/build
     with:
       output: bootc
-
   - runs: |
       mkdir -p ${{ targets.destdir }}/usr/lib/ostree/
       cp prepare-root.conf ${{ targets.destdir }}/usr/lib/ostree/prepare-root.conf
-
   - uses: strip
-
 test:
   environment:
     contents:

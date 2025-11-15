@@ -5,30 +5,24 @@ package:
   description: Bootloader updater
   copyright:
     - license: Apache-2.0
-
 environment:
   contents:
     packages:
       - openssl-dev
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/p5/coreos-bootupd.git
       # tag: v${{package.version}}
       branch: sdboot-support
-
   - uses: cargo/build
     with:
       output: bootupd
       opts: |
         --release \
         --features systemd-boot
-
   - uses: autoconf/make-install
-
   - uses: strip
-
 test:
   pipeline:
     - runs: |

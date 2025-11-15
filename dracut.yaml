@@ -10,7 +10,6 @@ package:
       - coreutils
       - cpio
       - udev
-
 environment:
   contents:
     packages:
@@ -21,13 +20,11 @@ environment:
       - pkgconf-dev
       - rust
       - systemd-dev
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/dracut-ng/dracut-ng.git
       tag: ${{package.version}}
-
   - uses: autoconf/configure
     with:
       opts: |
@@ -36,14 +33,11 @@ pipeline:
         --libdir=/usr/lib \
         --systemdsystemunitdir=/usr/lib/systemd \
         --enable-dracut-cpio
-
   - uses: autoconf/make-install
     with:
       opts: |
         enable_documentation=no
-
   - uses: strip
-
 subpackages:
   - name: dracut-dev
     description: Headers and dev libraries from Dracut
@@ -52,7 +46,6 @@ subpackages:
     test:
       pipeline:
         - uses: test/tw/ldd-check
-
 test:
   pipeline:
     - runs: |
