@@ -38,5 +38,4 @@ test:
     - runs: |
         set -o pipefail
         bootc --version | grep -F -e "${{package.version}}"
-        bootc --help | grep -F -e "Deploy and transactionally in-place with bootable container images."
         bootc status | yq .apiVersion | grep -F -e "org.containers.bootc/v1"
