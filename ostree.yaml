@@ -80,8 +80,3 @@ test:
         grep_file "systemd"
         grep_file "release"
         grep_file "p2p"
-update:
-  enabled: true
-  github:
-    identifier: ostreedev/ostree
-    strip-prefix: v
