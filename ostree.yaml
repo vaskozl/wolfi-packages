@@ -1,0 +1,82 @@
+package:
+  name: ostree
+  version: "2025.6"
+  epoch: 0
+  description: Operating system and container binary deployment and upgrades
+  copyright:
+    - license: LGPL-2.0-or-later
+  dependencies:
+    runtime:
+      - ca-certificates-bundle
+
+environment:
+  contents:
+    packages:
+      - bash
+      - bison
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - curl-dev
+      - e2fsprogs-dev
+      - fuse3-dev
+      - glib-dev
+      - glib-gir
+      - gobject-introspection-dev
+      - gpgme-dev
+      - gtk-doc
+      - libarchive-dev
+      - libxslt
+      - libxslt-dev
+      - linux-headers
+      - openssl-dev
+      - xz-dev
+
+pipeline:
+  - uses: fetch
+    with:
+      uri: https://github.com/ostreedev/ostree/releases/download/v${{package.version}}/libostree-${{package.version}}.tar.xz
+      expected-sha512: ca321175a9272cc7f6c3d7a3989d90d2cbb53def41ac2984ce6a60a05007b5760960a1bf4e9a5f13adc246c7061214424f21a5a284c201d8c4a4f5c619c6e02d
+
+  - uses: autoconf/configure
+    with:
+      opts: |
+        --sbindir=/usr/bin \
+        --libexecdir=/usr/lib \
+        --enable-gtk-doc \
+        --enable-introspection \
+        --disable-static \
+        --disable-glibtest \
+        --with-curl \
+        --with-openssl \
+        --without-soup
+
+  - uses: autoconf/make
+
+  - uses: autoconf/make-install
+
+  - uses: strip
+
+subpackages:
+  - name: ostree-dev
+    description: ostree development headers
+    pipeline:
+      - uses: split/dev
+    dependencies:
+      runtime:
+        - ostree
+  - name: ostree-doc
+    description: ostree documentation
+    pipeline:
+      - uses: split/manpages
+
+  - name: ostree-bash-completion
+    description: bash completion for ostree
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}"/usr/share/bash-completion
+          mv "${{targets.destdir}}"/usr/share/bash-completion/completions \
+            "${{targets.subpkgdir}}"/usr/share/bash-completion/
+    dependencies:
+      runtime:
+        - ostree
