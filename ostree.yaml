@@ -1,11 +1,10 @@
 package:
   name: ostree
-  version: "2025.4"
+  version: "2025.7"
   epoch: 0
   description: "Operating system and container binary deployment and upgrades"
   copyright:
     - license: GPL-2.0-only
-
 environment:
   contents:
     packages:
@@ -22,15 +21,12 @@ environment:
       - libtool
       - pkgconf-dev
       - systemd-dev
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/ostreedev/ostree.git
       tag: v${{package.version}}
-
   - runs: env NOCONFIGURE=1 ./autogen.sh
-
   - uses: autoconf/configure
     with:
       opts: |
@@ -42,13 +38,9 @@ pipeline:
         --without-soup \
         --with-composefs \
         --with-dracut=yesbutnoconf
-
   - uses: autoconf/make
-
   - uses: autoconf/make-install
-
   - uses: strip
-
 subpackages:
   - name: ostree-dev
     description: Headers and dev libraries from ostree
@@ -57,7 +49,6 @@ subpackages:
     test:
       pipeline:
         - uses: test/tw/ldd-check
-
 test:
   pipeline:
     - runs: |
@@ -89,7 +80,6 @@ test:
         grep_file "systemd"
         grep_file "release"
         grep_file "p2p"
-
 update:
   enabled: true
   github:
