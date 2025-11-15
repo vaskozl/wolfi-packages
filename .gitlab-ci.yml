@@ -8,7 +8,6 @@ package:
           - blocky.yaml
           - bootc-baselayout.yaml
           - bootc.yaml
-          - bootupd.yaml
           - catatonit.yaml
           - composefs-rs.yaml
           - composefs.yaml
