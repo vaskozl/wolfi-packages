@@ -9,7 +9,7 @@ endif
 PKG ?=
 OUT_DIR ?= ./packages
 WORKSPACE_DIR ?= $(PWD)
-RUNNER ?= bubblewrap
+RUNNER ?= docker
 KEY ?= melange.rsa
 
 # Package list - automatically discover all YAML files

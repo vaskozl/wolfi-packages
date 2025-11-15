@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+
+package:
+  name: kernel-initramfs
+  version: 6.15.6
+  epoch: 1
+  description: The Linux kernel initramfs
+  copyright:
+    - license: GPL-2.0
+  dependencies:
+    runtime:
+      - kernel
+      - kernel-modules
+      - kernel-initramfs
+      - zstd
+
+environment:
+  contents:
+    packages:
+      - busybox
+      - build-base
+      - bash
+      - binutils-dev
+      - wolfi-baselayout
+      - kernel
+      - kernel-modules
+      - dracut
+      - kmod
+      - zstd
+      - posix-libc-utils
+      - attr
+      - findutils
+      # For modules
+      - lvm2
+      - cryptsetup
+      - btrfs-progs
+      - systemd
+      - util-linux
+      - device-mapper
+      - openssl
+      - composefs-rs-dracut
+      - util-linux-login
+      - mount
+      - umount
+      - blkid
+      - losetup
+
+
+pipeline:
+  - runs: |
+      mkdir -p /var/tmp ${{targets.destdir}}/usr/lib/modules/${{package.version}}
+      depmod ${{package.version}}
+      dracut --force --no-hostonly --reproducible --zstd --verbose \
+        --kver ${{package.version}} --omit busybox \
+        ${{targets.destdir}}/usr/lib/modules/${{package.version}}/initramfs.img
+
+  - runs: |
+      ls -la ${{targets.destdir}}/usr/lib/modules/${{package.version}}/

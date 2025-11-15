@@ -4,6 +4,12 @@ package:
     matrix:
       - ARCH: [amd64, arm64]
         PKG:
+          - bootc-baselayout.yaml
+          - bootc.yaml
+          - bootupd.yaml
+          - composefs-rs.yaml
+          - composefs.yaml
+          - dracut.yaml
           - anubis.yaml
           - blocky.yaml
           - catatonit.yaml

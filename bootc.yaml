@@ -1,0 +1,52 @@
+package:
+  name: bootc
+  version: 1.5.1
+  epoch: 0
+  description: Boot and upgrade via container images
+  copyright:
+    - license: Apache-2.0-only
+  dependencies:
+    runtime:
+      - fstrim
+      - ostree
+      - composefs
+      - mount
+      - umount
+      - util-linux-misc
+
+environment:
+  contents:
+    packages:
+      - ostree-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/bootc-dev/bootc.git
+      branch: composefs-backend
+
+  - uses: patch
+    with:
+      patches: 0001-install-pass-through-bootupd-bootloader-args.patch
+
+  - uses: cargo/build
+    with:
+      output: bootc
+
+  - runs: |
+      mkdir -p ${{ targets.destdir }}/usr/lib/ostree/
+      cp prepare-root.conf ${{ targets.destdir }}/usr/lib/ostree/prepare-root.conf
+
+  - uses: strip
+
+test:
+  environment:
+    contents:
+      packages:
+        - yq
+  pipeline:
+    - runs: |
+        set -o pipefail
+        bootc --version | grep -F -e "${{package.version}}"
+        bootc --help | grep -F -e "Deploy and transactionally in-place with bootable container images."
+        bootc status | yq .apiVersion | grep -F -e "org.containers.bootc/v1"

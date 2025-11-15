@@ -1,0 +1,39 @@
+package:
+  name: bootupd
+  version: 0.2.29
+  epoch: 2
+  description: Bootloader updater
+  copyright:
+    - license: Apache-2.0
+
+environment:
+  contents:
+    packages:
+      - openssl-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/p5/coreos-bootupd.git
+      # tag: v${{package.version}}
+      branch: sdboot-support
+
+  - uses: cargo/build
+    with:
+      output: bootupd
+      opts: |
+        --release \
+        --features systemd-boot
+
+  - uses: autoconf/make-install
+
+  - uses: strip
+
+test:
+  pipeline:
+    - runs: |
+        set -o pipefail
+        bootupd --help | grep -F -e "Bootupd backend commands"
+        bootupd --version | grep -F -e "${{package.version}}"
+        bootupctl --help | grep -F -e "Bootupd client application"
+        bootupctl --version | grep -F -e "${{package.version}}"

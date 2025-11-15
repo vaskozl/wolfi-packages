@@ -1,0 +1,68 @@
+package:
+  name: composefs
+  version: 1.0.8
+  epoch: 0
+  description: The reliability of disk images, the flexibility of files
+  copyright:
+    - license: GPL-2.0-or-later OR Apache-2.0
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - fuse3-dev
+      - openssl-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/containers/composefs.git
+      tag: v${{package.version}}
+
+  - uses: meson/configure
+    with:
+      opts: |
+        --default-library=shared \
+        -Dfuse=enabled
+
+  - uses: meson/compile
+
+  - uses: meson/install
+
+  - runs: |
+      mkdir -p "${{targets.destdir}}/usr/bin"
+      mv "${{targets.destdir}}"/usr/sbin/* "${{targets.destdir}}/usr/bin"
+      rm -r "${{targets.destdir}}/usr/sbin"
+
+  - uses: strip
+
+subpackages:
+  - name: ${{package.name}}-dev
+    description: Headers and dev libraries from ${{package.name}}
+    pipeline:
+      - uses: split/dev
+    test:
+      pipeline:
+        - uses: test/tw/ldd-check
+
+  - name: ${{package.name}}-static
+    description: Static libraries for ${{package.name}}
+    pipeline:
+      - uses: split/static
+    test:
+      pipeline:
+        - uses: test/tw/ldd-check
+
+test:
+  pipeline:
+    - runs: |
+        set -o pipefail
+        {
+          mkcomposefs --help 2>&1 || true
+        } | grep -F -e "Usage: mkcomposefs"
+        {
+          mount.composefs 2>&1 || true
+        } | grep -F -e "mount.composefs -o basedir"
+        {
+          composefs-info 2>&1 || true
+        } | grep -F -e "usage: composefs-info"

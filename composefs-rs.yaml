@@ -1,0 +1,45 @@
+package:
+  name: composefs-rs
+  version: 0_git20250721
+  epoch: 0
+  description: Boot and upgrade via container images
+  copyright:
+    - license: Apache-2.0-only
+
+environment:
+  contents:
+    packages:
+      - openssl-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/containers/composefs-rs.git
+      branch: main
+
+  - uses: cargo/build
+    with:
+      output: composefs-setup-root
+
+  - uses: strip
+
+subpackages:
+  - name: ${{package.name}}-dracut
+    description: Dracut modules for composefs-rs
+    pipeline:
+    - runs: |
+        install -Dpm0755 -t "${{targets.subpkgdir}}/usr/lib/dracut/modules.d/37composefs/" target/release/composefs-setup-root ./module-setup.sh
+        install -Dpm0644 -t "${{targets.subpkgdir}}/usr/lib/dracut/modules.d/37composefs/" ./composefs-setup-root.service
+
+  - name: ${{package.name}}-cfsctl
+    description: Composefs utility
+    pipeline:
+    - runs: |
+        install -Dpm0755 -t "${{targets.subpkgdir}}/usr/bin/" target/release/cfsctl
+
+test:
+  pipeline:
+    - runs: |
+        set -o pipefail
+        composefs-setup-root --help | grep -F -e "Usage: composefs-setup-root"
+        composefs-setup-root --version | grep -F -e "${{package.version}}"
