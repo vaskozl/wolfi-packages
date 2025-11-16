@@ -16,15 +16,19 @@ package:
 environment:
   contents:
     packages:
+      - automake
+      - busybox
+      - build-base
       - ostree-dev
+      - cargo-auditable
+      - rust
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/bootc-dev/bootc.git
       tag: v${{package.version}}
-  - uses: cargo/build
-    with:
-      output: bootc
+  - runs: |
+      make bin install-all install-initramfs-dracut DESTDIR="${{targets.contextdir}}" V=1
   - runs: |
       mkdir -p ${{ targets.destdir }}/usr/lib/ostree/
       cp prepare-root.conf ${{ targets.destdir }}/usr/lib/ostree/prepare-root.conf
