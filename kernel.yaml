@@ -40,7 +40,7 @@ pipeline:
 
   # Install payload into destdir
   - runs: |
-      out="${{targets.destdir}}/usr/lib/modules/${{package.version}}"
+      out="${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}}-stable"
       install -d "${out}"
       cp -a "alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-stable/." "${out}/"
       cp -a "alpinepkg/boot/vmlinuz-stable" "${out}/vmlinuz"
