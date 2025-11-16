@@ -47,7 +47,7 @@ pipeline:
       EOF
   - name: Install
     runs: |
-      for i in dev etc etc/profile.d etc/secfixes.d var/home proc var/roothome var/log usr/bin usr/local/lib sys tmp var/spool/cron opt run usr/lib boot sysroot/etc; do
+      for i in dev etc etc/profile.d etc/secfixes.d proc usr/bin usr/local/lib var sys tmp opt run usr/lib boot sysroot/etc; do
         mkdir -p "${{targets.destdir}}"/${i}
       done
       # bootc enablement (/home -> /var/home, /root -> /var/roothome)
