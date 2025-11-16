@@ -2,82 +2,47 @@
 package:
   name: kernel
   version: 6.17.8
-  epoch: 1
-  description: The Linux kernel
+  epoch: 0
+  description: Repackaged Alpine linux-stable kernel
   copyright:
     - license: GPL-2.0
   dependencies:
     runtime:
-      - zstd
+      - kmod
+      - gzip
+
 environment:
   contents:
     packages:
-      - binutils-dev
-      - bison
-      - build-base
+      - wolfi-base
+      - apk-tools
       - busybox
-      - diffutils
-      - elfutils
-      - elfutils-dev
-      - findutils
-      - openssl-dev
-      - flex
-      - perl
-      - rsync
-      - gawk
-      - gnutar
-      - kmod
-      - libelf
-      - llvm
-      - openssl
-      - xz
-      - zstd
+      - wget
+      - gzip
+
 pipeline:
-  - uses: git-checkout
-    with:
-      repository: https://github.com/gregkh/linux
-      tag: v${{package.version}}
-  - runs: mv config-${{build.arch}}* .config
-  - uses: autoconf/make
-    with:
-      opts: prepare
-  - uses: autoconf/make
-    with:
-      opts: modules_prepare
-  - uses: autoconf/make
-  - uses: autoconf/make
-    with:
-      opts: headers_install INSTALL_HDR_PATH=${{targets.destdir}}/usr
+  # Fetch Alpine linux-lts package
   - runs: |
-      install -Dpm0644 ./arch/${{build.arch}}/boot/bzImage "${{targets.destdir}}/usr/lib/modules/${{package.version}}/vmlinuz"
-      install -Dpm0644 .config ${{targets.destdir}}/usr/lib/modules/${{package.version}}/config
-      install -Dpm0644 -t "${{targets.destdir}}/usr/lib/modules/${{package.version}}/" ./System.map
-subpackages:
-  - name: kernel-modules
-    description: Kernel modules
-    dependencies:
-      runtime:
-        - xz
-    pipeline:
-      - uses: autoconf/make
-        with:
-          opts: modules_install INSTALL_MOD_PATH=${{targets.subpkgdir}}/usr
-      - runs: |
-          echo "Compressing kernel modules with xz..."
-          find ${{targets.subpkgdir}}/usr/lib/modules/ -type f -name '*.ko' -print0 | xargs -0 -n1 -P$(nproc) xz -T1 --check=crc32 --lzma2=dict=1MiB
-    test:
-      pipeline:
-        - runs: |
-            stat "${{targets.subpkgdir}}/usr/lib/modules/${{package.version}}" | grep -F -e "0755"
-            test -d "${{targets.subpkgdir}}/usr/lib/modules/${{package.version}}"
-            if find "${{targets.subpkgdir}}/usr/lib/modules/${{package.version}}" -type f -name '*.ko' | grep -q .; then
-              print "%s" "Found uncompressed kernel object files" >&2
-              exit 1
-            fi
-  - name: kernel-dev
-    description: Kernel headers
-    pipeline:
-      - uses: split/dev
-    test:
-      pipeline:
-        - uses: test/tw/ldd-check
+      set -eux
+      mkdir alpinepkg
+      cd alpinepkg
+      branch="edge"
+      repo="community"
+      variant="linux-stable"
+
+      # Adjust repo & arch as needed
+      wget "https://dl-cdn.alpinelinux.org/alpine/${branch}/${repo}/${{build.arch}}/${variant}-${{package.full-version}}.apk"
+
+      # Extract fetched APK
+      for f in *.apk; do
+        tar -xzf "$f"
+      done
+
+  # Install payload into destdir
+  - runs: |
+      out="${{targets.destdir}}/usr/lib/modules/${{package.version}}"
+      install -d "${out}"
+      cp -a "alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-stable/." "${out}/"
+      cp -a "alpinepkg/boot/vmlinuz-stable" "${out}/vmlinuz"
+      cp -a "alpinepkg/boot/config-${{package.version}}-${{package.epoch}}-stable" "${out}/config"
+      cp -a "alpinepkg/boot/System.map-${{package.version}}-${{package.epoch}}-stable" "${out}/System.map"
