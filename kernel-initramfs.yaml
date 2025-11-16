@@ -36,7 +36,6 @@ environment:
       - util-linux
       - device-mapper
       - openssl
-      - composefs-rs-dracut
       - util-linux-login
       - mount
       - umount

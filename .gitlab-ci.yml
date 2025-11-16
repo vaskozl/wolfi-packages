@@ -9,7 +9,6 @@ package:
           - bootc-baselayout.yaml
           - bootc.yaml
           - catatonit.yaml
-          - composefs-rs.yaml
           - composefs.yaml
           - dracut.yaml
           - golink.yaml
