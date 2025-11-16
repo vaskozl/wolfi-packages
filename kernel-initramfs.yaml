@@ -51,6 +51,7 @@ pipeline:
       dracut --force --no-hostonly --reproducible --zstd --verbose \
         --kver ${{package.version}}-${{package.epoch}}-stable --omit busybox \
         ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable/initramfs.img
+        --kcmdline "rd.debug systemd.log_level=debug systemd.log_target=console rd.shell rd.shell_debug"
 
   - runs: |
       ls -la ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable/
