@@ -28,11 +28,19 @@ pipeline:
       repository: https://github.com/bootc-dev/bootc.git
       tag: v${{package.version}}
   - runs: |
-      make bin install-all install-initramfs-dracut DESTDIR="${{targets.contextdir}}" V=1
+      make bin install-all install-initramfs-dracut \
+        STORAGE_RELATIVE_PATH=/sysroot/ostree/bootc/storage \
+        DESTDIR="${{targets.contextdir}}" \
+        V=1
   - runs: |
       mkdir -p ${{ targets.destdir }}/usr/lib/ostree/
       cp prepare-root.conf ${{ targets.destdir }}/usr/lib/ostree/prepare-root.conf
   - uses: strip
+subpackages:
+  - name: bootc-doc
+    pipeline:
+      - uses: split/manpages
+    description: bootc manpages
 test:
   environment:
     contents:
