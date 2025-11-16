@@ -46,11 +46,12 @@ environment:
 
 pipeline:
   - runs: |
-      mkdir -p /var/tmp ${{targets.destdir}}/usr/lib/modules/${{package.version}}
-      depmod ${{package.version}}
+      mkdir -p /var/tmp ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable
+      ls -al /lib/modules
+      depmod ${{package.version}}-${{package.epoch}}-stable
       dracut --force --no-hostonly --reproducible --zstd --verbose \
-        --kver ${{package.version}} --omit busybox \
-        ${{targets.destdir}}/usr/lib/modules/${{package.version}}/initramfs.img
+        --kver ${{package.version}}-${{package.epoch}}-stable --omit busybox \
+        ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable/initramfs.img
 
   - runs: |
-      ls -la ${{targets.destdir}}/usr/lib/modules/${{package.version}}/
+      ls -la ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable/
