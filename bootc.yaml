@@ -34,7 +34,8 @@ pipeline:
         V=1
   - runs: |
       mkdir -p ${{ targets.destdir }}/usr/lib/ostree/
-      cp prepare-root.conf ${{ targets.destdir }}/usr/lib/ostree/prepare-root.conf
+      install -Dm644 ./prepare-root.conf ${{ targets.destdir }}/usr/lib/ostree/prepare-root.conf
+      install -Dm644 ./bootc-base-dirs.conf ${{targets.destdir}}/usr/lib/tmpfiles.d/bootc-base-dirs.conf
   - uses: strip
 subpackages:
   - name: bootc-doc
