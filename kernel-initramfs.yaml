@@ -2,15 +2,14 @@
 
 package:
   name: kernel-initramfs
-  version: 6.15.6
-  epoch: 1
+  version: 6.17.8
+  epoch: 0
   description: The Linux kernel initramfs
   copyright:
     - license: GPL-2.0
   dependencies:
     runtime:
       - kernel
-      - kernel-modules
       - kernel-initramfs
       - zstd
 
@@ -23,7 +22,6 @@ environment:
       - binutils-dev
       - wolfi-baselayout
       - kernel
-      - kernel-modules
       - dracut
       - kmod
       - zstd
