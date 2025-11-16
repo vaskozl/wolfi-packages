@@ -22,6 +22,7 @@ environment:
       - binutils-dev
       - wolfi-baselayout
       - kernel
+      - bootc
       - dracut
       - kmod
       - zstd
