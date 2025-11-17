@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: kernel-rpi
+  version: 6.12.54
+  epoch: 0
+  description: Repackaged Alpine linux-rpi kernel
+  copyright:
+    - license: GPL-2.0
+  dependencies:
+    runtime:
+      - kmod
+      - gzip
+
+environment:
+  contents:
+    packages:
+      - wolfi-base
+      - apk-tools
+      - busybox
+      - wget
+      - gzip
+
+pipeline:
+  # Fetch Alpine linux-lts package
+  - runs: |
+      set -eux
+      mkdir alpinepkg
+      cd alpinepkg
+      branch="edge"
+      repo="main"
+      variant="linux-rpi"
+
+      # Adjust repo & arch as needed
+      wget "https://dl-cdn.alpinelinux.org/alpine/${branch}/${repo}/${{build.arch}}/${variant}-${{package.full-version}}.apk"
+
+      # Extract fetched APK
+      for f in *.apk; do
+        tar -xzf "$f"
+      done
+
+  # Install payload into destdir
+  - runs: |
+      out="${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-rpi"
+      install -d "${out}"
+      cp -a "alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-rpi/." "${out}/"
+      cp -a "alpinepkg/boot/vmlinuz-rpi" "${out}/vmlinuz"
+      cp -a "alpinepkg/boot/config-${{package.version}}-${{package.epoch}}-rpi" "${out}/config"
+      cp -a "alpinepkg/boot/System.map-${{package.version}}-${{package.epoch}}-rpi" "${out}/System.map"
