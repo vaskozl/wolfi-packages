@@ -9,12 +9,11 @@ package:
     runtime:
       - ca-certificates-bundle
     provides:
+      - wolfi-baselayout
       - merged-sbin
       - merged-bin
       - merged-usrsbin
       - merged-lib
-    replaces:
-      - wolfi-baselayout
   checks:
     disabled:
       # fails "usrlocal" linter because it creates /usr/local/lib64

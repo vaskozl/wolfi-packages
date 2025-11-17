@@ -8,13 +8,13 @@ package:
     - license: GPL-2.0
   dependencies:
     runtime:
+      - wolfi-baselayout
       - kmod
       - gzip
 
 environment:
   contents:
     packages:
-      - wolfi-base
       - apk-tools
       - busybox
       - wget
