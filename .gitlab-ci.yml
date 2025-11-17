@@ -59,7 +59,7 @@ package:
       --runner=docker
       --cache-dir=/apks/melange-cache
       --apk-cache-dir=/apks/apks-cache
-      --repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os
+      --repository-append=https://packages.wolfi.dev/os
       --keyring-append melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
       --pipeline-dir ./pipelines
       --env-file common.env

@@ -18,13 +18,11 @@ package:
     disabled:
       # fails "usrlocal" linter because it creates /usr/local/lib64
       - usrmerge
-
 environment:
   contents:
     packages:
       - busybox
       - wolfi-baselayout
-
 pipeline:
   - name: Generate /etc/shadow
     runs: |
@@ -46,10 +44,10 @@ pipeline:
       EOF
   - name: Install
     runs: |
-      for i in dev etc etc/profile.d etc/secfixes.d proc usr/bin usr/local/lib var sys tmp opt run usr/lib boot sysroot/etc; do
+      # bootc enablement (/home -> /var/home, /root -> /var/roothome)
+      for i in dev etc/profile.d etc/secfixes.d proc var/home var/root var/usrlocal var/srv var/log var/spool/cron var/empty usr/bin usr/lib usr/local/lib sys tmp opt run; do
         mkdir -p "${{targets.destdir}}"/${i}
       done
-      # bootc enablement (/home -> /var/home, /root -> /var/roothome)
       ln -s var/home "${{targets.destdir}}"/home
       ln -s var/roothome "${{targets.destdir}}"/root
       ln -s var/usrlocal "${{targets.destdir}}"/usr/local
@@ -66,8 +64,11 @@ pipeline:
         install -m644 vendor/${i} "${{targets.destdir}}"/${i}
       done
       install -m000 vendor/etc/shadow "${{targets.destdir}}"/etc/shadow
+      ln -s /etc/crontabs "${{targets.destdir}}"/var/spool/cron/crontabs
       ln -s /proc/mounts "${{targets.destdir}}"/etc/mtab
+      ln -s /var/mail "${{targets.destdir}}"/var/spool/mail
       echo 'multi on' > "${{targets.destdir}}"/etc/host.conf
+      chmod 755 "${{targets.destdir}}"/var/empty
 test:
   pipeline:
     - name: "Files exist"
