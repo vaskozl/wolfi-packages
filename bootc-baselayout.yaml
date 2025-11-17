@@ -66,13 +66,8 @@ pipeline:
         install -m644 vendor/${i} "${{targets.destdir}}"/${i}
       done
       install -m000 vendor/etc/shadow "${{targets.destdir}}"/etc/shadow
-      ln -s /etc/crontabs "${{targets.destdir}}"/var/spool/cron/crontabs
       ln -s /proc/mounts "${{targets.destdir}}"/etc/mtab
-      ln -s /var/mail "${{targets.destdir}}"/var/spool/mail
       echo 'multi on' > "${{targets.destdir}}"/etc/host.conf
-      chmod 0700 "${{targets.destdir}}"/root
-      mkdir -p "${{targets.destdir}}"/var/empty
-      chmod 755 "${{targets.destdir}}"/var/empty
 test:
   pipeline:
     - name: "Files exist"
