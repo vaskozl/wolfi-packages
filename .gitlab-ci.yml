@@ -32,6 +32,7 @@ package:
           - redis.yaml
           - renovate-apk-indexer.yaml
           - sonarr.yaml
+          - sxhkd.yaml
           - tailscale.yaml
           - tsidp.yaml
           - wolfi-scanner.yaml

@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/community/catatonit/APKBUILD
+package:
+  name: sxhkd
+  version: 0.6.3
+  epoch: 0
+  description: Simple X hotkey daemon
+  copyright:
+    - license: BSD-2-Clause
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - automake
+      - libxcb-dev
+      - xcb-util-keysyms-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/baskerville/sxhkd
+      tag: ${{package.version}}
+  - uses: autoconf/make
+  - uses: autoconf/make-install
+    with:
+      opts: |
+        PREFIX=/usr
+  - uses: strip
+subpackages:
+  - name: "${{package.name}}-doc"
+    pipeline:
+      - uses: split/manpages
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}"/usr/share/doc/
+          mv "${{targets.destdir}}"/usr/share/doc/* "${{targets.subpkgdir}}"/usr/share/doc/
+    description: sxhkd manpages
+test:
+  pipeline:
+    - name: Verify bspwm installation, please improve the test as needed
+      runs: bspc --help || exit 1
