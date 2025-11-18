@@ -38,4 +38,4 @@ subpackages:
 test:
   pipeline:
     - name: Verify bspwm installation, please improve the test as needed
-      runs: bspc --help || exit 1
+      runs: sxhkd --help || exit 1
