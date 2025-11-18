@@ -7,13 +7,14 @@ package:
           - anubis.yaml
           - blocky.yaml
           - bootc.yaml
+          - bspwm.yaml
           - catatonit.yaml
           - composefs.yaml
           - dracut.yaml
           - golink.yaml
-          - kernel.yaml
-          - kernel-rpi.yaml
           - kernel-initramfs.yaml
+          - kernel-rpi.yaml
+          - kernel.yaml
           - kromgo.yaml
           - kube-network-policies.yaml
           - kubeconform.yaml

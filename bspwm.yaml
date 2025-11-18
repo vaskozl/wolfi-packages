@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/community/catatonit/APKBUILD
+package:
+  name: bspwm
+  version: 0.9.12
+  epoch: 0
+  description: A tiling window manager based on binary space partitioning
+  copyright:
+    - license: BSD-2-Clause
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - automake
+      - libtool
+      - libxcb-dev
+      - xcb-util-dev
+      - xcb-util-wm-dev
+      - xcb-util-keysyms-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/baskerville/bspwm
+      tag: ${{package.version}}
+  - uses: autoconf/make
+  - uses: autoconf/make-install
+    with:
+      opts: |
+        PREFIX=/usr
+  - uses: strip
+subpackages:
+  - name: "${{package.name}}-doc"
+    pipeline:
+      - uses: split/manpages
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}"/usr/share/doc/
+          mv "${{targets.destdir}}"/usr/share/doc/* "${{targets.subpkgdir}}"/usr/share/doc/
+    description: bspwm manpages
+  - name: "${{package.name}}-bash-completion"
+    description: "bash completion for bspc"
+    pipeline:
+      - runs: |
+          mkdir -p ${{targets.subpkgdir}}/usr/share/bash-completion/completions
+          mv ${{targets.destdir}}/usr/share/bash-completion/completions/bspc ${{targets.subpkgdir}}/usr/share/bash-completion/bspc
+    dependencies:
+      runtime:
+        - merged-usrsbin
+        - wolfi-baselayout
+  - name: "${{package.name}}-zsh-completion"
+    description: "bash completion for bspc"
+    pipeline:
+      - runs: |
+          mkdir -p ${{targets.subpkgdir}}/usr/share/zsh
+          mv ${{targets.destdir}}/usr/share/zsh/site-functions ${{targets.subpkgdir}}/usr/share/zsh/site-functions
+    dependencies:
+      runtime:
+        - merged-usrsbin
+        - wolfi-baselayout
+  - name: "${{package.name}}-fish-completion"
+    description: "bash completion for bspc"
+    pipeline:
+      - runs: |
+          mkdir -p ${{targets.subpkgdir}}/usr/share/fish
+          mv ${{targets.destdir}}/usr/share/fish/vendor_completions.d ${{targets.subpkgdir}}/usr/share/fish/vendor_completions.d
+    dependencies:
+      runtime:
+        - merged-usrsbin
+        - wolfi-baselayout
+test:
+  pipeline:
+    - name: Verify bspwm installation, please improve the test as needed
+      runs: bspc --help || exit 1
