@@ -34,6 +34,7 @@ package:
           - renovate-apk-indexer.yaml
           - sonarr.yaml
           - sxhkd.yaml
+          - synology-csi.yaml
           - tailscale.yaml
           - tsidp.yaml
           - wolfi-scanner.yaml

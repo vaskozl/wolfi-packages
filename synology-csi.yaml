@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: synology-csi
+  version: 1.2.1
+  epoch: 0
+  description: The official Container Storage Interface driver for Synology NAS
+  copyright:
+    - license: Apache-2.0-only
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/SynologyOpenSource/synology-csi
+      tag: v${{package.version}}
+  - uses: go/build
+    with:
+      packages: .
+      output: synology-csi-driver
+  - uses: go/build
+    with:
+      packages: ./synocli
+      output: synologycli
+  - uses: strip
+test:
+  pipeline:
+    - name: Verify synology-csi installation
+      runs: synology-csi-driver --help || exit 1
