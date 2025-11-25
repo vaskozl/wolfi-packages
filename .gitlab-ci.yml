@@ -49,9 +49,9 @@ package:
     - when: never
   tags: ["$ARCH"]
   services:
-    - cgr.dev/chainguard/docker-dind:latest@sha256:7ac2790d8bc2034f7fd347c20a007eef8cb04d9f0f2c4b85bd99d1633a7a6572
+    - cgr.dev/chainguard/docker-dind:latest
   image:
-    name: ghcr.io/vaskozl/melange:0.34.0@sha256:704197995173b8ecce7738a705ef8b7f8a582b473500a0a272d984843e9dbe57
+    name: ghcr.io/vaskozl/melange:0.34.0
     entrypoint: [""]
   before_script:
     - echo "${MELANGE_RSA}" > melange.rsa
