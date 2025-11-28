@@ -39,7 +39,7 @@ pipeline:
         enable_documentation=no
   - runs: |
       mkdir -p ${{targets.destdir}}/etc/dracut.conf.d
-      install -Dm644 ./fix-bootc.conf ${{targets.destdir}}/etc/dracut.conf.d/fix-bootc.conf
+      install -Dm644 ./30-bootc.conf ${{targets.destdir}}/etc/dracut.conf.d/30-bootc.conf
   - uses: strip
 subpackages:
   - name: dracut-dev
