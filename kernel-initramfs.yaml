@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
-
 package:
   name: kernel-initramfs
   version: 6.17.8
@@ -12,7 +11,6 @@ package:
       - kernel
       - kernel-initramfs
       - zstd
-
 environment:
   contents:
     packages:
@@ -42,17 +40,12 @@ environment:
       - umount
       - blkid
       - losetup
-
-
 pipeline:
   - runs: |
       mkdir -p /var/tmp ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable
       ls -al /lib/modules
       depmod ${{package.version}}-${{package.epoch}}-stable
-      dracut --force --no-hostonly --reproducible --zstd --verbose \
-        --kver ${{package.version}}-${{package.epoch}}-stable --omit busybox \
-        ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable/initramfs.img \
-        --kernel-cmdline "SYSTEMD_SULOGIN_FORCE=1"
-
+      dracut --force --verbose --kernel-cmdline "SYSTEMD_SULOGIN_FORCE=1" \
+        ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable/initramfs.img
   - runs: |
       ls -la ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable/
