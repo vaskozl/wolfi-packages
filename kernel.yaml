@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: kernel
-  version: 6.17.8
+  version: 6.17.9
   epoch: 0
   description: Repackaged Alpine linux-stable kernel
   copyright:
