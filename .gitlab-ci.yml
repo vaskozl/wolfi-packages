@@ -41,6 +41,7 @@ package:
           - tailscale.yaml
           - tsidp.yaml
           - wolfi-scanner.yaml
+          - wlroots.yaml
           - zsh-autosuggestions.yaml
           - zsh-history-substring-search.yaml
           - zsh-syntax-highliting.yaml

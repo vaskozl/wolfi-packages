@@ -1,0 +1,60 @@
+package:
+  name: wlroots
+  version: "0.19.2"
+  epoch: 0
+  description: Modular Wayland compositor library
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - build-base
+      - glslang-dev
+      - hwdata-dev
+      - hwdata-pnp
+      - libcap-dev
+      - libdisplay-info-dev
+      - libinput-dev
+      - libliftoff-dev
+      - libxcb-dev
+      - libxkbcommon-dev
+      - lcms2-dev
+      - mesa-dev
+      - mesa-gbm
+      - meson
+      - ninja-build
+      - samurai
+      - pixman-dev
+      - vulkan-loader
+      - vulkan-headers
+      - wayland-dev
+      - wayland-protocols
+      - xcb-util-image-dev
+      - xcb-util-renderutil-dev
+      - xcb-util-wm-dev
+      - xkeyboard-config-dev
+      - systemd-dev
+      - libsystemd
+      - libseat-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://gitlab.freedesktop.org/wlroots/wlroots
+      tag: ${{package.version}}
+  - runs: |
+      meson \
+        -Db_lto=true \
+        -Dexamples=false \
+        -Dcolor-management=enabled \
+        -Ddefault_library=both \
+        -Dsession=enabled \
+        --prefix=/usr \
+        . output
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-dev
+    pipeline:
+      - uses: split/dev
+    description: ${{package.name}} dev
