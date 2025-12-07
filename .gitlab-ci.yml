@@ -19,6 +19,7 @@ package:
           - kromgo.yaml
           - kube-network-policies.yaml
           - kubeconform.yaml
+          - libdisplay-info.yaml
           - lidarr.yaml
           - ostree.yaml
           - perl-email-date-format.yaml
