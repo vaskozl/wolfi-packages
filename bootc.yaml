@@ -1,6 +1,6 @@
 package:
   name: bootc
-  version: 1.10.0
+  version: 1.11.0
   epoch: 0
   description: Boot and upgrade via container images
   copyright:
