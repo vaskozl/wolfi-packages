@@ -5,6 +5,7 @@ package:
       - ARCH: [amd64, arm64]
         PKG:
           - anubis.yaml
+          - libliftoff.yaml
           - blocky.yaml
           - bootc.yaml
           - bspwm.yaml
