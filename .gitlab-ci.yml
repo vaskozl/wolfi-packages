@@ -67,6 +67,7 @@ package:
       --pipeline-dir ./pipelines
       --env-file common.env
     OUT_DIR: /apks
+  retry: 2
   script:
     - until [ -S /var/run/docker.sock ]; do sleep 1; done
     - melange build "$PKG" $MELANGE_FLAGS --source-dir="${PKG%.yaml}" --out-dir="${OUT_DIR}" --signing-key=melange.rsa
