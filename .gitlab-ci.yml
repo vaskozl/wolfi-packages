@@ -5,7 +5,6 @@ package:
       - ARCH: [amd64, arm64]
         PKG:
           - anubis.yaml
-          - libliftoff.yaml
           - blocky.yaml
           - bootc.yaml
           - bspwm.yaml
@@ -21,6 +20,7 @@ package:
           - kube-network-policies.yaml
           - kubeconform.yaml
           - libdisplay-info.yaml
+          - libliftoff.yaml
           - lidarr.yaml
           - ostree.yaml
           - perl-email-date-format.yaml
@@ -34,6 +34,7 @@ package:
           - radarr.yaml
           - redis.yaml
           - renovate-apk-indexer.yaml
+          - seatd.yaml
           - sonarr.yaml
           - sxhkd.yaml
           - synology-csi.yaml

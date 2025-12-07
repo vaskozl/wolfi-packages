@@ -1,0 +1,42 @@
+package:
+  name: seatd
+  version: "0.9.1"
+  epoch: 0
+  description: Minimal seat management daemon
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - build-base
+      - meson
+      - mesa-dev
+      - scdoc
+      - systemd-dev
+      - libsystemd
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://git.sr.ht/~kennylevinsen/seatd
+      tag: ${{package.version}}
+  - runs: |
+      ln -s /usr/bin/scdoc /usr/local/bin/scdoc
+  - uses: meson/configure
+  - uses: meson/compile
+  - uses: meson/install
+  - runs: |
+      install -Dm644 contrib/systemd/seatd.service ${{targets.destdir}}/usr/lib/systemd/system/seatd.service
+  - uses: strip
+subpackages:
+  - name: libseat
+    pipeline:
+      - uses: split/lib
+    description: Universal seat management library
+  - name: libseat-dev
+    pipeline:
+      - uses: split/dev
+    description: Universal seat management library (development files)
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: ${{package.name}} manpages
