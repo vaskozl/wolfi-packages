@@ -5,8 +5,6 @@ package:
   description: Wayland tiling compositor inspired by Ratpoison
   copyright:
     - license: MIT
-  resources:
-    memory: 10Gi
   dependencies:
     runtime:
       - wlroots
