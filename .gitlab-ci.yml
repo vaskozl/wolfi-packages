@@ -6,8 +6,8 @@ package:
         PKG:
           - anubis.yaml
           - blocky.yaml
-          - bootc.yaml
           - bootc-baselayout.yaml
+          - bootc.yaml
           - bspwm.yaml
           - cage.yaml
           - cagebreak.yaml
@@ -27,6 +27,7 @@ package:
           - libdisplay-info.yaml
           - libliftoff.yaml
           - lidarr.yaml
+          - nori-user.yaml
           - ostree.yaml
           - perl-email-date-format.yaml
           - perl-mailtools.yaml

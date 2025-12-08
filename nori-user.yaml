@@ -1,0 +1,14 @@
+package:
+  name: nori-user
+  version: "1"
+  epoch: 0
+  description: nori setup user
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - runs: |
+      cp -a vendor/. "${{targets.destdir}}"/
