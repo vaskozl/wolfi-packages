@@ -12,3 +12,4 @@ environment:
 pipeline:
   - runs: |
       cp -a vendor/. "${{targets.destdir}}"/
+      find "${{targets.destdir}}" -type f -exec chmod 644 {} +
