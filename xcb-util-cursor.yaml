@@ -1,0 +1,37 @@
+package:
+  name: xcb-util-cursor
+  version: "0.1.6"
+  epoch: 0
+  description: X C-language Binding - cursor library (port of libXcursor)
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - autoconf
+      - automake
+      - build-base
+      - busybox
+      - util-macros
+      - m4
+      - xcb-util-dev
+      - xcb-util-renderutil-dev
+      - xcb-util-image-dev
+pipeline:
+  - uses: fetch
+    with:
+      uri: https://xcb.freedesktop.org/dist/xcb-util-cursor-${{package.version}}.tar.xz
+      expected-sha256: fdeb8bd127873519be5cc70dcd0d3b5d33b667877200f9925a59fdcad8f7a933
+  - uses: autoconf/configure
+  - uses: autoconf/make
+  - uses: autoconf/make-install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-dev
+    pipeline:
+      - uses: split/dev
+    description: xcb-util-cursor dev
+test:
+  pipeline:
+    - runs: |
+        dwl --help
