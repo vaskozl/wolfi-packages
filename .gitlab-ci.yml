@@ -9,6 +9,7 @@ package:
           - bootc.yaml
           - bspwm.yaml
           - catatonit.yaml
+          - cagebreak.yaml
           - composefs.yaml
           - dracut.yaml
           - golink.yaml

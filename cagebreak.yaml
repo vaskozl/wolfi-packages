@@ -1,0 +1,47 @@
+package:
+  name: cagebreak
+  version: "3.1.0"
+  epoch: 0
+  description: Wayland tiling compositor inspired by Ratpoison
+  copyright:
+    - license: MIT
+  resources:
+    memory: 10Gi
+  dependencies:
+    runtime:
+      - wlroots
+environment:
+  contents:
+    packages:
+      - build-base
+      - libevdev-dev
+      - meson
+      - pango-dev
+      - scdoc
+      - wayland-protocols
+      - wlroots
+      - wlroots-dev
+      - libinput-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/project-repo/cagebreak
+      tag: ${{package.version}}
+  - runs: |
+      sed -i 's/fanalyzer/fanalyzer_disabled/' meson.build
+      meson \
+        -Dman-pages=true \
+        --prefix=/usr \
+        . output
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: cagebreak manpages
+test:
+  pipeline:
+    - runs: |
+        cagebreak --help
