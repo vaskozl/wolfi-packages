@@ -1,0 +1,30 @@
+package:
+  name: tllist
+  version: "1.1.0"
+  epoch: 0
+  description: A C header file only implementation of a typed linked list
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - build-base
+      - meson
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://codeberg.org/dnkl/tllist.git
+      tag: ${{package.version}}
+  - uses: meson/configure
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: "${{package.name}}-doc"
+    pipeline:
+      - uses: split/alldocs
+    description: tllist manpages
+  - name: "${{package.name}}-dev"
+    pipeline:
+      - uses: split/dev
+    description: tllist dev

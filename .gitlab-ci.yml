@@ -41,6 +41,7 @@ package:
           - synology-csi.yaml
           - tailscale.yaml
           - tsidp.yaml
+          - tllist.yaml
           - wolfi-scanner.yaml
           - wlroots.yaml
           - zsh-autosuggestions.yaml
