@@ -1,0 +1,15 @@
+package:
+  name: bootc-baselayout
+  version: 20251208
+  epoch: 0
+  description: Base directories needed by bootc
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - runs: |
+        mkdir -p "${{targets.destdir}}"/sysroot
+        mkdir -p "${{targets.destdir}}"/boot

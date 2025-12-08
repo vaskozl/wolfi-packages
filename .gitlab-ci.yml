@@ -7,6 +7,7 @@ package:
           - anubis.yaml
           - blocky.yaml
           - bootc.yaml
+          - bootc-baselayout.yaml
           - bspwm.yaml
           - cage.yaml
           - cagebreak.yaml
