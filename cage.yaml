@@ -1,0 +1,39 @@
+package:
+  name: cage
+  version: "0.2.1"
+  epoch: 0
+  description: A Wayland kiosk
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime:
+      - wlroots
+environment:
+  contents:
+    packages:
+      - build-base
+      - meson
+      - scdoc
+      - wayland-protocols
+      - wlroots
+      - wlroots-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/cage-kiosk/cage
+      tag: v${{package.version}}
+  - runs: |
+      ln -s /usr/bin/scdoc /usr/local/bin/scdoc
+  - uses: meson/configure
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: cage manpages
+test:
+  pipeline:
+    - runs: |
+        cage --help
