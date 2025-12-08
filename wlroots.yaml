@@ -58,3 +58,6 @@ subpackages:
     pipeline:
       - uses: split/dev
     description: ${{package.name}} dev
+    dependencies:
+      runtime:
+        - wlroots

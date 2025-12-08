@@ -27,4 +27,3 @@ subpackages:
   - name: ${{package.name}}-dev
     pipeline:
       - uses: split/dev
-    description: ${{package.name}} manpages
