@@ -2,13 +2,14 @@
 package:
   name: pinewall-config
   version: "0.0.1"
-  epoch: 1
+  epoch: 2
   description: pinewall router config
   copyright:
     - license: MIT
   dependencies:
     replaces:
       - 'avahi' # For /etc/avahi/avahi-daemon.conf
+      - 'wolfi-baselayout' # For /etc/hosts
 environment:
   contents:
     packages:
