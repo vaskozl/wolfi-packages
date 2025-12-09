@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Function to get IRQ number for a given network interface
+get_irq_number() {
+    local interface=$1
+    grep $interface /proc/interrupts | awk '{print $1}' | sed 's/://'
+}
+
+# Get IRQ numbers for eth0
+IRQ1=$(get_irq_number "eth0" | sed -n '1p')
+IRQ2=$(get_irq_number "eth0" | sed -n '2p')
+
+# Set IRQ affinity
+if [ -n "$IRQ1" ]; then
+    echo 2 > /proc/irq/$IRQ1/smp_affinity  # Assign to CPU1
+fi
+
+if [ -n "$IRQ2" ]; then
+    echo 4 > /proc/irq/$IRQ2/smp_affinity  # Assign to CPU2
+fi

@@ -1,0 +1,16 @@
+[Match]
+Name=eth0
+
+[Network]
+Address=192.168.1.1/24
+DHCPPrefixDelegation=yes
+IPv4Forwarding=yes
+IPv6Forwarding=yes
+IPv6SendRA=yes
+VLAN=guest
+VLAN=iot
+VLAN=wireguard
+
+[IPv6SendRA]
+Managed=false
+OtherInformation=true

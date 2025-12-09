@@ -1,0 +1,16 @@
+package:
+  name: pinewall-config
+  version: "0.0.1"
+  epoch: 0
+  description: pinewall router config
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - runs: |
+      cp -a vendor/. "${{targets.destdir}}"/
+      find "${{targets.destdir}}" -type f -exec chmod 644 {} +
+      find "${{targets.destdir}}"/usr/bin -type f -exec chmod 755 {} +

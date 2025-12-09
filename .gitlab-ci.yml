@@ -36,6 +36,7 @@ package:
           - perl-mojolicious.yaml
           - perl-path-tiny.yaml
           - perl-timedate.yaml
+          - pinewall-config.yaml
           - prowlarr.yaml
           - radarr.yaml
           - redis.yaml

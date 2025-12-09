@@ -1,0 +1,13 @@
+[Unit]
+Description=Netfilter Tables
+Documentation=man:nft(8)
+Wants=network-pre.target
+After=load-modloop.service
+Before=network-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/nft -f /etc/nftables.nft
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,150 @@
+# Adapted from: https://wiki.nftables.org/wiki-nftables/index.php/Simple_ruleset_for_a_home_router
+flush ruleset
+
+define DEV_PRIVATE = eth0
+define DEV_WORLD = enp1s0u2
+define DEV_GUEST = guest
+define DEV_IOT = iot
+define DEV_TAIL = tailscale0
+
+define NET_PRIVATE = 192.168.0.0/16
+define NET_PODCIDR = 10.244.0.0/16
+define NET_CGNAT = 100.64.0.0/10
+
+define IP_SYNO = 192.168.1.108
+
+define IP_MAIL = 100.96.0.15
+define IP_EXTI = 100.74.162.53
+define IP_INTI = 100.106.35.150
+
+define SMART_SPEAKERS = {
+    192.168.107.10, # Google Living
+    192.168.107.11, # Google Bathroom
+    192.168.107.12, # Lenovo Bedroom
+}
+
+define TVS = {
+    192.168.107.32, # Samsung TV
+}
+
+define IOT_WITH_EGRESS = {
+    $SMART_SPEAKERS,
+    $TVS,
+    192.168.107.30, # Washer-Dryer
+    192.168.107.31, # Dreame L10
+    192.168.107.33, # Bosch-Dishwasher
+}
+
+table inet global {
+    chain inbound_world {
+        # accepting ping (icmp-echo-request) for diagnostic purposes.
+        icmp type echo-request limit rate 5/second accept
+        icmpv6 type echo-request limit rate 5/second accept
+
+        # Allow DHCPv6
+        udp dport 546 udp sport 547 accept
+        icmpv6 type { destination-unreachable, ind-neighbor-advert, ind-neighbor-solicit,
+            mld-listener-query, mld-listener-reduction, mld-listener-report,
+            mld2-listener-report, nd-neighbor-advert, nd-neighbor-solicit,
+            nd-router-advert, nd-router-solicit, packet-too-big,
+            parameter-problem, time-exceeded } accept comment "Permit required ICMPv6 types without rate limit"
+
+        ip protocol . th dport vmap {
+            udp . 51820 : accept, # wireguard
+            udp . 41641 : accept, # tailscale
+            udp . 41642 : accept, # tailscale relay
+        }
+    }
+
+    chain inbound_guest {
+        # allow DHCP and DNS from the private network
+        ip protocol . th dport vmap {
+            udp . 53 : accept,
+            tcp . 53 : accept,
+            udp . 67 : accept,
+        }
+
+        jump inbound_world
+    }
+
+    chain inbound {
+        type filter hook input priority 0; policy drop;
+
+        # Allow traffic from established and related packets, drop invalid
+        ct state vmap { established : accept, related : accept }
+
+        # allow loopback traffic, anything else jump to chain for further evaluation
+        iifname vmap {
+            lo           : accept,
+            $DEV_PRIVATE : accept,
+            $DEV_TAIL    : accept,
+            $DEV_IOT     : jump inbound_guest,
+            $DEV_GUEST   : jump inbound_guest,
+            $DEV_WORLD   : jump inbound_world,
+        }
+
+        # the rest is dropped by the default policy
+    }
+
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+
+        # Allow traffic from established and related packets, drop invalid
+        ct state vmap { established : accept, related : accept, invalid : drop }
+
+        # Accept everything that came through destination nat
+        ct status dnat accept
+
+        # connections from the internal net to the internet or to other
+        # internal nets are allowed
+        iifname $DEV_PRIVATE accept
+        iifname $DEV_TAIL accept
+
+        # Guest is only allowed internet accesss
+        iifname $DEV_GUEST oifname $DEV_WORLD accept
+
+        # Allow traffic to mosquitto from IOT
+        iifname $DEV_IOT ip daddr $NET_CGNAT tcp dport 1883 accept
+        iifname $DEV_IOT ip daddr $NET_PODCIDR tcp dport 1883 accept
+
+        # Allow TVs access to media
+        iifname $DEV_IOT ip saddr $TVS ip daddr $NET_PODCIDR tcp dport { http, https } accept
+
+        # Smart speakers need to be able to speak to hass for TTS
+        iifname $DEV_IOT ip saddr $SMART_SPEAKERS ip daddr $NET_PODCIDR tcp dport { http, https } accept
+
+        # IOT devices don't have internet by default but some need it
+        ip saddr $IOT_WITH_EGRESS oifname $DEV_WORLD accept
+
+        # the rest is dropped by the default policy
+    }
+}
+
+table ip nat {
+    chain prerouting {
+        type nat hook prerouting priority 0;
+        fib daddr type local dnat ip to meta l4proto . th dport map {
+            # maddy
+            tcp . smtp  : $IP_MAIL . smtp,
+            # haproxy ingress
+            tcp . http  : $IP_EXTI . http,
+            tcp . https : $IP_EXTI . https,
+            udp . http  : $IP_EXTI . http,
+            udp . https : $IP_EXTI . https,
+            # qbittorrent
+            tcp . 16989 : $IP_SYNO . 16989,
+            udp . 16989 : $IP_SYNO . 16989,
+        }
+    }
+
+    chain postrouting {
+        type nat hook postrouting priority 100; policy accept;
+
+        # masquerade outgoing connections
+        ip saddr $NET_PRIVATE oifname $DEV_WORLD masquerade
+        iifname $DEV_TAIL oifname $DEV_WORLD masquerade
+        oifname $DEV_TAIL masquerade
+        # masquerade hairpinned connections
+        ip saddr $NET_PRIVATE ip daddr $NET_PRIVATE ct status dnat masquerade
+    }
+}
