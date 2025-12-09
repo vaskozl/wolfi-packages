@@ -2,7 +2,7 @@
 package:
   name: pinewall-config
   version: "0.0.2"
-  epoch: 0
+  epoch: 1
   description: pinewall router config
   copyright:
     - license: MIT
@@ -10,6 +10,7 @@ package:
     replaces:
       - 'avahi' # For /etc/avahi/avahi-daemon.conf
       - 'wolfi-baselayout' # For /etc/hosts
+      - 'systemd-init' # For /etc/resolv.conf
 environment:
   contents:
     packages:
