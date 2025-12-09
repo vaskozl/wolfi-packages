@@ -2,13 +2,13 @@
 package:
   name: pinewall-config
   version: "0.0.1"
-  epoch: 0
+  epoch: 1
   description: pinewall router config
   copyright:
     - license: MIT
   dependencies:
     replaces:
-      - 'avahi:etc/avahi/avahi-daemon.conf'
+      - 'avahi' # For /etc/avahi/avahi-daemon.conf
 environment:
   contents:
     packages:
