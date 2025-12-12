@@ -6,6 +6,7 @@ define DEV_WORLD = enp1s0u2
 define DEV_GUEST = guest
 define DEV_IOT = iot
 define DEV_TAIL = tailscale0
+define DEV_WG = wg0
 
 define NET_PRIVATE = 192.168.0.0/16
 define NET_PODCIDR = 10.244.0.0/16
@@ -77,6 +78,7 @@ table inet global {
         iifname vmap {
             lo           : accept,
             $DEV_PRIVATE : accept,
+            $DEV_WG      : accept,
             $DEV_TAIL    : accept,
             $DEV_IOT     : jump inbound_guest,
             $DEV_GUEST   : jump inbound_guest,
@@ -98,6 +100,7 @@ table inet global {
         # connections from the internal net to the internet or to other
         # internal nets are allowed
         iifname $DEV_PRIVATE accept
+        iifname $DEV_WG accept
         iifname $DEV_TAIL accept
 
         # Guest is only allowed internet accesss
@@ -125,12 +128,12 @@ table ip nat {
         type nat hook prerouting priority 0;
         fib daddr type local dnat ip to meta l4proto . th dport map {
             # maddy
-            tcp . smtp  : $IP_MAIL . smtp,
+            tcp . smtp  : 192.168.1.33 . 30896,
             # haproxy ingress
-            tcp . http  : $IP_EXTI . http,
-            tcp . https : $IP_EXTI . https,
-            udp . http  : $IP_EXTI . http,
-            udp . https : $IP_EXTI . https,
+            tcp . http  : 192.168.1.33 . 30579,
+            tcp . https : 192.168.1.33 . 31924,
+            udp . http  : 192.168.1.33 . 30579,
+            udp . https : 192.168.1.33 . 31924,
             # qbittorrent
             tcp . 16989 : $IP_SYNO . 16989,
             udp . 16989 : $IP_SYNO . 16989,
@@ -144,6 +147,7 @@ table ip nat {
         ip saddr $NET_PRIVATE oifname $DEV_WORLD masquerade
         iifname $DEV_TAIL oifname $DEV_WORLD masquerade
         oifname $DEV_TAIL masquerade
+        ip saddr $NET_PRIVATE ip daddr $NET_PODCIDR masquerade
         # masquerade hairpinned connections
         ip saddr $NET_PRIVATE ip daddr $NET_PRIVATE ct status dnat masquerade
     }
