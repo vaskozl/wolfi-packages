@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: minilb
+  version: 0.0.7
+  epoch: 0
+  description: Lightweight DNS based load balancer for Kubernetes
+  copyright:
+    - license: Apache-2.0
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/vaskozl/minilb
+      tag: ${{package.version}}
+  - uses: go/build
+    with:
+      packages: cmd/main.go
+      output: minilb
+  - uses: strip
+test:
+  pipeline:
+    - name: Verify minilb installation.
+      runs: minilb -h || exit 1

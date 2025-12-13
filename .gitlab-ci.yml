@@ -27,6 +27,7 @@ package:
           - libdisplay-info.yaml
           - libliftoff.yaml
           - lidarr.yaml
+          - minilb.yaml
           - nori-user.yaml
           - ostree.yaml
           - perl-email-date-format.yaml
