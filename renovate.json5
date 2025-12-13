@@ -54,8 +54,8 @@
   ],
   "packageRules": [
     {
-      "matchDatasources": ["github-tags"],
-      "groupName": "github-tags",
+      "matchDatasources": ["github-tags","gitlab-tags","forgejo-tags"],
+      "groupName": "tags",
     }
   ]
 }
