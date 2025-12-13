@@ -24,6 +24,32 @@
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "loose",
       "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/.+\\.ya?ml$/"],
+      "matchStringsStrategy": "combination",
+      "matchStrings": [
+        "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
+        "repository:\\s*https:\\/\\/codeberg\\.org\\/(?<depName>.*)"
+      ],
+      "registryUrlTemplate": "https://codeberg.org",
+      "datasourceTemplate": "forgejo-tags",
+      "versioningTemplate": "loose",
+      "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/.+\\.ya?ml$/"],
+      "matchStringsStrategy": "combination",
+      "matchStrings": [
+        "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
+        "repository:\\s*https:\\/\\//gitlab\\.freedesktop\\.org/(?<depName>.*)"
+      ],
+      "registryUrlTemplate": "https://gitlab.freedesktop.org",
+      "datasourceTemplate": "gitlab-tags",
+      "versioningTemplate": "loose",
+      "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
     }
   ],
   "packageRules": [
