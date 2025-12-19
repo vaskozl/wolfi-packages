@@ -130,10 +130,10 @@ table ip nat {
             # maddy
             tcp . smtp  : 192.168.1.33 . 30896,
             # haproxy ingress
-            tcp . http  : 192.168.1.33 . 30579,
-            tcp . https : 192.168.1.33 . 31924,
-            udp . http  : 192.168.1.33 . 30579,
-            udp . https : 192.168.1.33 . 31924,
+            tcp . http  : 192.168.1.33 . 32514,
+            tcp . https : 192.168.1.33 . 31837,
+            udp . http  : 192.168.1.33 . 32514,
+            udp . https : 192.168.1.33 . 31837,
             # qbittorrent
             tcp . 16989 : $IP_SYNO . 16989,
             udp . 16989 : $IP_SYNO . 16989,
