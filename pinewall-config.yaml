@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: pinewall-config
-  version: "0.0.3"
-  epoch: 1
+  version: "0.0.4"
+  epoch: 0
   description: pinewall router config
   copyright:
     - license: MIT
