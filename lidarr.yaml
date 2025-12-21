@@ -34,6 +34,9 @@ pipeline:
       - runs: |
           export BROWSERSLIST_IGNORE_OLD_DATA=true
           yarn install --frozen-lockfile --network-timeout 120000
+
+          # remove upstream dotnet version
+          rm global.json
       - runs: |
           # increase max opened files
           ulimit -n 4096
