@@ -17,9 +17,6 @@ package:
           - fcft.yaml
           - foot.yaml
           - golink.yaml
-          - kernel-initramfs.yaml
-          - kernel-rpi-initramfs.yaml
-          - kernel-rpi.yaml
           - kernel.yaml
           - kromgo.yaml
           - kube-network-policies.yaml
