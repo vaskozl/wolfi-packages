@@ -15,6 +15,9 @@ environment:
   contents:
     packages:
       - busybox
+      - apk-tools
+      - wget
+      - gzip
       - build-base
       - bash
       - binutils-dev
