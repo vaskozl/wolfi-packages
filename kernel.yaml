@@ -14,31 +14,11 @@ package:
 environment:
   contents:
     packages:
+      - wolfi-base
+      - apk-tools
       - busybox
-      - build-base
-      - bash
-      - binutils-dev
-      - wolfi-baselayout
-      - bootc
-      - dracut
-      - kmod
-      - zstd
-      - posix-libc-utils
-      - attr
-      - findutils
-      # For modules
-      - lvm2
-      - cryptsetup
-      - btrfs-progs
-      - systemd
-      - util-linux
-      - device-mapper
-      - openssl
-      - util-linux-login
-      - mount
-      - umount
-      - blkid
-      - losetup
+      - wget
+      - gzip
 
 pipeline:
   # Fetch Alpine linux-lts package
@@ -66,18 +46,3 @@ pipeline:
       cp -a "alpinepkg/boot/vmlinuz-stable" "${out}/vmlinuz"
       cp -a "alpinepkg/boot/config-${{package.version}}-${{package.epoch}}-stable" "${out}/config"
       cp -a "alpinepkg/boot/System.map-${{package.version}}-${{package.epoch}}-stable" "${out}/System.map"
-subpackages:
-  - name: kernel-initramfs
-    dependencies:
-      runtime:
-        - kernel
-        - zstd
-    pipeline:
-      - runs: |
-          mkdir -p /var/tmp ${{targets.subpkgdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable
-          ls -al /lib/modules
-          depmod ${{package.version}}-${{package.epoch}}-stable
-          dracut --force --verbose --kernel-cmdline "SYSTEMD_SULOGIN_FORCE=1" \
-            ${{targets.subpkgdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable/initramfs.img
-      - runs: |
-          ls -la ${{targets.subpkgdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable/
