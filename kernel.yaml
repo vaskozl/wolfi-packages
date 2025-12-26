@@ -11,7 +11,7 @@ package:
       - kmod
       - gzip
     provides:
-      - linux:${{package.version}}-stable
+      - linux:${{package.version}}-${{package.epoch}}-stable
 
 environment:
   contents:
