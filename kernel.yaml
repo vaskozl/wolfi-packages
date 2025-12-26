@@ -10,6 +10,8 @@ package:
     runtime:
       - kmod
       - gzip
+    provides:
+      - linux:${{package.version}}-stable
 
 environment:
   contents:
