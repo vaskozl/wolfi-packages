@@ -1,6 +1,6 @@
 {
 	"name": "Wolfi SDK",
-	"image": "ghcr.io/vaskozl/melange:0.37.3@sha256:2607a3e4878eaeb653c89c43e48f33c168885442bd3b41057477e2ae1e507a47",
+	"image": "ghcr.io/vaskozl/melange:0.37.3@sha256:d72e2a8b6050ee8a150d5fbf3014ab0b7703fe9f73a47bc2d90c9d05c2745365",
 	"features": {},
 	"remoteEnv": {
 		"LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
