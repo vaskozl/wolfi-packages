@@ -1,6 +1,6 @@
 package:
   name: bootc
-  version: 1.11.0
+  version: 1.12.0
   epoch: 0
   description: Boot and upgrade via container images
   copyright:
@@ -26,7 +26,7 @@ environment:
 pipeline:
   - uses: git-checkout
     with:
-      repository: https://github.com/bootc-dev/bootc.git
+      repository: https://github.com/bootc-dev/bootc
       tag: v${{package.version}}
   - runs: |
       make bin install-all \
