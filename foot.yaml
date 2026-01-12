@@ -29,7 +29,7 @@ environment:
 pipeline:
   - uses: git-checkout
     with:
-      repository: https://codeberg.org/dnkl/foot.git
+      repository: https://codeberg.org/dnkl/foot
       tag: ${{package.version}}
   - runs: |
       ln -s /usr/bin/scdoc /usr/local/bin/scdoc

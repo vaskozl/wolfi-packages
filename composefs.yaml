@@ -14,7 +14,7 @@ environment:
 pipeline:
   - uses: git-checkout
     with:
-      repository: https://github.com/containers/composefs.git
+      repository: https://github.com/containers/composefs
       tag: v${{package.version}}
   - uses: meson/configure
     with:
