@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: kernel
-  version: 6.18.2
+  version: 6.18.5
   epoch: 0
   description: Repackaged Alpine linux-stable kernel
   copyright:
@@ -40,11 +40,20 @@ pipeline:
         tar -xzf "$f"
       done
 
-  # Install payload into destdir
   - runs: |
       out="${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable"
-      install -d "${out}"
-      cp -a "alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-stable/." "${out}/"
-      cp -a "alpinepkg/boot/vmlinuz-stable" "${out}/vmlinuz"
-      cp -a "alpinepkg/boot/config-${{package.version}}-${{package.epoch}}-stable" "${out}/config"
-      cp -a "alpinepkg/boot/System.map-${{package.version}}-${{package.epoch}}-stable" "${out}/System.map"
+
+      # Copy module tree
+      find "alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-stable" -type f \
+        | while read -r f; do
+            rel="${f#alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-stable/}"
+            install -Dm0644 "$f" "$out/$rel"
+          done
+
+      # Kernel artifacts
+      install -Dm0644 "alpinepkg/boot/vmlinuz-stable" \
+        "$out/vmlinuz"
+      install -Dm0644 "alpinepkg/boot/config-${{package.version}}-${{package.epoch}}-stable" \
+        "$out/config"
+      install -Dm0644 "alpinepkg/boot/System.map-${{package.version}}-${{package.epoch}}-stable" \
+        "$out/System.map"
