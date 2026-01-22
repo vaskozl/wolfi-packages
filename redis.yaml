@@ -5,7 +5,7 @@ package:
   epoch: 0
   description: Advanced key-value store
   copyright:
-    - license: BSD-3-Clause
+    - license: SSPL
   dependencies:
     runtime:
       - posix-libc-utils # `getent` is required on startup in ha mode for ip introspection cluster formation
