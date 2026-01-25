@@ -60,7 +60,7 @@ package:
     - when: never
   tags: ["$ARCH"]
   services:
-    - cgr.dev/chainguard/docker-dind:latest
+    - docker:29.1.5-dind
   image:
     name: ghcr.io/vaskozl/melange:0.39.0
     entrypoint: [""]
