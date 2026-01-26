@@ -1,0 +1,148 @@
+From e1d0ce8629e288cac062e748e62ee2204026f6ab Mon Sep 17 00:00:00 2001
+From: Vasil Zlatanov <v@skozl.com>
+Date: Wed, 9 Jul 2025 21:33:33 +0100
+Subject: [PATCH] Support multiple APK indexes (#16)
+
+---
+ README.md      |  8 +++++++-
+ main.go        |  9 ++++++---
+ pkg/apk/apk.go | 49 ++++++++++++++++++++++++++++++-------------------
+ 3 files changed, 43 insertions(+), 23 deletions(-)
+
+diff --git a/README.md b/README.md
+index 174dd03..fcd7716 100644
+--- a/README.md
++++ b/README.md
+@@ -10,7 +10,7 @@ For every release a container image is built and stored in the github container
+ $ renovate-apk-indexer -help
+ Usage of renovate-apk-indexer:
+   -apk-index-url string
+-        url of the apk index to get the package information from (default "https://packages.wolfi.dev/os/x86_64/APKINDEX.tar.gz")
++        comma-separated URLs of the apk indexes to get the package information from (default "https://packages.wolfi.dev/os/x86_64/APKINDEX.tar.gz")
+   -log-level value
+         log level (default INFO)
+   -log-output string
+@@ -19,6 +19,12 @@ Usage of renovate-apk-indexer:
+         update interval of the apk package index in hours (default 4)
+ ```
+ 
++You can also specify multiple comma seperate indexes for distributions with multiple repositories:
++
++```
++$ renovate-apk-indexer -apk-index-url=https://dl-cdn.alpinelinux.org/edge/main/aarch64/APKINDEX.tar.gz,https://dl-cdn.alpinelinux.org/edge/community/aarch64/APKINDEX.tar.gz,https://dl-cdn.alpinelinux.org/edge/testing/aarch64/APKINDEX.tar.gz
++```
++
+ ## Renovate Gitlab example
+ 
+ Renovate gitlab-job (abbreviated):
+diff --git a/main.go b/main.go
+index 954c6d9..c1e95a0 100644
+--- a/main.go
++++ b/main.go
+@@ -7,6 +7,7 @@ import (
+ 	"log/slog"
+ 	"net/http"
+ 	"os"
++	"strings"
+ 	"time"
+ 
+ 	"github.com/hown3d/renovate-apk-indexer/pkg/apk"
+@@ -17,7 +18,7 @@ const wolfiIndex = "https://packages.wolfi.dev/os/x86_64/APKINDEX.tar.gz"
+ 
+ var (
+ 	updateInterval = flag.Int("update-interval", 4, "update interval of the apk package index in hours")
+-	apkIndexUrl    = flag.String("apk-index-url", wolfiIndex, "url of the apk index to get the package information from")
++	apkIndexUrls   = flag.String("apk-index-url", wolfiIndex, "comma-separated URLs of the apk indexes to get the package information from")
+ 	logLevel       = new(slog.Level)
+ 	logOutput      = flag.String("log-output", "text", "representation for logs (text,json)")
+ )
+@@ -42,8 +43,10 @@ func main() {
+ 	}
+ 	slog.SetDefault(l)
+ 
+-	apkContext := apk.New(http.DefaultClient, *apkIndexUrl)
+-	slog.Info("retrieving apk packages", "url", *apkIndexUrl)
++	urls := strings.Split(*apkIndexUrls, ",")
++
++	apkContext := apk.New(http.DefaultClient, urls)
++	slog.Info("retrieving apk packages", "urls", urls)
+ 	apkPackages, err := apkContext.GetApkPackages()
+ 	if err != nil {
+ 		slog.Error("error getting apk packages", "err", err)
+diff --git a/pkg/apk/apk.go b/pkg/apk/apk.go
+index 2a0fc7e..6bd990d 100644
+--- a/pkg/apk/apk.go
++++ b/pkg/apk/apk.go
+@@ -11,42 +11,53 @@ import (
+ )
+ 
+ type Context struct {
+-	client   *http.Client
+-	indexURL string
++	client    *http.Client
++	indexURLs []string
+ }
+ 
+-func New(client *http.Client, indexURL string) Context {
++func New(client *http.Client, indexURLs []string) Context {
+ 	return Context{
+-		client:   client,
+-		indexURL: indexURL,
++		client:    client,
++		indexURLs: indexURLs,
+ 	}
+ }
+ 
+ func (c Context) GetApkPackages() (map[string][]*repository.Package, error) {
+-	req, err := http.NewRequest("GET", c.indexURL, nil)
+-	if err != nil {
+-		return nil, err
+-	}
+-	resp, err := c.client.Do(req)
+-	if err != nil {
+-		return nil, errors.Join(err, fmt.Errorf("failed getting URI %s", c.indexURL))
+-	}
+-	defer resp.Body.Close()
++	var packages []*repository.Package
++
++	for _, url := range c.indexURLs {
++		req, err := http.NewRequest("GET", url, nil)
++		if err != nil {
++			return nil, err
++		}
++		resp, err := c.client.Do(req)
++		if err != nil {
++			return nil, errors.Join(err, fmt.Errorf("failed getting URI %s", url))
++		}
++		defer resp.Body.Close()
++
++		if resp.StatusCode != http.StatusOK {
++			return nil, fmt.Errorf("non ok http response for URI %s code: %v", url, resp.StatusCode)
++		}
++
++		ps, err := parseApkIndex(resp.Body)
++		if err != nil {
++			return nil, err
++		}
+ 
+-	if resp.StatusCode != http.StatusOK {
+-		return nil, fmt.Errorf("non ok http response for URI %s code: %v", c.indexURL, resp.StatusCode)
++		packages = append(packages, ps...)
+ 	}
+ 
+-	return parseApkIndex(resp.Body)
++	return getPackagesMap(packages), nil
+ }
+ 
+-func parseApkIndex(indexData io.ReadCloser) (map[string][]*repository.Package, error) {
++func parseApkIndex(indexData io.ReadCloser) ([]*repository.Package, error) {
+ 	apkIndex, err := repository.IndexFromArchive(indexData)
+ 	if err != nil {
+ 		return nil, errors.Join(err, fmt.Errorf("failed to parse response %v", indexData))
+ 	}
+ 
+-	return getPackagesMap(apkIndex.Packages), nil
++	return apkIndex.Packages, nil
+ }
+ 
+ func getPackagesMap(packages []*repository.Package) map[string][]*repository.Package {

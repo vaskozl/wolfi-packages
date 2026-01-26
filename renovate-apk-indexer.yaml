@@ -18,6 +18,9 @@ pipeline:
     with:
       repository: https://github.com/hown3d/renovate-apk-indexer
       tag: v${{package.version}}
+  - uses: patch
+    with:
+      patches: e1d0ce8629e288cac062e748e62ee2204026f6ab.patch
   - uses: go/build
     with:
       packages: .
