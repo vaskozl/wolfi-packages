@@ -1,0 +1,62 @@
+package:
+  name: seerr
+  version: 2.7.3
+  description: "Open-source media request and discovery manager for Jellyfin, Plex, and Emby."
+  epoch: 0
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - build-base
+      - ca-certificates-bundle
+      - jq
+      - nodejs-${{vars.node-version}}
+      - pnpm
+      - wolfi-base
+      - python3
+      - bash
+      - node-gyp
+vars:
+  node-version: 25
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/seerr-team/seerr
+      tag: v${{package.version}}
+  - uses: patch
+    with:
+      patches: npm.patch
+  - name: pnpm-build
+    pipeline:
+      - runs: |
+          echo "{\"commitTag\": \"${{package.version}}\"}" > committag.json
+          export NEXT_TELEMETRY_DISABLED=1
+          export CYPRESS_INSTALL_BINARY=0
+          export SHARP_IGNORE_GLOBAL_LIBVIPS=1
+          export NODE_OPTIONS=--max-old-space-size=7620
+          pnpm update jwa
+          pnpm install
+          pnpm build
+          pnpm prune --prod --ignore-scripts
+          rm -rf .next/cache
+
+  - runs: |
+      mkdir -p ${{targets.contextdir}}/usr/bin \
+      ${{targets.contextdir}}/usr/lib/seerr \
+      ${{targets.contextdir}}/usr/local
+
+      cp -a .next ${{targets.contextdir}}/usr/lib/seerr/
+      cp -a dist ${{targets.contextdir}}/usr/lib/seerr/
+      cp -a node_modules ${{targets.contextdir}}/usr/lib/seerr/
+      cp -a public ${{targets.contextdir}}/usr/lib/seerr/
+      cp package.json ${{targets.contextdir}}/usr/lib/seerr/
+      cp seerr-api.yml ${{targets.contextdir}}/usr/lib/seerr/
+      cp package.json ${{targets.contextdir}}/usr/lib/seerr/
+      cp next.config.js ${{targets.contextdir}}/usr/lib/seerr/
+
+      # Fix paths
+      find "${{targets.contextdir}}/usr/lib/jellyseerr/.next" -type f -print0 | xargs -0 sed -i "s^${{package.srcdir}}^/usr/lib/jellyseerr^g"
+
+
+      echo '#!/bin/sh\nexec node /usr/lib/seerr/dist/index.js "$@"\n' > ${{targets.contextdir}}/usr/bin/seerr

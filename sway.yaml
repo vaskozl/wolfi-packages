@@ -1,0 +1,53 @@
+package:
+  name: sway
+  version: "1.11"
+  epoch: 0
+  description: i3-compatible window manager for Wayland
+  copyright:
+    - license: MIT
+  resources:
+    memory: 6Gi
+environment:
+  contents:
+    packages:
+      - build-base
+      - libevdev-dev
+      - meson
+      - pango-dev
+      - scdoc
+      - wayland-protocols
+      - wlroots
+      - wlroots-dev
+      - libinput-dev
+      - cairo-dev
+      - gdk-pixbuf-dev
+      - json-c-dev
+      - libcap-utils
+      - libevdev-dev
+      - libinput-dev
+      - libxkbcommon-dev
+      - linux-pam-dev
+      - pango-dev
+      - pcre2-dev
+      - wayland-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/swaywm/sway
+      tag: ${{package.version}}
+  - runs: |
+      ln -s /usr/bin/scdoc /usr/local/bin/scdoc
+  - uses: meson/configure
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: sway manpages
+test:
+  pipeline:
+    - runs: |
+        sway --help
