@@ -5,7 +5,6 @@ define DEV_PRIVATE = eth0
 define DEV_WORLD = enp1s0u2
 define DEV_GUEST = guest
 define DEV_IOT = iot
-define DEV_TAIL = tailscale0
 define DEV_WG = wg0
 
 define NET_PRIVATE = 192.168.0.0/16
@@ -52,8 +51,6 @@ table inet global {
 
         ip protocol . th dport vmap {
             udp . 51820 : accept, # wireguard
-            udp . 41641 : accept, # tailscale
-            udp . 41642 : accept, # tailscale relay
         }
     }
 
@@ -79,7 +76,6 @@ table inet global {
             lo           : accept,
             $DEV_PRIVATE : accept,
             $DEV_WG      : accept,
-            $DEV_TAIL    : accept,
             $DEV_IOT     : jump inbound_guest,
             $DEV_GUEST   : jump inbound_guest,
             $DEV_WORLD   : jump inbound_world,
@@ -101,7 +97,6 @@ table inet global {
         # internal nets are allowed
         iifname $DEV_PRIVATE accept
         iifname $DEV_WG accept
-        iifname $DEV_TAIL accept
 
         # Guest is only allowed internet accesss
         iifname $DEV_GUEST oifname $DEV_WORLD accept
@@ -145,8 +140,6 @@ table ip nat {
 
         # masquerade outgoing connections
         ip saddr $NET_PRIVATE oifname $DEV_WORLD masquerade
-        iifname $DEV_TAIL oifname $DEV_WORLD masquerade
-        oifname $DEV_TAIL masquerade
         ip saddr $NET_PRIVATE ip daddr $NET_PODCIDR masquerade
         # masquerade hairpinned connections
         ip saddr $NET_PRIVATE ip daddr $NET_PRIVATE ct status dnat masquerade
