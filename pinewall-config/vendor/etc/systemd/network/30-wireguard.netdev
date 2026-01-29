@@ -7,25 +7,12 @@ Description=WireGuard tunnel wg0
 PrivateKey = ${WG_PRIV_KEY}
 ListenPort=51820
 
-# vasko-motog54
-[WireGuardPeer]
-PublicKey = r4RRbd4GhT6tkRHkcJhJszunjXSj8d4uj/Mr65FbUDs=
-AllowedIPs = 192.168.7.2/32
-
 # leane-oneplus10t
 [WireGuardPeer]
-PublicKey = qK3on1WGDh2JReXAZPNH1hWlbTJyPPYjb15fCfy6jkE=
+PublicKey = Vu0e70g4Q55Yd20uCOKEh5r9Xnvb93kstpJ8l89W5AE=
 AllowedIPs = 192.168.7.3/32
-
-[WireGuardPeer]
-PublicKey = E9vORS0K256ei6GYJMvg300Haoq/ZxYEwL2a+0wYrDA=
-AllowedIPs = 192.168.7.4/32
 
 # vasko-pixel
 [WireGuardPeer]
-PublicKey = 0RVMXiBtTC8H0Uu4ojED0SR+y7B/Wmq4I/1wZAIJ/Gs=
+PublicKey = mB27x3FAnqikF5jTx9KnUKCrmpSU7HOxk8xgi5Ev6CM=
 AllowedIPs = 192.168.7.5/32
-
-[WireGuardPeer]
-PublicKey = x9NRovyHMKJeFU3+AExCj5QJc0vlTl+AWe476V3nbyw=
-AllowedIPs = 192.168.7.6/32
