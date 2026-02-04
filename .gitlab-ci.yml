@@ -60,7 +60,7 @@ package:
     - when: never
   tags: ["$ARCH"]
   services:
-    - docker:29.2.0-dind
+    - docker:29.2.1-dind
   image:
     name: ghcr.io/vaskozl/melange:0.40.4
     entrypoint: [""]
