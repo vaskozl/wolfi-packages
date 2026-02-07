@@ -60,9 +60,9 @@ package:
     - when: never
   tags: ["$ARCH"]
   services:
-    - docker:29.2.1-dind
+    - docker:29.2.1-dind@sha256:8bcbad4b45f0bff9d3e809d85a7ac589390f0be8acbc526850c998c35c1243fd
   image:
-    name: ghcr.io/vaskozl/melange:0.40.5
+    name: ghcr.io/vaskozl/melange:0.40.5@sha256:ad911cb903da41c020d9e09646ff155941a9b9ae856dffcbbd2fd8cac334f77b
     entrypoint: [""]
   before_script:
     - echo "${MELANGE_RSA}" > melange.rsa
