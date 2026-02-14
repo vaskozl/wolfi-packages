@@ -62,7 +62,7 @@ package:
   services:
     - docker:29.2.1-dind@sha256:8bcbad4b45f0bff9d3e809d85a7ac589390f0be8acbc526850c998c35c1243fd
   image:
-    name: ghcr.io/vaskozl/melange:0.41.1@sha256:42aa06e22399c58cbec90788d1ec84a4ccc538d4b32f6f46345a50ea7b5efc9f
+    name: ghcr.io/vaskozl/melange:0.41.1@sha256:44c2a544c6cf57873aa7e35191de49299e57634a54ca92a550fcecb7e4308f69
     entrypoint: [""]
   before_script:
     - echo "${MELANGE_RSA}" > melange.rsa
