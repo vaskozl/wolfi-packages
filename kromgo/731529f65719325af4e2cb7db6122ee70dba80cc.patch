@@ -1,0 +1,64 @@
+From 731529f65719325af4e2cb7db6122ee70dba80cc Mon Sep 17 00:00:00 2001
+From: Vasil Zlatanov <v@skozl.com>
+Date: Wed, 18 Feb 2026 23:57:05 +0000
+Subject: [PATCH] fix(badge): make thread-safe with sync.Mutex
+
+---
+ pkg/kromgo/kromgo.go | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/pkg/kromgo/kromgo.go b/pkg/kromgo/kromgo.go
+index 493429f..ac3c728 100644
+--- a/pkg/kromgo/kromgo.go
++++ b/pkg/kromgo/kromgo.go
+@@ -5,6 +5,7 @@ import (
+ 	"net/http"
+ 	"strconv"
+ 	"strings"
++	"sync"
+ 	"time"
+ 
+ 	"github.com/essentialkaos/go-badge"
+@@ -19,6 +20,7 @@ import (
+ type KromgoHandler struct {
+ 	Config         configuration.KromgoConfig
+ 	BadgeGenerator *badge.Generator
++	badgeMu        sync.Mutex
+ }
+ 
+ // NewKromgoHandler initializes the handler with the necessary dependencies
+@@ -142,22 +144,20 @@ func (h *KromgoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+ 	if requestFormat == "badge" {
+ 		hex := colorNameToHex(colorConfig.Color)
+ 
+-		w.Header().Set("Content-Type", "image/svg+xml")
+-
+-		if badgeStyle == "plastic" {
+-			w.Write(h.BadgeGenerator.GeneratePlastic(title, message, hex))
+-			return
++		h.badgeMu.Lock()
++		var badgeBytes []byte
++		switch badgeStyle {
++		case "plastic":
++			badgeBytes = h.BadgeGenerator.GeneratePlastic(title, message, hex)
++		case "flat-square":
++			badgeBytes = h.BadgeGenerator.GenerateFlatSquare(title, message, hex)
++		default:
++			badgeBytes = h.BadgeGenerator.GenerateFlat(title, message, hex)
+ 		}
+-		if badgeStyle == "flat-square" {
+-			w.Write(h.BadgeGenerator.GenerateFlatSquare(title, message, hex))
+-			return
+-		}
+-		//if badgeStyle == "flat" || badgeStyle == "" {
+-		//	w.Write(h.BadgeGenerator.GenerateFlat(title, message, hex))
+-		//	return
+-		//}
++		h.badgeMu.Unlock()
+ 
+-		w.Write(h.BadgeGenerator.GenerateFlat(title, message, hex))
++		w.Header().Set("Content-Type", "image/svg+xml")
++		w.Write(badgeBytes)
+ 		return
+ 	}
+ 

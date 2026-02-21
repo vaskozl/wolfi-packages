@@ -2,7 +2,7 @@
 package:
   name: kromgo
   version: 0.7.5
-  epoch: 0
+  epoch: 1
   description: Expose prometheus metrics safely to a public source.
   copyright:
     - license: Apache-2.0
@@ -18,6 +18,9 @@ pipeline:
     with:
       repository: https://github.com/kashalls/kromgo
       tag: v${{package.version}}
+  - uses: patch
+    with:
+      patch: 731529f65719325af4e2cb7db6122ee70dba80cc.patch
   - uses: go/build
     with:
       packages: ./cmd/kromgo
