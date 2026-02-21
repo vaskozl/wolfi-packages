@@ -12,7 +12,7 @@ package:
       - aspnet-${{vars.dotnet_version}}-runtime
       - sqlite-libs
 vars:
-  dotnet_version: "8"
+  dotnet_version: "10"
   output: '_output'
 environment:
   contents:
@@ -30,9 +30,6 @@ pipeline:
     with:
       repository: https://github.com/Sonarr/Sonarr
       tag: v${{package.version}}
-  - uses: patch
-    with:
-      patches: dotnet-8.patch
   - pipeline:
       - runs: |
           export BROWSERSLIST_IGNORE_OLD_DATA=true
