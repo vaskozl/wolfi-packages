@@ -20,7 +20,7 @@ pipeline:
       tag: v${{package.version}}
   - uses: patch
     with:
-      patch: 731529f65719325af4e2cb7db6122ee70dba80cc.patch
+      patches: 731529f65719325af4e2cb7db6122ee70dba80cc.patch
   - uses: go/build
     with:
       packages: ./cmd/kromgo
