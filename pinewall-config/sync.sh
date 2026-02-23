@@ -17,6 +17,6 @@ find vendor -type f -print0 | while IFS= read -r -d '' f; do
   mkdir -p "$(dirname "./$f")"
 
   echo "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r ${host}:${remote_path} ./${f}"
-  scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r "${host}:${remote_path}" "./${f}"
+  scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r "${host}:${remote_path}" "./${f}" || true
 done
 

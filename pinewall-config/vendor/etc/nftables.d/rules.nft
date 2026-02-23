@@ -49,9 +49,7 @@ table inet global {
             nd-router-advert, nd-router-solicit, packet-too-big,
             parameter-problem, time-exceeded } accept comment "Permit required ICMPv6 types without rate limit"
 
-        ip protocol . th dport vmap {
-            udp . 51820 : accept, # wireguard
-        }
+        udp dport 51820 accept
     }
 
     chain inbound_guest {
