@@ -2,7 +2,7 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/sonarr/APKBUILD
 package:
   name: sonarr
-  version: 4.0.16.2944
+  version: 5.0.0_alpha
   epoch: 0
   description: TV download automation for usenet and torrents.
   copyright:
@@ -25,11 +25,17 @@ environment:
       - aspnet-${{vars.dotnet_version}}-runtime
       - dotnet-${{vars.dotnet_version}}-sdk
       - sqlite-libs
+var-transforms:
+  # Transform 1.0.0_beta55 -> 1.0.0-beta.55
+  - from: ${{package.version}}
+    match: ^(\d+\.\d+\.\d+)_alpha$
+    replace: $1
+    to: simple-version
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/Sonarr/Sonarr
-      tag: v${{package.version}}
+      branch: v5-develop
   - pipeline:
       - runs: |
           export BROWSERSLIST_IGNORE_OLD_DATA=true
@@ -51,7 +57,7 @@ pipeline:
 
           dotnet publish src \
           -p:AssemblyConfiguration="master" \
-          -p:AssemblyVersion="${{package.version}}" \
+          -p:AssemblyVersion="${{vars.simple-version}}" \
           -p:TreatWarningsAsErrors=false \
           --framework "$_framework" \
           --no-self-contained \
