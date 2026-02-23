@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: pinewall-config
-  version: "0.0.7"
+  version: "0.0.8"
   epoch: 0
   description: pinewall router config
   copyright:
@@ -16,6 +16,10 @@ environment:
     packages:
       - busybox
 pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/vaskozl/pinewall-config
+      tag: ${{package.version}}
   - runs: |
       cp -a vendor/. "${{targets.destdir}}"/
       find "${{targets.destdir}}" -type f -exec chmod 644 {} +
