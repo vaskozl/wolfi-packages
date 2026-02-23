@@ -59,8 +59,6 @@ package:
         - ${PKG%.yaml}/*
     - when: never
   tags: ["$ARCH"]
-  services:
-    - docker:29.2.1-dind@sha256:8bcbad4b45f0bff9d3e809d85a7ac589390f0be8acbc526850c998c35c1243fd
   image:
     name: ghcr.io/vaskozl/melange:0.43.1@sha256:4ec201fd4545d76adae45affa9c13ec43c8e9928710170fc79e39c502c00f112
     entrypoint: [""]
@@ -70,7 +68,7 @@ package:
     MELANGE_FLAGS: >-
       --workspace-dir="$CI_PROJECT_DIR"
       --arch="$ARCH"
-      --runner=docker
+      --runner=bubblewrap
       --cache-dir=/apks/melange-cache
       --apk-cache-dir=/apks/apks-cache
       --repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os
