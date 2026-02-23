@@ -1,7 +1,7 @@
 package:
   name: nori-user
-  version: "1"
-  epoch: 1
+  version: "2"
+  epoch: 0
   description: nori setup user
   copyright:
     - license: MIT
