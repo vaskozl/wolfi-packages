@@ -1,0 +1,29 @@
+package:
+  name: trusttunnel
+  version: 1.0.9
+  epoch: 0
+  description: Modern, fast and obfuscated VPN protocol
+  copyright:
+    - license: Apache-2.0-only
+environment:
+  contents:
+    packages:
+      - cmake
+      - busybox
+      - build-base
+      - cargo-auditable
+      - rust
+      - libclang-cpp-19
+      - clang-19
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/TrustTunnel/TrustTunnel
+      tag: v${{package.version}}
+  - name: Configure and build
+    runs: |
+      cargo auditable build --release --bin setup_wizard
+      cargo auditable build --release --bin trusttunnel_endpoint
+      install -Dm755 target/release/setup_wizard ${{targets.destdir}}/usr/bin/trusttunnel-setup
+      install -Dm755 target/release/trusttunnel_endpoint ${{targets.destdir}}/usr/bin/trusttunnel
+  - uses: strip

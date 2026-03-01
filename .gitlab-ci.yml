@@ -45,6 +45,7 @@ package:
           - sxhkd.yaml
           - synology-csi.yaml
           - tailscale.yaml
+          - trusttunnel.yaml
           - tllist.yaml
           - tsidp.yaml
           - wlroots.yaml
