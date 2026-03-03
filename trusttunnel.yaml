@@ -1,6 +1,6 @@
 package:
   name: trusttunnel
-  version: 1.0.9
+  version: 1.0.12
   epoch: 0
   description: Modern, fast and obfuscated VPN protocol
   copyright:
