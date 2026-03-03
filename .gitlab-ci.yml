@@ -61,7 +61,7 @@ package:
     - when: never
   tags: ["$ARCH"]
   image:
-    name: ghcr.io/vaskozl/melange:0.43.4@sha256:f751e004a91ead9e304dcc561d98970f784389a77bb350197b9c5a8481eb7c26
+    name: ghcr.io/vaskozl/melange:0.43.4@sha256:555aa6664ecf6e7817b2d5306c661e45a8989fef7002b8532b9552fa622afef8
     entrypoint: [""]
   before_script:
     - echo "${MELANGE_RSA}" > melange.rsa
