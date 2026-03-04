@@ -8,18 +8,17 @@ package:
     - license: GPL-2.0
   dependencies:
     runtime:
-      - kernel
-      - kernel-initramfs
+      - kernel=${{package.version}}
       - zstd
 environment:
   contents:
     packages:
+      - kernel=${{package.version}}
       - busybox
       - build-base
       - bash
       - binutils-dev
       - wolfi-baselayout
-      - kernel
       - bootc
       - dracut
       - kmod
