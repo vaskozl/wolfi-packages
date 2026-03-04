@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: kernel
-  version: 6.6.127
+  version: 6.19.5
   epoch: 0
-  description: Repackaged Alpine linux-lts kernel
+  description: Repackaged Alpine linux-stable kernel
   copyright:
     - license: GPL-2.0
   dependencies:
@@ -11,7 +11,7 @@ package:
       - kmod
       - gzip
     provides:
-      - linux:${{package.version}}-${{package.epoch}}-lts
+      - linux:${{package.version}}-${{package.epoch}}-stable
 
 environment:
   contents:
@@ -28,9 +28,9 @@ pipeline:
       set -eux
       mkdir alpinepkg
       cd alpinepkg
-      repo="main"
-      branch="v3.20"
-      variant="linux-lts"
+      branch="edge"
+      repo="community"
+      variant="linux-stable"
 
       # Adjust repo & arch as needed
       wget "https://dl-cdn.alpinelinux.org/alpine/${branch}/${repo}/${{build.arch}}/${variant}-${{package.full-version}}.apk"
@@ -41,19 +41,19 @@ pipeline:
       done
 
   - runs: |
-      out="${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-lts"
+      out="${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable"
 
       # Copy module tree
-      find "alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-lts" -type f \
+      find "alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-stable" -type f \
         | while read -r f; do
-            rel="${f#alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-lts/}"
+            rel="${f#alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-stable/}"
             install -Dm0644 "$f" "$out/$rel"
           done
 
       # Kernel artifacts
-      install -Dm0644 "alpinepkg/boot/vmlinuz-lts" \
+      install -Dm0644 "alpinepkg/boot/vmlinuz-stable" \
         "$out/vmlinuz"
-      install -Dm0644 "alpinepkg/boot/config-${{package.version}}-${{package.epoch}}-lts" \
+      install -Dm0644 "alpinepkg/boot/config-${{package.version}}-${{package.epoch}}-stable" \
         "$out/config"
-      install -Dm0644 "alpinepkg/boot/System.map-${{package.version}}-${{package.epoch}}-lts" \
+      install -Dm0644 "alpinepkg/boot/System.map-${{package.version}}-${{package.epoch}}-stable" \
         "$out/System.map"
