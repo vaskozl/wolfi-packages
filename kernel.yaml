@@ -3,7 +3,7 @@ package:
   name: kernel
   version: 6.6.127
   epoch: 0
-  description: Repackaged Alpine linux-stable kernel
+  description: Repackaged Alpine linux-lts kernel
   copyright:
     - license: GPL-2.0
   dependencies:
@@ -11,7 +11,7 @@ package:
       - kmod
       - gzip
     provides:
-      - linux:${{package.version}}-${{package.epoch}}-stable
+      - linux:${{package.version}}-${{package.epoch}}-lts
 
 environment:
   contents:
