@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: kernel-initramfs
-  version: 6.6.127
+  version: 6.19.5
   epoch: 0
   description: The Linux kernel initramfs
   copyright:
@@ -41,10 +41,10 @@ environment:
       - losetup
 pipeline:
   - runs: |
-      mkdir -p /var/tmp ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-lts
+      mkdir -p /var/tmp ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable
       ls -al /lib/modules
-      depmod ${{package.version}}-${{package.epoch}}-lts
+      depmod ${{package.version}}-${{package.epoch}}-stable
       dracut --force --verbose --kernel-cmdline "SYSTEMD_SULOGIN_FORCE=1" \
-        ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-lts/initramfs.img
+        ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable/initramfs.img
   - runs: |
-      ls -la ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-lts/
+      ls -la ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable/
