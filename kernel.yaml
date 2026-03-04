@@ -28,9 +28,9 @@ pipeline:
       set -eux
       mkdir alpinepkg
       cd alpinepkg
-      branch="edge"
-      repo="community"
-      variant="linux-stable"
+      branch="v3.20"
+      repo="main"
+      variant="linux-lts"
 
       # Adjust repo & arch as needed
       wget "https://dl-cdn.alpinelinux.org/alpine/${branch}/${repo}/${{build.arch}}/${variant}-${{package.full-version}}.apk"
@@ -41,19 +41,19 @@ pipeline:
       done
 
   - runs: |
-      out="${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable"
+      out="${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-lts"
 
       # Copy module tree
-      find "alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-stable" -type f \
+      find "alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-lts" -type f \
         | while read -r f; do
-            rel="${f#alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-stable/}"
+            rel="${f#alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-lts/}"
             install -Dm0644 "$f" "$out/$rel"
           done
 
       # Kernel artifacts
-      install -Dm0644 "alpinepkg/boot/vmlinuz-stable" \
+      install -Dm0644 "alpinepkg/boot/vmlinuz-lts" \
         "$out/vmlinuz"
-      install -Dm0644 "alpinepkg/boot/config-${{package.version}}-${{package.epoch}}-stable" \
+      install -Dm0644 "alpinepkg/boot/config-${{package.version}}-${{package.epoch}}-lts" \
         "$out/config"
-      install -Dm0644 "alpinepkg/boot/System.map-${{package.version}}-${{package.epoch}}-stable" \
+      install -Dm0644 "alpinepkg/boot/System.map-${{package.version}}-${{package.epoch}}-lts" \
         "$out/System.map"
