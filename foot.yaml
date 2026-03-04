@@ -1,6 +1,6 @@
 package:
   name: foot
-  version: "1.25.0"
+  version: "1.26.0"
   epoch: 0
   description: Fast, lightweight and minimalistic Wayland terminal emulator
   copyright:
