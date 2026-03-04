@@ -36,6 +36,7 @@ package:
           - perl-path-tiny.yaml
           - perl-timedate.yaml
           - pinewall-config.yaml
+          - prometheus-node-exporter.yaml
           - prowlarr.yaml
           - radarr.yaml
           - redis.yaml
