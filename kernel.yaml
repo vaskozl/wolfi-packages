@@ -28,8 +28,8 @@ pipeline:
       set -eux
       mkdir alpinepkg
       cd alpinepkg
-      branch="v3.20"
       repo="main"
+      branch="v3.20"
       variant="linux-lts"
 
       # Adjust repo & arch as needed
