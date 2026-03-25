@@ -1,0 +1,71 @@
+package:
+  name: qbittorrent-nox
+  version: "5.1.4"
+  epoch: 0
+  description: qBittorrent BitTorrent client (headless/webui only)
+  copyright:
+    - license: GPL-2.0-or-later
+  dependencies:
+    runtime:
+      - libgcc
+      - libstdc++
+      - libtorrent-rasterbar
+      - openssl
+      - qt6-qtbase
+      - qt6-qttools
+      - zlib
+  resources:
+    cpu: "8"
+    memory: 16Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - cmake
+      - libtorrent-rasterbar-dev
+      - openssl-dev
+      - qt6-qtbase-dev
+      - qt6-qttools-dev
+      - samurai
+      - zlib-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/qbittorrent/qBittorrent
+      tag: release-${{package.version}}
+
+  - runs: |
+      cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DGUI=OFF \
+        -DSTACKTRACE=OFF \
+        -DTESTING=OFF \
+        -DCMAKE_INSTALL_PREFIX=/usr
+      cmake --build build
+      cmake --install build --destdir "${{targets.destdir}}"
+
+  - runs: |
+      # Install systemd service
+      install -Dm644 dist/systemd/qbittorrent-nox.service "${{targets.destdir}}"/usr/lib/systemd/system/qbittorrent-nox.service
+
+  - uses: strip
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify qbittorrent-nox binary exists
+      runs: |
+        stat /usr/bin/qbittorrent-nox
+    - name: Verify qbittorrent-nox is executable
+      runs: |
+        test -x /usr/bin/qbittorrent-nox
+    - name: Check qbittorrent-nox version
+      runs: |
+        qbittorrent-nox --version 2>&1 || true

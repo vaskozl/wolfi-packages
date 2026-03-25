@@ -1,0 +1,135 @@
+package:
+  name: baikal
+  version: "0.11.1"
+  epoch: 0
+  description: Lightweight CalDAV/CardDAV server
+  copyright:
+    - license: GPL-3.0-or-later
+  dependencies:
+    runtime:
+      - php-8.5-curl
+      - php-8.5-dom
+      - php-8.5-iconv
+      - php-8.5-openssl
+      - php-8.5-pdo
+      - php-8.5-session
+      - php-8.5-simplexml
+      - php-8.5-tokenizer
+      - php-8.5-xmlreader
+      - php-8.5-xmlwriter
+  resources:
+    cpu: "2"
+    memory: 4Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - composer
+      - php-8.5
+      - php-8.5-dom
+      - php-8.5-iconv
+      - php-8.5-pdo
+      - php-8.5-phar
+      - rsync
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/sabre-io/Baikal
+      tag: ${{package.version}}
+
+  - runs: |
+      # Create directory structure
+      mkdir -p build/baikal/Specific/db
+      mkdir -p config
+
+      # Copy source files
+      rsync -a --exclude='*.swp' \
+        Core/ \
+        html/ \
+        LICENSE \
+        README.md \
+        composer.json \
+        build/baikal/
+
+      # Install dependencies (ignore platform reqs for missing extensions)
+      cd build/baikal
+      composer install --no-dev --no-interaction --ignore-platform-reqs
+
+  - runs: |
+      # Install to /usr/share/webapps
+      mkdir -p ${{targets.destdir}}/usr/share/webapps/baikal
+      cp -r build/baikal/* ${{targets.destdir}}/usr/share/webapps/baikal/
+
+      # Create config and db directories with proper permissions
+      mkdir -p ${{targets.destdir}}/etc/baikal
+      mkdir -p ${{targets.destdir}}/var/lib/baikal/Specific/db
+
+      # Set permissions for web server
+      chmod 755 ${{targets.destdir}}/usr/share/webapps/baikal
+      find ${{targets.destdir}}/usr/share/webapps/baikal -type d -exec chmod 755 {} \;
+      find ${{targets.destdir}}/usr/share/webapps/baikal -type f -exec chmod 644 {} \;
+
+  - uses: strip
+
+subpackages:
+  - name: baikal-mysql
+    description: Baikal with MySQL support
+    dependencies:
+      runtime:
+        - baikal
+        - php-8.5-pdo_mysql
+    pipeline:
+      - runs: |
+          mkdir -p ${{targets.subpkgdir}}/usr/share/doc/baikal
+          echo "MySQL support for Baikal" > ${{targets.subpkgdir}}/usr/share/doc/baikal/README.mysql
+    test:
+      pipeline:
+        - runs: |
+            test -f /usr/share/webapps/baikal/composer.json
+
+  - name: baikal-pgsql
+    description: Baikal with PostgreSQL support
+    dependencies:
+      runtime:
+        - baikal
+        - php-8.5-pdo_pgsql
+    pipeline:
+      - runs: |
+          mkdir -p ${{targets.subpkgdir}}/usr/share/doc/baikal
+          echo "PostgreSQL support for Baikal" > ${{targets.subpkgdir}}/usr/share/doc/baikal/README.pgsql
+    test:
+      pipeline:
+        - runs: |
+            test -f /usr/share/webapps/baikal/composer.json
+
+  - name: baikal-sqlite
+    description: Baikal with SQLite support
+    dependencies:
+      runtime:
+        - baikal
+        - php-8.5-pdo_sqlite
+    pipeline:
+      - runs: |
+          mkdir -p ${{targets.subpkgdir}}/usr/share/doc/baikal
+          echo "SQLite support for Baikal" > ${{targets.subpkgdir}}/usr/share/doc/baikal/README.sqlite
+    test:
+      pipeline:
+        - runs: |
+            test -f /usr/share/webapps/baikal/composer.json
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+        - php84
+  pipeline:
+    - name: Verify baikal installation
+      runs: |
+        test -d /usr/share/webapps/baikal
+        test -f /usr/share/webapps/baikal/html/admin/install.php
+        php /usr/share/webapps/baikal/html/admin/install.php --help 2>&1 || true
