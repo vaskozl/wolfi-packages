@@ -38,6 +38,7 @@ package:
           - pinewall-config.yaml
           - prometheus-node-exporter.yaml
           - prowlarr.yaml
+          - qwen-code.yaml
           - radarr.yaml
           - redis.yaml
           - renovate-apk-indexer.yaml
