@@ -25,6 +25,7 @@ package:
           - libdisplay-info.yaml
           - libliftoff.yaml
           - lidarr.yaml
+          - maddy.yaml
           - minilb.yaml
           - nori-user.yaml
           - ostree.yaml
