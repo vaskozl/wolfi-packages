@@ -1,0 +1,84 @@
+package:
+  name: thelounge
+  version: "4.4.3"
+  epoch: 0
+  description: Web IRC client that you host on your own server
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime:
+      - nodejs
+  resources:
+    cpu: "4"
+    memory: 8Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - nodejs
+      - npm
+      - python3
+      - yarn
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/thelounge/thelounge
+      tag: v${{package.version}}
+
+  - runs: |
+      export BROWSERSLIST_IGNORE_OLD_DATA=1
+      export npm_config_build_from_source=1
+      yarn install --frozen-lockfile
+
+  - runs: |
+      export NODE_ENV=production
+      yarn build
+
+  - runs: |
+      # Install application files
+      mkdir -p ${{targets.destdir}}/usr/share/webapps/thelounge
+      cp -r dist/* ${{targets.destdir}}/usr/share/webapps/thelounge/
+      cp package.json ${{targets.destdir}}/usr/share/webapps/thelounge/
+
+      # Create wrapper script
+      mkdir -p ${{targets.destdir}}/usr/bin
+      printf '#!/bin/sh\nexec node /usr/share/webapps/thelounge/index.js "$@"\n' > ${{targets.destdir}}/usr/bin/thelounge
+      chmod 755 ${{targets.destdir}}/usr/bin/thelounge
+
+      # Set default home location
+      mkdir -p ${{targets.destdir}}/var/lib/thelounge
+
+      # Clean up node_modules (not needed at runtime, bundled in dist)
+      rm -rf node_modules
+
+  - uses: strip
+
+subpackages:
+  - name: thelounge-doc
+    description: TheLounge documentation
+    pipeline:
+      - uses: split/manpages
+    test:
+      pipeline:
+        - uses: test/docs
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+        - nodejs
+  pipeline:
+    - name: Verify thelounge binary exists
+      runs: |
+        stat /usr/bin/thelounge
+    - name: Verify thelounge is executable
+      runs: |
+        test -x /usr/bin/thelounge
+    - name: Check thelounge help
+      runs: |
+        thelounge --help 2>&1 | head -10
