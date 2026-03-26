@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: nqp
+  version: "2025.11"
+  epoch: 0
+  description: Not Quite Perl (NQP) is a minimal Perl 6-like language for building compilers
+  copyright:
+    - license: Artistic-2.0
+  dependencies:
+    runtime:
+      - moarvm
+      - perl
+  resources:
+    cpu: "4"
+    memory: 8Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - moarvm
+      - moarvm-dev
+      - perl
+      - perl-utils
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/Raku/nqp
+      tag: ${{package.version}}
+
+  - runs: |
+      # Configure nqp
+      perl Configure.pl \
+        --prefix=/usr \
+        --backends=moar
+
+  - runs: |
+      # Build
+      make
+
+  - runs: |
+      # Install
+      make DESTDIR="${{targets.destdir}}" install
+
+  - uses: strip
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify nqp binary exists
+      runs: |
+        stat /usr/bin/nqp-m
+    - name: Verify nqp is executable
+      runs: |
+        test -x /usr/bin/nqp-m
