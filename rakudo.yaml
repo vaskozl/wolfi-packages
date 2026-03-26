@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: rakudo
+  version: "2024.02"
+  epoch: 0
+  description: Raku (Perl 6) compiler implementation
+  copyright:
+    - license: Artistic-2.0
+  dependencies:
+    runtime:
+      - moarvm
+  resources:
+    cpu: "4"
+    memory: 8Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - moarvm-dev
+      - perl
+      - make
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/rakudo/rakudo
+      tag: ${{package.version}}
+
+  - runs: |
+      # Configure and build rakudo
+      perl Configure.pl --gen-moar --backends=moar --prefix=/usr
+      make
+
+  - runs: |
+      # Install rakudo
+      make install DESTDIR="${{targets.destdir}}"
+
+  - uses: strip
+
+subpackages:
+  - name: rakudo-doc
+    description: rakudo documentation
+    pipeline:
+      - uses: split/manpages
+    test:
+      pipeline:
+        - uses: test/docs
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify rakudo binary exists
+      runs: |
+        stat /usr/bin/rakudo
+    - name: Verify rakudo is executable
+      runs: |
+        test -x /usr/bin/rakudo
+    - name: Check rakudo version
+      runs: |
+        rakudo --version 2>&1 | head -5
