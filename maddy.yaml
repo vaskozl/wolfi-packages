@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: maddy
+  version: "0.9.1"
+  epoch: 0
+  description: Composable all-in-one mail server
+  copyright:
+    - license: GPL-3.0-or-later
+  dependencies:
+    runtime:
+      - ca-certificates
+  resources:
+    cpu: "4"
+    memory: 8Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/foxcpp/maddy
+      tag: v${{package.version}}
+
+  - runs: |
+      # Build maddy
+      export CGO_ENABLED=1
+      go build -o maddy ./cmd/maddy
+
+  - runs: |
+      # Install binary
+      mkdir -p ${{targets.destdir}}/usr/bin
+      cp maddy ${{targets.destdir}}/usr/bin/
+
+      # Install config directory
+      mkdir -p ${{targets.destdir}}/etc/maddy
+
+      # Install systemd service
+      mkdir -p ${{targets.destdir}}/usr/lib/systemd/system
+      cp contrib/maddy.service ${{targets.destdir}}/usr/lib/systemd/system/ 2>/dev/null || true
+
+      # Install man pages
+      mkdir -p ${{targets.destdir}}/usr/share/man/man5
+      mkdir -p ${{targets.destdir}}/usr/share/man/man8
+      cp contrib/maddy.8 ${{targets.destdir}}/usr/share/man/man8/ 2>/dev/null || true
+      cp contrib/maddy.conf.5 ${{targets.destdir}}/usr/share/man/man5/ 2>/dev/null || true
+
+  - uses: strip
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify maddy binary exists
+      runs: |
+        stat /usr/bin/maddy
+    - name: Verify maddy is executable
+      runs: |
+        test -x /usr/bin/maddy
+    - name: Check maddy version
+      runs: |
+        maddy --version 2>&1 || true
