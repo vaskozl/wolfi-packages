@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: jellyfin
+  version: "10.10.3"
+  epoch: 0
+  description: The Free Software Media System
+  copyright:
+    - license: GPL-2.0-or-later
+  dependencies:
+    runtime:
+      - aspnet-runtime-8.0
+      - dotnet-runtime-8.0
+      - ffmpeg
+  resources:
+    cpu: "4"
+    memory: 8Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - dotnet-8
+      - ffmpeg-dev
+      - nodejs
+      - npm
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/jellyfin/jellyfin
+      tag: v${{package.version}}
+
+  - runs: |
+      # Build the web client first
+      cd src/jellyfin-web
+      npm ci
+      npm run build:production
+      cd ../..
+
+  - runs: |
+      # Build the server
+      cd src
+      dotnet publish Jellyfin.Server/Jellyfin.Server.csproj \
+        -c Release \
+        -o ../publish \
+        --self-contained false \
+        -p:DefineConstants=Unstable
+
+  - runs: |
+      # Install to /usr/share/jellyfin
+      mkdir -p "${{targets.destdir}}"/usr/share/jellyfin
+      cp -r publish/* "${{targets.destdir}}"/usr/share/jellyfin/
+
+      # Install web client
+      mkdir -p "${{targets.destdir}}"/usr/share/jellyfin/jellyfin-web
+      cp -r src/jellyfin-web/dist/* "${{targets.destdir}}"/usr/share/jellyfin/jellyfin-web/
+
+      # Create binary wrapper
+      mkdir -p "${{targets.destdir}}"/usr/bin
+      cat > "${{targets.destdir}}"/usr/bin/jellyfin << 'EOF'
+#!/bin/sh
+exec dotnet /usr/share/jellyfin/jellyfin.dll "$@"
+EOF
+      chmod 755 "${{targets.destdir}}"/usr/bin/jellyfin
+
+      # Create systemd service
+      mkdir -p "${{targets.destdir}}"/usr/lib/systemd/system
+      cat > "${{targets.destdir}}"/usr/lib/systemd/system/jellyfin.service << 'EOF'
+[Unit]
+Description=Jellyfin Media Server
+After=network.target
+
+[Service]
+Type=exec
+User=jellyfin
+Group=jellyfin
+ExecStart=/usr/bin/jellyfin
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+      # Create data directories
+      mkdir -p "${{targets.destdir}}"/var/lib/jellyfin
+      mkdir -p "${{targets.destdir}}"/var/cache/jellyfin
+
+  - uses: strip
+
+subpackages:
+  - name: jellyfin-doc
+    description: Jellyfin documentation
+    pipeline:
+      - uses: split/manpages
+    test:
+      pipeline:
+        - uses: test/docs
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+        - dotnet-runtime-8.0
+  pipeline:
+    - name: Verify jellyfin binary exists
+      runs: |
+        stat /usr/bin/jellyfin
+    - name: Verify jellyfin is executable
+      runs: |
+        test -x /usr/bin/jellyfin
