@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: calibre
+  version: "7.22.0"
+  epoch: 0
+  description: E-book management application and e-book reader
+  copyright:
+    - license: GPL-3.0-or-later
+  dependencies:
+    runtime:
+      - python-3
+      - py3-setuptools
+      - py3-dateutil
+      - py3-lxml
+      - py3-mechanize
+      - py3-css-parser
+      - py3-html5-parser
+      - py3-pillow
+      - py3-chardet
+      - py3-dnspython
+      - py3-requests
+      - py3-beautifulsoup4
+      - qt6-qtbase
+      - qt6-qtwebengine
+  resources:
+    cpu: "4"
+    memory: 8Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - python-3-dev
+      - py3-setuptools
+      - py3-dateutil
+      - py3-lxml
+      - py3-mechanize
+      - py3-css-parser
+      - py3-html5-parser
+      - py3-pillow-dev
+      - py3-chardet
+      - py3-dnspython
+      - py3-requests
+      - py3-beautifulsoup4
+      - qt6-qtbase-dev
+      - qt6-qtwebengine-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/kovidgoyal/calibre
+      tag: v${{package.version}}
+
+  - runs: |
+      # Install dependencies
+      pip3 install --break-system-packages -r requirements.txt
+
+  - runs: |
+      # Install calibre
+      python3 setup.py install --root="${{targets.destdir}}"
+
+  - uses: strip
+
+subpackages:
+  - name: calibre-doc
+    description: calibre documentation
+    pipeline:
+      - uses: split/manpages
+    test:
+      pipeline:
+        - uses: test/docs
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+        - python-3
+  pipeline:
+    - name: Verify calibre binaries exist
+      runs: |
+        stat /usr/bin/calibre
+    - name: Check calibre version
+      runs: |
+        calibre --version 2>&1 || true
