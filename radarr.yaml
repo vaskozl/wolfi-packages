@@ -2,7 +2,7 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/radarr/APKBUILD
 package:
   name: radarr
-  version: 6.1.1.10317
+  version: 6.1.1.10360
   epoch: 0
   description: TV download automation for usenet and torrents.
   copyright:
