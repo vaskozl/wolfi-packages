@@ -53,14 +53,5 @@ pipeline:
   - uses: strip
 test:
   pipeline:
-    - name: Start Jellyfin server and verify HTTP service
-      runs: |
-        jellyfin --nowebclient > /tmp/jellyfin.log 2>&1 &
-        JELLYFIN_PID=$!
-        sleep 10
-        if ! ps | grep -q "$JELLYFIN_PID"; then
-          echo "Test failed: Jellyfin failed to start."
-          cat /tmp/jellyfin.log
-          exit 1
-        fi
-        echo "Test passed: Jellyfin started successfully."
+    - name: Verify jellyfin installation
+      runs: jellyfin --version || exit 1

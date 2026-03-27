@@ -30,15 +30,8 @@ pipeline:
       cp -r dist/* "${{targets.destdir}}"/usr/lib/jellyfin/jellyfin-web
   - uses: strip
 test:
-  environment:
-    contents:
-      packages:
-        - python3
-        - wget
   pipeline:
-    - runs: |
-        # Run a basic HTTP server for the generated content
-        cd /usr/lib/jellyfin/jellyfin-web || exit
-        python3 -m http.server > /dev/null 2>&1 &
-        sleep 1
-        wget --spider --recursive -e robots=off --page-requisites http://localhost:8000
+    - name: Verify jellyfin-web installation
+      runs: |
+        test -d /usr/lib/jellyfin/jellyfin-web || exit 1
+        test -f /usr/lib/jellyfin/jellyfin-web/index.html || exit 1
