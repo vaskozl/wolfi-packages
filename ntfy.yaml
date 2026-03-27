@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: ntfy
+  version: 2.20.1
+  epoch: 0
+  description: Push notifications via HTTP using topics
+  copyright:
+    - license: Apache-2.0
+  dependencies:
+    runtime:
+      - ca-certificates
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+      - npm
+      - nodejs
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/binwiederhier/ntfy
+      tag: v${{package.version}}
+  - runs: |
+      # Create placeholder directories for embed (as per cli-deps-static-sites)
+      mkdir -p server/docs server/site
+      touch server/docs/index.html server/site/app.html
+  - runs: |
+      # Build the web app with increased memory
+      cd web
+      npm ci
+      export NODE_OPTIONS="--max-old-space-size=1024"
+      npm run build
+      cd ..
+      # Move web build to server/site (replacing placeholder)
+      rm -rf server/site
+      mv web/build server/site
+      # Remove config.js as it's injected at runtime
+      rm -f server/site/config.js
+  - runs: |
+      # Build the server binary with CGO enabled for SQLite support
+      export CGO_ENABLED=1
+      go build -tags sqlite_omit_load_extension,osusergo,netgo -ldflags "-linkmode=external -extldflags=-static -s -w -X main.version=${{package.version}}" -o ntfy
+  - runs: |
+      # Install the binary
+      install -Dm755 ntfy "${{targets.destdir}}"/usr/bin/ntfy
+  - uses: strip
+test:
+  pipeline:
+    - name: Verify ntfy installation
+      runs: ntfy help || exit 1
