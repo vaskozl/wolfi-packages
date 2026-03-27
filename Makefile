@@ -7,9 +7,9 @@ ifeq (${ARCH}, arm64)
 	ARCH = aarch64
 endif
 PKG ?=
-OUT_DIR ?= ./packages
+OUT_DIR ?= $(PWD)/packages
 WORKSPACE_DIR ?= $(PWD)
-RUNNER ?= docker
+RUNNER ?= bubblewrap
 KEY ?= melange.rsa
 
 # Package list - automatically discover all YAML files
@@ -84,6 +84,7 @@ build-multi-arch:
 	@$(MAKE) build-all ARCH=arm64
 
 # Test a package (commented out in original gitlab-ci.yml)
+# Note: Package must be built first before running tests
 .PHONY: test
 test: setup
 	@if [ -z "$(PKG)" ]; then \
@@ -91,7 +92,17 @@ test: setup
 		exit 1; \
 	fi
 	@echo "Testing $(PKG) for $(ARCH)..."
-	@melange test "$(PKG)" $(MELANGE_FLAGS) --test-package-append=busybox
+	@mkdir -p $(OUT_DIR)/$(ARCH)
+	@ln -sfn $(OUT_DIR)/$(ARCH) $(WORKSPACE_DIR)/$(ARCH)
+	@melange test "$(PKG)" \
+		--workspace-dir="$(WORKSPACE_DIR)" \
+		--arch="$(ARCH)" \
+		--runner=$(RUNNER) \
+		--repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os,$(WORKSPACE_DIR)/$(ARCH) \
+		--keyring-append=melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub \
+		--env-file=common.env \
+		--test-package-append=busybox
+	@rm -f $(WORKSPACE_DIR)/$(ARCH)
 
 # Clean output directory
 .PHONY: clean

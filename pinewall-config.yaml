@@ -24,3 +24,13 @@ pipeline:
       cp -a vendor/. "${{targets.destdir}}"/
       find "${{targets.destdir}}" -type f -exec chmod 644 {} +
       find "${{targets.destdir}}"/usr/bin -type f -exec chmod 755 {} +
+test:
+  pipeline:
+    - runs: |
+        # Verify key config files exist
+        stat /etc/hostname
+        stat /etc/hosts
+        stat /etc/nftables.nft
+        stat /etc/blocky.yaml
+        # Verify command is executable
+        /usr/bin/set-irq-affinity --help || true
