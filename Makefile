@@ -20,7 +20,7 @@ MELANGE_FLAGS := --workspace-dir="$(WORKSPACE_DIR)" \
                 --arch="$(ARCH)" \
                 --runner=$(RUNNER) \
                 --repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os,./packages \
-                --keyring-append=melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub \
+                --keyring-append=melange.rsa.pub,https://apks.sko.ai/melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub \
 				--signing-key=melange.rsa \
 				--pipeline-dir=./pipelines \
                 --env-file=common.env
@@ -51,8 +51,8 @@ help:
 .PHONY: setup
 setup:
 	@if [ ! -f $(KEY) ]; then \
-		echo "RSA key file $(KEY) not found. Please ensure it exists."; \
-		exit 1; \
+		echo "RSA key file $(KEY) not found. Generating..."; \
+		melange keygen; \
 	fi
 	@echo "RSA key setup complete"
 
