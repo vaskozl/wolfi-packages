@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: jellyfin
+  version: "10.11.6"
+  epoch: 0
+  description: The Free Software Media System
+  copyright:
+    - license: GPL-2.0-only
+  dependencies:
+    runtime:
+      - aspnet-${{vars.dotnet-version}}-runtime
+      - ffmpeg
+      - fontconfig
+      - mesa
+      - sqlite
+vars:
+  dotnet-version: "9"
+environment:
+  contents:
+    packages:
+      - aspnet-${{vars.dotnet-version}}-runtime
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - dotnet-${{vars.dotnet-version}}-sdk
+      - ffmpeg
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/jellyfin/jellyfin
+      tag: v${{package.version}}
+  - name: build
+    runs: |
+      # Set runtime arch
+      ARCH=${{build.arch}}
+      if [[ "$ARCH" == "aarch64" ]]; then
+        runtime_arch="arm64"
+      elif [[ "$ARCH" == "x86_64" ]]; then
+        runtime_arch="x64"
+      fi
+      dotnet publish \
+        --configuration Release Jellyfin.Server \
+        --no-self-contained \
+        --output publish \
+        --runtime linux-"$runtime_arch" \
+        -p:DebugSymbols=false \
+        -p:DebugType=none
+  - runs: |
+      mkdir -p "${{targets.destdir}}"/usr/lib
+      cp -dr publish "${{targets.destdir}}"/usr/lib/jellyfin
+      mkdir -p "${{targets.destdir}}"/usr/bin
+      ln -s /usr/lib/jellyfin/jellyfin "${{targets.destdir}}"/usr/bin/jellyfin
+  - uses: strip
+test:
+  pipeline:
+    - name: Start Jellyfin server and verify HTTP service
+      runs: |
+        jellyfin --nowebclient > /tmp/jellyfin.log 2>&1 &
+        JELLYFIN_PID=$!
+        sleep 10
+        if ! ps | grep -q "$JELLYFIN_PID"; then
+          echo "Test failed: Jellyfin failed to start."
+          cat /tmp/jellyfin.log
+          exit 1
+        fi
+        echo "Test passed: Jellyfin started successfully."
