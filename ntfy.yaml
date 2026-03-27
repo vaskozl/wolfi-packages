@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: ntfy
+  version: 2.17.0
+  epoch: 0
+  description: A simple HTTP-based pub-sub notification service
+  copyright:
+    - license: GPL-2.0-only
+  dependencies:
+    runtime:
+      - sqlite-libs
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+      - mkdocs
+      - mkdocs-material
+      - nodejs
+      - npm
+      - sqlite-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/binwiederhier/ntfy
+      tag: v${{package.version}}
+  - name: prepare
+    runs: |
+      # Patch server.yml to use port 8080 instead of 80
+      sed -i 's/listen-http: :80/listen-http: :8080/' server/server.yml
+  - name: build
+    runs: |
+      # Set Go environment
+      export GOCACHE="$PWD/.cache/go-build"
+      export GOMODCACHE="$PWD/.cache/mod"
+      export GOTMPDIR="$PWD/.cache/tmp"
+      
+      # Build web assets and docs
+      make web
+      make docs
+      
+      # Create dist directory structure
+      mkdir -p dist/ntfy_linux_server
+      touch server/docs/index.html
+      touch server/site/app.html
+      
+      # Build Go binary with sqlite3 support
+      CGO_ENABLED=1 go build \
+        -tags "sqlite_omit_load_extension,osusergo,netgo,libsqlite3" \
+        -ldflags "-linkmode=external -extldflags '$LDFLAGS' -X main.version=${{package.version}} -X main.commit=release -X main.date=alpine-package" \
+        -o dist/ntfy_linux_server/ntfy
+  - runs: |
+      # Install binary
+      mkdir -p "${{targets.destdir}}"/usr/bin
+      install -Dm755 dist/ntfy_linux_server/ntfy "${{targets.destdir}}"/usr/bin/ntfy
+      
+      # Install config directories
+      mkdir -p "${{targets.destdir}}"/etc/ntfy
+      cp server/server.yml "${{targets.destdir}}"/etc/ntfy/server.yml
+      cp client/client.yml "${{targets.destdir}}"/etc/ntfy/client.yml
+test:
+  pipeline:
+    - name: Verify ntfy installation
+      runs: |
+        ntfy version || exit 1
+        test -f "${{targets.destdir}}"/usr/bin/ntfy
+        test -x "${{targets.destdir}}"/usr/bin/ntfy
