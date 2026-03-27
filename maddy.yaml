@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: maddy
+  version: 0.8.2
+  epoch: 0
+  description: Composable all-in-one mail server
+  copyright:
+    - license: GPL-3.0-or-later
+  dependencies:
+    runtime:
+      - linux-pam
+      - sqlite-libs
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+      - linux-pam-dev
+      - scdoc
+      - sqlite-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/foxcpp/maddy
+      tag: v${{package.version}}
+  - name: build
+    runs: |
+      # Set Go build flags
+      export GOFLAGS="-trimpath -mod=readonly -modcacherw -tags=libsqlite3"
+      export GOCACHE="$PWD/.cache/go-build"
+      export GOMODCACHE="$PWD/.cache/mod"
+      
+      # Build maddy binary
+      go build -ldflags="-extldflags \"$LDFLAGS\" -X github.com/foxcpp/maddy.Version=${{package.version}}" \
+        -v -o bin/maddy ./cmd/maddy
+      
+      # Generate man page
+      scdoc < doc/maddy.1.scd
+  - runs: |
+      # Install binary
+      mkdir -p "${{targets.destdir}}"/usr/bin
+      install -Dm755 bin/maddy "${{targets.destdir}}"/usr/bin/maddy
+      
+      # Install man page
+      mkdir -p "${{targets.destdir}}"/usr/share/man/man1
+      install -Dm644 maddy.1 "${{targets.destdir}}"/usr/share/man/man1/maddy.1
+      
+      # Install example config
+      mkdir -p "${{targets.destdir}}"/etc/maddy
+      cp dist/maddy.conf "${{targets.destdir}}"/etc/maddy/maddy.conf.example
+test:
+  pipeline:
+    - name: Verify maddy installation
+      runs: |
+        maddy version || exit 1
+        test -f "${{targets.destdir}}"/usr/bin/maddy
+        test -x "${{targets.destdir}}"/usr/bin/maddy
