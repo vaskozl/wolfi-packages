@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: v2ray
+  version: 5.47.0
+  epoch: 0
+  description: A platform for building proxies to bypass network restrictions
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime: []
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+      - wget
+vars:
+  geosite_ver: 20260309055128
+  geoip_ver: 202603050223
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/v2fly/v2ray-core
+      tag: v${{package.version}}
+  - name: fetch-geo-databases
+    runs: |
+      # Download geosite database
+      wget -O geosite.dat "https://github.com/v2fly/domain-list-community/releases/download/${{vars.geosite_ver}}/dlc.dat"
+      
+      # Download geoip databases
+      wget -O geoip.dat "https://github.com/v2fly/geoip/releases/download/${{vars.geoip_ver}}/geoip.dat"
+      wget -O geoip-only-cn-private.dat "https://github.com/v2fly/geoip/releases/download/${{vars.geoip_ver}}/geoip-only-cn-private.dat"
+  - name: build
+    runs: |
+      # Set Go environment
+      export GOCACHE="$PWD/.cache/go-build"
+      export GOMODCACHE="$PWD/.cache/mod"
+      export GOTMPDIR="$PWD/.cache/tmp"
+      
+      # Build v2ray binary
+      ldflags=" -X github.com/v2fly/v2ray-core/v5.codename=v2ray -X github.com/v2fly/v2ray-core/v5.version=${{package.version}} -X github.com/v2fly/v2ray-core/v5.build=${{source_epoch}} -buildid= "
+      go build -trimpath -ldflags "$ldflags" -o v2ray ./main
+  - runs: |
+      # Install binary
+      mkdir -p "${{targets.destdir}}"/usr/bin
+      install -Dm755 v2ray "${{targets.destdir}}"/usr/bin/v2ray
+      
+      # Install geo databases
+      mkdir -p "${{targets.destdir}}"/usr/share/v2ray
+      install -Dm644 geosite.dat "${{targets.destdir}}"/usr/share/v2ray/geosite.dat
+      install -Dm644 geoip.dat "${{targets.destdir}}"/usr/share/v2ray/geoip.dat
+      install -Dm644 geoip-only-cn-private.dat "${{targets.destdir}}"/usr/share/v2ray/geoip-only-cn-private.dat
+      
+      # Install config files
+      mkdir -p "${{targets.destdir}}"/etc/v2ray
+      cp release/config/*.json "${{targets.destdir}}"/etc/v2ray/ 2>/dev/null || true
+test:
+  pipeline:
+    - name: Verify v2ray installation
+      runs: |
+        v2ray version || exit 1
+        test -f "${{targets.destdir}}"/usr/bin/v2ray
+        test -x "${{targets.destdir}}"/usr/bin/v2ray
+        test -f "${{targets.destdir}}"/usr/share/v2ray/geosite.dat
+        test -f "${{targets.destdir}}"/usr/share/v2ray/geoip.dat
