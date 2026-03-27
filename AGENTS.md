@@ -66,9 +66,48 @@ test:
 | `RUNNER` | bubblewrap | `bubblewrap`, `docker`, `qemu` |
 | `OUT_DIR` | `./packages` | Output directory |
 
+## Reference Packages
+
+- **This repo**: Custom package examples - use as primary reference
+- **wolfi-os**: https://github.com/wolfi-dev/os - melange patterns
+- **Alpine aports**: https://gitlab.alpinelinux.org/alpine/aports - search for APKBUILD files
+
+### Using Alpine APKBUILD as Reference
+
+When packaging software, check Alpine's aports for existing build recipes:
+
+```
+https://gitlab.alpinelinux.org/alpine/aports/-/raw/master/<section>/<package>/APKBUILD
+```
+
+Sections to check (in order): `main`, `community`, `testing`
+
+**Example:** https://gitlab.alpinelinux.org/alpine/aports/-/raw/master/community/maddy/APKBUILD
+
+**Important differences:**
+- Wolfi uses `glibc` instead of `musl`
+- Wolfi uses **systemd** (`-system` suffix) - Alpine uses **OpenRC** (`-openrc` suffix)
+- Only create systemd service packages if the upstream repository provides service files
+
 ## Node.js Packages
 
-- Install to `/usr/lib/<package>/`
-- Wrapper in `/usr/bin/<package>` with `exec node ...`
-- Declare `nodejs` runtime dependency
-- Use `split/alldocs` for docs subpackage
+- Install code to `/usr/lib/<package>/`
+- Create wrapper script in `/usr/bin/<package>` that calls `exec node /usr/lib/<package>/...`
+- Declare `nodejs` as runtime dependency
+- Use `split/alldocs` for documentation split
+
+## General Guidelines
+
+- Search for similar packages to use as working examples before creating new ones
+- Split documentation into a separate subpackage where possible
+- Reuse existing melange pipelines where possible
+- When debugging failed builds, clone the source code locally to study the build system
+- Explore APK contents: `tar tzv -f packages/aarch64/<package>-*.apk`
+
+## Commit Guidelines
+
+- Create a feature branch for each change
+- Format: `<package-name>: <concise description>`
+- For version updates: `<package-name>/<version> package update`
+- Use imperative mood ("Add feature" not "Added feature")
+- Describe what changed and why, not how
