@@ -18,6 +18,8 @@ package:
           - fcft.yaml
           - foot.yaml
           - golink.yaml
+          - jellyfin-web.yaml
+          - jellyfin.yaml
           - kernel-initramfs.yaml
           - kernel.yaml
           - kromgo.yaml
