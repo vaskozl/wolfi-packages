@@ -1,17 +1,17 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: ntfy
-  version: "2.20.0"
+  version: "2.20.1"
   epoch: 0
-  description: Send push notifications to your phone or desktop
+  description: Cloud-native push notifications for scripts, tools and apps
   copyright:
-    - license: GPL-2.0-or-later
+    - license: Apache-2.0 AND GPL-2.0-or-later
   dependencies:
     runtime:
       - ca-certificates
   resources:
     cpu: "2"
-    memory: 4Gi
+    memory: 2Gi
 
 environment:
   contents:
@@ -20,7 +20,6 @@ environment:
       - busybox
       - ca-certificates-bundle
       - go
-      - sqlite-dev
 
 pipeline:
   - uses: git-checkout
@@ -28,24 +27,24 @@ pipeline:
       repository: https://github.com/binwiederhier/ntfy
       tag: v${{package.version}}
 
-  - runs: |
-      # Build with CGO enabled for SQLite support
-      export CGO_ENABLED=1
-      export CGO_CFLAGS="-I/usr/include"
-      export CGO_LDFLAGS="-L/usr/lib"
-      go build -tags timetzdata -o ntfy .
+  - uses: go/build
+    with:
+      packages: ./...
+      output: ntfy
+      ldflags: |
+        -X ${{package.name}}/config.Version=${{package.version}}
+        -X ${{package.name}}/config.CommitHash=${{vars.git_hash}}
+        -X ${{package.name}}/config.BuildTime=${{vars.date}}
 
   - runs: |
       # Install binary
-      mkdir -p ${{targets.destdir}}/usr/bin
-      cp ntfy ${{targets.destdir}}/usr/bin/
+      install -Dm755 ntfy "${{targets.destdir}}"/usr/bin/ntfy
 
-      # Install config directory
-      mkdir -p ${{targets.destdir}}/etc/ntfy
+      # Create cache directory
+      mkdir -p "${{targets.destdir}}"/var/cache/ntfy
 
-      # Install systemd service directory
-      mkdir -p ${{targets.destdir}}/usr/lib/systemd/system
-      cp ntfy.service ${{targets.destdir}}/usr/lib/systemd/system/ 2>/dev/null || true
+      # Create data directory
+      mkdir -p "${{targets.destdir}}"/var/lib/ntfy
 
   - uses: strip
 
@@ -64,3 +63,6 @@ test:
     - name: Check ntfy version
       runs: |
         ntfy --version 2>&1 || true
+    - name: Check ntfy help
+      runs: |
+        ntfy --help 2>&1 | head -10
