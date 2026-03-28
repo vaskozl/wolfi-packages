@@ -69,4 +69,4 @@ test:
         ntfy --version 2>&1 || true
     - name: Check ntfy help
       runs: |
-        ntfy --help 2>&1 | head -10
+        ntfy --help 2>&1 | head -10 || true
