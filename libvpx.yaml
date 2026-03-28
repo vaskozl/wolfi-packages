@@ -19,9 +19,9 @@ environment:
       - build-base
       - busybox
       - ca-certificates-bundle
-      - cmake
       - glibc-dev
-      - ninja-build
+      - nasm
+      - yasm
 
 pipeline:
   - uses: git-checkout
@@ -30,8 +30,11 @@ pipeline:
       tag: v${{package.version}}
 
   - runs: |
+      # Create build directory (libvpx developers recommend building in separate directory)
+      mkdir build && cd build
+      
       # Configure libvpx for shared library build
-      ./configure \
+      ../configure \
         --prefix=/usr \
         --libdir=/usr/lib \
         --enable-shared \
@@ -48,16 +51,15 @@ pipeline:
         --disable-install-srcs
 
   - runs: |
+      cd build
       make -j$(nproc)
 
   - runs: |
+      cd build
       make DESTDIR="${{targets.destdir}}" install
       
       # Remove static libraries if any
       find "${{targets.destdir}}" -name "*.a" -delete || true
-      
-      # Remove .la files
-      find "${{targets.destdir}}" -name "*.la" -delete || true
 
   - uses: strip
 
