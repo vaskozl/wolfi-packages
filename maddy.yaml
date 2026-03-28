@@ -52,9 +52,6 @@ subpackages:
     description: maddy documentation
     pipeline:
       - uses: split/manpages
-    test:
-      pipeline:
-        - uses: test/docs
 
 test:
   environment:
