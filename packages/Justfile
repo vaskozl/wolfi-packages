@@ -1,0 +1,29 @@
+# Justfile for wolfictl operations
+
+arches := "x86_64 aarch64"
+
+# Run wolfictl command in Docker
+wolfictl *args:
+    docker run -i --rm -w {{justfile_directory()}} -v {{justfile_directory()}}:{{justfile_directory()}} -v ~/melange.rsa:/root/melange.rsa:ro ghcr.io/vaskozl/wolfictl {{args}}
+
+# List available packages
+list:
+    just wolfictl apk ls https://apks.sko.ai/x86_64/APKINDEX.tar.gz
+
+# Withdraw one or more packages from all architectures
+withdraw +packages:
+    @for arch in {{arches}}; do \
+        echo "Withdrawing {{packages}} from $arch..."; \
+        if (cd $arch && just wolfictl withdraw --signing-key ~/melange.rsa {{packages}} < APKINDEX.tar.gz > APKINDEX.tar.gz.new); then \
+            chmod 644 $arch/APKINDEX.tar.gz.new; \
+            mv $arch/APKINDEX.tar.gz $arch/APKINDEX.tar.gz.bak; \
+            mv $arch/APKINDEX.tar.gz.new $arch/APKINDEX.tar.gz; \
+            (cd $arch && rm -f {{packages}}); \
+            echo "✓ Successfully withdrew from $arch and deleted packages"; \
+        else \
+            echo "✗ Failed to withdraw from $arch"; \
+            rm -f $arch/APKINDEX.tar.gz.new; \
+            exit 1; \
+        fi; \
+    done; \
+    echo "Done!"
