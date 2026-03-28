@@ -24,7 +24,7 @@ environment:
 pipeline:
   - uses: git-checkout
     with:
-      repository: https://github.com/ostreedev/ostree.git
+      repository: https://github.com/ostreedev/ostree
       tag: v${{package.version}}
   - runs: env NOCONFIGURE=1 ./autogen.sh
   - uses: autoconf/configure

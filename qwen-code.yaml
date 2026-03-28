@@ -32,7 +32,7 @@ environment:
 pipeline:
   - uses: git-checkout
     with:
-      repository: https://github.com/QwenLM/qwen-code.git
+      repository: https://github.com/QwenLM/qwen-code
       tag: v${{package.version}}
 
   - runs: |
