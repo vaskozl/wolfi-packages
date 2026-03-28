@@ -23,7 +23,6 @@ environment:
       - ca-certificates-bundle
       - cmake
       - glibc-dev
-      - libgcc-dev
       - libstdc++-dev
       - portaudio-dev
       - git
@@ -60,9 +59,6 @@ subpackages:
     description: Multi-lingual software speech synthesizer (documentation)
     pipeline:
       - uses: split/manpages
-    test:
-      pipeline:
-        - uses: test/docs
 
 test:
   environment:
