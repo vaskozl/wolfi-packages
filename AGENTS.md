@@ -1,9 +1,9 @@
 # Building Packages
 
 ```sh
-make <package>.yaml
+just build <package>.yaml
 # Example:
-make pinewall-config.yaml
+just build pinewall-config.yaml
 ```
 
 Built packages appear in `packages/aarch64/`.
@@ -11,7 +11,7 @@ Built packages appear in `packages/aarch64/`.
 ## Testing Packages
 
 ```sh
-make test PKG=pinewall-config.yaml
+just test pinewall-config.yaml
 ```
 
 The test runs in a bubblewrap container, installs the package, and verifies:
@@ -22,7 +22,7 @@ The test runs in a bubblewrap container, installs the package, and verifies:
 
 ```sh
 # Build and install
-make pinewall-config.yaml
+just build pinewall-config.yaml
 apk add --allow-untrusted packages/aarch64/pinewall-config-*.apk
 
 # Verify
@@ -47,24 +47,29 @@ test:
         /usr/bin/set-irq-affinity --help || true
 ```
 
-## Makefile Targets
+## Justfile Recipes
 
-| Target | Description |
+| Recipe | Description |
 |--------|-------------|
-| `make <pkg>.yaml` | Build package |
-| `make build PKG=<file>` | Build package |
-| `make build-all` | Build all packages |
-| `make test PKG=<file>` | Run melange tests |
-| `make clean` | Clean output |
-| `make list` | List packages |
+| `just build <pkg>.yaml` | Build a specific package |
+| `just build-all` | Build all packages |
+| `just test <pkg>.yaml` | Run melange tests for a package |
+| `just clean` | Clean output directory |
+| `just list` | List available package YAML files |
+| `just index-list` | List packages in the remote index |
+| `just withdraw <pkg>...` | Withdraw packages from all architecture indexes |
 
 ## Parameters
 
+Override defaults by setting variables:
+
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ARCH` | auto | `aarch64`, `amd64` |
-| `RUNNER` | bubblewrap | `bubblewrap`, `docker`, `qemu` |
-| `OUT_DIR` | `./packages` | Output directory |
+| `arch` | auto-detected | `aarch64`, `x86_64` |
+| `runner` | `bubblewrap` | `bubblewrap`, `docker`, `qemu` |
+| `out_dir` | `./packages` | Output directory |
+
+Example: `just arch=x86_64 runner=docker build redis.yaml`
 
 ## Reference Packages
 
