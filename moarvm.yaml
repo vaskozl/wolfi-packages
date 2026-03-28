@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: moarvm
-  version: "2025.11"
+  version: "2026.02"
   epoch: 0
   description: VM with adaptive optimization and JIT compilation
   copyright:
