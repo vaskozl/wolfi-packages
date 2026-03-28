@@ -33,10 +33,9 @@ pipeline:
   - runs: |
       # Clean any existing build directory and create fresh one
       rm -rf build
-      mkdir build && cd build
       
-      # Configure libvpx for shared library build
-      ../configure \
+      # Configure libvpx for shared library build (run from source dir)
+      ./configure \
         --prefix=/usr \
         --libdir=/usr/lib \
         --enable-shared \
@@ -53,11 +52,9 @@ pipeline:
         --disable-install-srcs
 
   - runs: |
-      cd build
       make -j$(nproc)
 
   - runs: |
-      cd build
       make DESTDIR="${{targets.destdir}}" install
       
       # Remove static libraries if any
