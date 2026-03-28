@@ -44,10 +44,12 @@ pipeline:
         -X main.date=${{package.version}}
 
   - runs: |
-      # Create cache directory
-      mkdir -p "${{targets.destdir}}"/var/cache/ntfy
+      # Install default configuration files
+      install -Dm644 client/client.yml "${{targets.destdir}}"/etc/ntfy/client.yml
+      install -Dm644 server/server.yml "${{targets.destdir}}"/etc/ntfy/server.yml
 
-      # Create data directory
+      # Create cache and data directories
+      mkdir -p "${{targets.destdir}}"/var/cache/ntfy
       mkdir -p "${{targets.destdir}}"/var/lib/ntfy
 
   - uses: strip
@@ -70,3 +72,7 @@ test:
     - name: Check ntfy help
       runs: |
         ntfy --help 2>&1 | head -10 || true
+    - name: Verify config files
+      runs: |
+        stat /etc/ntfy/client.yml
+        stat /etc/ntfy/server.yml

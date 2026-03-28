@@ -20,6 +20,7 @@ environment:
       - busybox
       - ca-certificates-bundle
       - go
+      - scdoc
 
 pipeline:
   - uses: git-checkout
@@ -33,6 +34,11 @@ pipeline:
       output: maddy
       ldflags: |
         -X github.com/foxcpp/maddy/version.Tag=v${{package.version}}
+
+  - runs: |
+      # Build manpage
+      scdoc < docs/man/maddy.1.scd > maddy.1
+      install -Dm644 maddy.1 "${{targets.destdir}}"/usr/share/man/man1/maddy.1
 
   - runs: |
       # Install example config
@@ -49,6 +55,17 @@ subpackages:
     description: maddy documentation
     pipeline:
       - uses: split/manpages
+
+  - name: maddy-vim
+    description: maddy vim syntax files
+    dependencies:
+      install-if:
+        - vim
+        - maddy
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}"/usr/share/vim
+          cp -r dist/vim "${{targets.subpkgdir}}"/usr/share/vim/vimfiles
 
 test:
   environment:
