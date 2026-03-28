@@ -27,7 +27,6 @@ environment:
       - ca-certificates-bundle
       - cmake
       - glibc-dev
-      - libgcc-dev
       - libstdc++-dev
       - qt6-qtbase-dev
       - samurai

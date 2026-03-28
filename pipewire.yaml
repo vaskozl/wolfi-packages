@@ -27,7 +27,6 @@ environment:
       - dbus-dev
       - glibc-dev
       - libcap-dev
-      - libgcc-dev
       - libstdc++-dev
       - meson
       - ninja-build
@@ -47,7 +46,7 @@ pipeline:
         --libdir=/usr/lib \
         --sysconfdir=/etc \
         --localstatedir=/var \
-        -Ddocumentation=disabled \
+        -Ddocs=disabled \
         -Dman=disabled \
         -Dtests=disabled \
         -Dexamples=disabled \
@@ -57,17 +56,11 @@ pipeline:
         -Dflatpak=disabled \
         -Dvulkan=disabled \
         -Dx11=disabled \
-        -Dqt=disabled \
-        -Dpipewire-alsa=enabled \
-        -Dpipewire-pulse=enabled \
+        -Dpipewire-alsa=disabled \
         -Dpipewire-jack=enabled \
         -Dsession-managers=disabled \
         -Dsystemd=enabled \
-        -Dbluez5=disabled \
-        -Dffado=disabled \
-        -Dlibffado=disabled \
-        -Dlto=disabled \
-        -Djack=disabled
+        -Dbluez5=disabled
 
   - runs: |
       ninja -C build

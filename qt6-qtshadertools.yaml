@@ -24,8 +24,8 @@ environment:
       - ca-certificates-bundle
       - cmake
       - glibc-dev
-      - libgcc-dev
       - libstdc++-dev
+      - mesa-dev
       - qt6-qtbase-dev
       - samurai
 
@@ -47,7 +47,7 @@ pipeline:
       cmake --build build
 
   - runs: |
-      cmake --install build --destdir "${{targets.destdir}}"
+      cmake --install build --prefix "${{targets.destdir}}/usr"
 
   - uses: strip
 
