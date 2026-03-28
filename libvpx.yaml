@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: libvpx
+  version: "1.15.2"
+  epoch: 0
+  description: Library for the VP8/VP9 codecs (WebM project)
+  copyright:
+    - license: BSD-3-Clause
+  dependencies:
+    runtime:
+      - glibc
+  resources:
+    cpu: "4"
+    memory: 4Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - cmake
+      - glibc-dev
+      - ninja-build
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/webmproject/libvpx
+      tag: v${{package.version}}
+
+  - runs: |
+      # Configure libvpx for shared library build
+      ./configure \
+        --prefix=/usr \
+        --libdir=/usr/lib \
+        --enable-shared \
+        --disable-static \
+        --enable-vp8 \
+        --enable-vp9 \
+        --enable-vp9-highbitdepth \
+        --enable-multithread \
+        --enable-pic \
+        --disable-install-docs \
+        --disable-examples \
+        --disable-install-bins \
+        --disable-unit-tests \
+        --disable-install-srcs
+
+  - runs: |
+      make -j$(nproc)
+
+  - runs: |
+      make DESTDIR="${{targets.destdir}}" install
+      
+      # Remove static libraries if any
+      find "${{targets.destdir}}" -name "*.a" -delete || true
+      
+      # Remove .la files
+      find "${{targets.destdir}}" -name "*.la" -delete || true
+
+  - uses: strip
+
+subpackages:
+  - name: libvpx-dev
+    description: VP8/VP9 codec library (development files)
+    dependencies:
+      runtime:
+        - libvpx=${{package.full-version}}
+    pipeline:
+      - uses: split/dev
+    test:
+      pipeline:
+        - runs: |
+            test -f /usr/include/vpx/vpx_codec.h
+            test -f /usr/include/vpx/vpx_decoder.h
+            test -f /usr/include/vpx/vpx_encoder.h
+            test -f /usr/lib/pkgconfig/vpx.pc
+  - name: libvpx-doc
+    description: VP8/VP9 codec library (documentation)
+    pipeline:
+      - uses: split/manpages
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+        - libvpx
+  pipeline:
+    - name: Verify libvpx library exists
+      runs: |
+        test -f /usr/lib/libvpx.so
+    - name: Verify vpx binaries exist
+      runs: |
+        test -x /usr/bin/vpxdec
+        test -x /usr/bin/vpxenc

@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: qt6-qttools
+  version: "6.10.2"
+  epoch: 0
+  description: Qt6 Tools and utilities
+  copyright:
+    - license: LGPL-3.0-only OR GPL-3.0-only
+  dependencies:
+    runtime:
+      - glibc
+      - libgcc
+      - libstdc++
+      - qt6-qtbase
+  resources:
+    cpu: "4"
+    memory: 8Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - cmake
+      - glibc-dev
+      - libgcc-dev
+      - libstdc++-dev
+      - qt6-qtbase-dev
+      - samurai
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/qt/qttools
+      tag: v${{package.version}}
+
+  - runs: |
+      cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DBUILD_SHARED_LIBS=ON \
+        -DBUILD_TESTING=OFF \
+        -DQT_FEATURE_assistant=OFF \
+        -DQT_FEATURE_designer=OFF \
+        -DQT_FEATURE_linguist=OFF \
+        -DQT_FEATURE_pixeltool=OFF \
+        -DQT_FEATURE_qdbus=ON \
+        -DQT_FEATURE_qev=ON \
+        -DQT_FEATURE_qtattributionsscanner=ON \
+        -DQT_FEATURE_qtdiag=ON \
+        -DQT_FEATURE_qtplugininfo=ON
+
+  - runs: |
+      cmake --build build
+
+  - runs: |
+      cmake --install build --destdir "${{targets.destdir}}"
+
+  - uses: strip
+
+subpackages:
+  - name: qt6-qttools-dev
+    description: Qt6 Tools (development files)
+    dependencies:
+      runtime:
+        - qt6-qttools=${{package.full-version}}
+    pipeline:
+      - uses: split/dev
+    test:
+      pipeline:
+        - runs: |
+            test -f /usr/include/QtTools/qttools_version.h
+  - name: qt6-qttools-doc
+    description: Qt6 Tools (documentation)
+    pipeline:
+      - uses: split/manpages
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify qt6-qttools binaries exist
+      runs: |
+        test -x /usr/bin/qdbus
+        test -x /usr/bin/qev

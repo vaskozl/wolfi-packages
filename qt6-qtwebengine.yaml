@@ -1,0 +1,169 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: qt6-qtwebengine
+  version: "6.10.2"
+  epoch: 0
+  description: Qt6 WebEngine module (Chromium-based web browser engine)
+  copyright:
+    - license: LGPL-3.0-only OR GPL-3.0-only
+  dependencies:
+    runtime:
+      - glibc
+      - libgcc
+      - libstdc++
+      - qt6-qtbase
+      - qt6-qtdeclarative
+      - qt6-qtwebchannel
+      - qt6-qtpositioning
+      - qt6-qtwebsockets
+      - qt6-qtserialport
+      - dbus-libs
+      - nspr
+      - nss
+      - ffmpeg
+      - libxslt
+      - libvpx
+      - opus
+      - snappy
+      - lcms2
+      - minizip
+      - libepoxy
+      - libevent
+      - alsa-lib
+      - libdrm
+      - mesa-gbm
+      - wayland-libs-client
+      - wayland-libs-cursor
+      - wayland-libs-egl
+      - wayland-libs-server
+      - libxkbcommon
+      - xcb-util
+      - xcb-util-image
+      - xcb-util-keysyms
+      - xcb-util-renderutil
+      - xcb-util-wm
+  resources:
+    cpu: "16"
+    memory: 32Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - cmake
+      - ninja-build
+      - samurai
+      - python3
+      - python3-dev
+      - perl
+      - bison
+      - flex
+      - gperf
+      - nodejs
+      - glibc-dev
+      - libgcc-dev
+      - libstdc++-dev
+      - qt6-qtbase-dev
+      - qt6-qtdeclarative-dev
+      - qt6-qtwebchannel-dev
+      - qt6-qtpositioning-dev
+      - qt6-qtwebsockets-dev
+      - qt6-qtserialport-dev
+      - dbus-dev
+      - nspr-dev
+      - nss-dev
+      - ffmpeg-dev
+      - libxslt-dev
+      - libvpx-dev
+      - opus-dev
+      - snappy-dev
+      - lcms2-dev
+      - minizip-dev
+      - libepoxy-dev
+      - libevent-dev
+      - alsa-lib-dev
+      - libdrm-dev
+      - mesa-dev
+      - wayland-dev
+      - libxkbcommon-dev
+      - xcb-util-dev
+      - krb5-dev
+      - pciutils-dev
+      - pipewire-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/qt/qtwebengine
+      tag: v${{package.version}}
+      depth: 1
+
+  - runs: |
+      # Initialize git submodules for Chromium
+      git submodule update --init --recursive --depth 1
+
+  - runs: |
+      # Configure Qt WebEngine
+      cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DBUILD_SHARED_LIBS=ON \
+        -DBUILD_TESTING=OFF \
+        -DQT_FEATURE_webengine_system_ffmpeg=ON \
+        -DQT_FEATURE_webengine_system_libvpx=ON \
+        -DQT_FEATURE_webengine_system_opus=ON \
+        -DQT_FEATURE_webengine_system_snappy=ON \
+        -DQT_FEATURE_webengine_system_minizip=ON \
+        -DQT_FEATURE_webengine_system_libevent=ON \
+        -DQT_FEATURE_webengine_system_glib=OFF \
+        -DQT_FEATURE_webengine_system_icu=ON \
+        -DQT_FEATURE_webengine_system_zlib=ON \
+        -DQT_FEATURE_webengine_system_re2=OFF \
+        -DQT_FEATURE_webengine_system_protobuf=OFF \
+        -DQT_FEATURE_webengine_proprietary_codecs=ON \
+        -DQT_FEATURE_webengine_spellchecker=OFF \
+        -DQT_FEATURE_webengine_webrtc=OFF \
+        -DQT_FEATURE_webengine_printing=ON \
+        -DQT_FEATURE_webengine_pdf=ON
+
+  - runs: |
+      # Build Qt WebEngine (this will take a long time)
+      cmake --build build -- -j$(nproc)
+
+  - runs: |
+      cmake --install build --destdir "${{targets.destdir}}"
+
+  - uses: strip
+
+subpackages:
+  - name: qt6-qtwebengine-dev
+    description: Qt6 WebEngine (development files)
+    dependencies:
+      runtime:
+        - qt6-qtwebengine=${{package.full-version}}
+    pipeline:
+      - uses: split/dev
+    test:
+      pipeline:
+        - runs: |
+            test -f /usr/include/QtWebEngine/qtwebengine_version.h
+            test -f /usr/include/QtWebEngineCore/qtwebenginecore_version.h
+  - name: qt6-qtwebengine-doc
+    description: Qt6 WebEngine (documentation)
+    pipeline:
+      - uses: split/manpages
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify Qt6WebEngine library exists
+      runs: |
+        test -f /usr/lib/libQt6WebEngineCore.so
+        test -f /usr/lib/libQt6WebEngine.so
+        test -f /usr/lib/libQt6WebEngineWidgets.so

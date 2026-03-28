@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: qt6-qtwayland
+  version: "6.10.2"
+  epoch: 0
+  description: Qt6 Wayland platform support
+  copyright:
+    - license: LGPL-3.0-only OR GPL-3.0-only
+  dependencies:
+    runtime:
+      - glibc
+      - libgcc
+      - libstdc++
+      - qt6-qtbase
+      - wayland-libs-client
+      - wayland-libs-server
+      - wayland-protocols
+  resources:
+    cpu: "4"
+    memory: 8Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - cmake
+      - glibc-dev
+      - libgcc-dev
+      - libstdc++-dev
+      - qt6-qtbase-dev
+      - samurai
+      - wayland-dev
+      - wayland-protocols
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/qt/qtwayland
+      tag: v${{package.version}}
+
+  - runs: |
+      cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DBUILD_SHARED_LIBS=ON \
+        -DBUILD_TESTING=OFF
+
+  - runs: |
+      cmake --build build
+
+  - runs: |
+      cmake --install build --destdir "${{targets.destdir}}"
+
+  - uses: strip
+
+subpackages:
+  - name: qt6-qtwayland-dev
+    description: Qt6 Wayland (development files)
+    dependencies:
+      runtime:
+        - qt6-qtwayland=${{package.full-version}}
+    pipeline:
+      - uses: split/dev
+    test:
+      pipeline:
+        - runs: |
+            test -f /usr/include/QtWaylandClient/qtwaylandclient_version.h
+  - name: qt6-qtwayland-doc
+    description: Qt6 Wayland (documentation)
+    pipeline:
+      - uses: split/manpages
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify Qt6Wayland library exists
+      runs: |
+        test -f /usr/lib/libQt6WaylandClient.so

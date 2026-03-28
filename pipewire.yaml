@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: pipewire
+  version: "1.4.9"
+  epoch: 0
+  description: Multimedia processing engine for audio and video
+  copyright:
+    - license: LGPL-2.1-or-later
+  dependencies:
+    runtime:
+      - glibc
+      - libgcc
+      - libstdc++
+      - dbus-libs
+      - libcap
+  resources:
+    cpu: "4"
+    memory: 8Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - cmake
+      - dbus-dev
+      - glibc-dev
+      - libcap-dev
+      - libgcc-dev
+      - libstdc++-dev
+      - meson
+      - ninja-build
+      - samurai
+      - systemd-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/PipeWire/pipewire
+      tag: ${{package.version}}
+
+  - runs: |
+      # Configure PipeWire with meson
+      meson setup build \
+        --prefix=/usr \
+        --libdir=/usr/lib \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        -Ddocumentation=disabled \
+        -Dman=disabled \
+        -Dtests=disabled \
+        -Dexamples=disabled \
+        -Dgstreamer=disabled \
+        -Dlibcamera=disabled \
+        -Droc=disabled \
+        -Dflatpak=disabled \
+        -Dvulkan=disabled \
+        -Dx11=disabled \
+        -Dqt=disabled \
+        -Dpipewire-alsa=enabled \
+        -Dpipewire-pulse=enabled \
+        -Dpipewire-jack=enabled \
+        -Dsession-managers=disabled \
+        -Dsystemd=enabled \
+        -Dbluez5=disabled \
+        -Dffado=disabled \
+        -Dlibffado=disabled \
+        -Dlto=disabled \
+        -Djack=disabled
+
+  - runs: |
+      ninja -C build
+
+  - runs: |
+      DESTDIR="${{targets.destdir}}" ninja -C build install
+
+  - uses: strip
+
+subpackages:
+  - name: pipewire-dev
+    description: PipeWire development files
+    dependencies:
+      runtime:
+        - pipewire=${{package.full-version}}
+    pipeline:
+      - uses: split/dev
+    test:
+      pipeline:
+        - runs: |
+            test -f /usr/include/pipewire/pipewire.h
+            test -f /usr/lib/pkgconfig/libpipewire-0.3.pc
+  - name: pipewire-doc
+    description: PipeWire documentation
+    pipeline:
+      - uses: split/manpages
+  - name: pipewire-libs
+    description: PipeWire libraries
+    dependencies:
+      runtime:
+        - pipewire=${{package.full-version}}
+    pipeline:
+      - runs: |
+          # Move libraries to libs subpackage
+          mkdir -p "${{targets.subpkgdir}}"/usr/lib
+          mv "${{targets.destdir}}"/usr/lib/*.so* "${{targets.subpkgdir}}"/usr/lib/ || true
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+        - pipewire
+  pipeline:
+    - name: Verify pipewire binary exists
+      runs: |
+        test -x /usr/bin/pipewire
+    - name: Verify pipewire library exists
+      runs: |
+        test -f /usr/lib/libpipewire-0.3.so
