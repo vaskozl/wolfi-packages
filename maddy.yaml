@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: maddy
-  version: "0.8.0"
+  version: "0.9.2"
   epoch: 0
   description: All-in-one mail server (MTA, MDA, IMAP)
   copyright:
@@ -39,7 +39,7 @@ pipeline:
       install -Dm755 maddy "${{targets.destdir}}"/usr/bin/maddy
 
       # Install example config
-      install -Dm644 maddy.conf.example "${{targets.destdir}}"/etc/maddy/maddy.conf.example
+      install -Dm644 maddy.conf "${{targets.destdir}}"/etc/maddy/maddy.conf
 
       # Create directories
       mkdir -p "${{targets.destdir}}"/var/lib/maddy
