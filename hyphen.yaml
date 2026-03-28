@@ -19,16 +19,16 @@ environment:
       - busybox
       - ca-certificates-bundle
       - glibc-dev
+      - patch
+      - perl
 
 pipeline:
-  - uses: git-checkout
+  - uses: fetch
     with:
-      repository: https://sourceforge.net/p/hunspell/code
-      tag: hyphen-2.8.8
-      strip_components: 2
+      uri: https://deb.debian.org/debian/pool/main/h/hyphen/hyphen_${{package.version}}.orig.tar.gz
+      expected-sha256: 304636d4eccd81a14b6914d07b84c79ebb815288c76fe027b9ebff6ff24d5705
 
   - runs: |
-      ./autogen.sh
       ./configure \
         --prefix=/usr \
         --sysconfdir=/etc \
