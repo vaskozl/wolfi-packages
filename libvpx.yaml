@@ -30,7 +30,8 @@ pipeline:
       tag: v${{package.version}}
 
   - runs: |
-      # Create build directory (libvpx developers recommend building in separate directory)
+      # Clean any existing build directory and create fresh one
+      rm -rf build
       mkdir build && cd build
       
       # Configure libvpx for shared library build
