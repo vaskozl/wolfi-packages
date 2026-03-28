@@ -25,16 +25,17 @@ environment:
       - perl
 
 pipeline:
-  - uses: git-checkout
+  - uses: fetch
     with:
-      repository: https://github.com/webmproject/libvpx
-      tag: v${{package.version}}
+      url: https://github.com/webmproject/libvpx/archive/refs/tags/v${{package.version}}.tar.gz
+      expected-sha256: "26fcd3db88045dee380e581862a6ef106f49b74b6396ee95c2993a260b4636aa"
 
   - runs: |
-      # Clean any existing build directory and create fresh one
-      rm -rf build
+      # Extract the tarball
+      tar -xzf libvpx-${{package.version}}.tar.gz
+      cd libvpx-${{package.version}}
       
-      # Configure libvpx for shared library build (run from source dir)
+      # Configure libvpx for shared library build
       ./configure \
         --prefix=/usr \
         --libdir=/usr/lib \
@@ -52,9 +53,11 @@ pipeline:
         --disable-install-srcs
 
   - runs: |
+      cd libvpx-${{package.version}}
       make -j$(nproc)
 
   - runs: |
+      cd libvpx-${{package.version}}
       make DESTDIR="${{targets.destdir}}" install
       
       # Remove static libraries if any
