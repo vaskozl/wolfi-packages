@@ -1,0 +1,182 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Calibre - Ebook management application
+# Based on Alpine Linux APKBUILD from https://gitlab.alpinelinux.org/alpine/aports/-/blob/master/testing/calibre/APKBUILD
+package:
+  name: calibre
+  version: 8.16.2
+  epoch: 0
+  description: Ebook management application
+  copyright:
+    - license: GPL-3.0-or-later
+  dependencies:
+    runtime:
+      - font-liberation
+      - libwmf
+      - mtdev
+      - optipng
+      - poppler
+      - py3-apsw
+      - py3-beautifulsoup4
+      - py3-css-parser
+      - py3-cssselect
+      - py3-dateutil
+      - py3-dnspython
+      - py3-feedparser
+      - py3-fonttools
+      - py3-html2text
+      - py3-html5-parser
+      - py3-html5lib
+      - py3-jeepney
+      - py3-lxml
+      - py3-markdown
+      - py3-msgpack
+      - py3-netifaces
+      - py3-pillow
+      - py3-psutil
+      - py3-pycryptodome
+      - py3-pygments
+      - py3-pyqt6-webengine
+      - py3-regex
+      - py3-xxhash
+      - py3-zeroconf
+      - qt6-qtimageformats
+      - qt6-qtsvg
+      - qt6-qtwebengine
+      - udisks2
+
+vars:
+  python3-version: "3.12"
+
+environment:
+  contents:
+    packages:
+      - bash
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - cmake
+      - curl
+      - ffmpeg-dev
+      - font-liberation
+      - hunspell-dev
+      - hyphen-dev
+      - libmtp-dev
+      - libstemmer-dev
+      - libusb-dev
+      - libwmf
+      - mtdev
+      - optipng
+      - poppler
+      - py3-apsw
+      - py3-beautifulsoup4
+      - py3-css-parser
+      - py3-cssselect
+      - py3-dateutil
+      - py3-dnspython
+      - py3-feedparser
+      - py3-fonttools
+      - py3-html2text
+      - py3-html5-parser
+      - py3-html5lib
+      - py3-jeepney
+      - py3-lxml
+      - py3-markdown
+      - py3-msgpack
+      - py3-netifaces
+      - py3-pillow
+      - py3-psutil
+      - py3-pycryptodome
+      - py3-pygments
+      - py3-pyqt-builder
+      - py3-pyqt6-sip
+      - py3-pyqt6-webengine
+      - py3-qt6
+      - py3-regex
+      - py3-sip
+      - py3-xxhash
+      - py3-zeroconf
+      - python3-dev
+      - qt6-qtbase-dev
+      - qt6-qtimageformats
+      - qt6-qtsvg
+      - qt6-qtwebengine
+      - uchardet-dev
+      - udisks2
+      - xdg-utils
+  environment:
+    LANG: en_US.UTF-8
+    PATH: /usr/lib/qt6/bin:${PATH}
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/kovidgoyal/calibre
+      tag: v${{package.version}}
+
+  - name: Prepare source
+    runs: |
+      # Remove portable files that cause issues
+      rm -f resources/calibre-portable.*
+
+  - name: Build calibre core
+    runs: |
+      python3 setup.py build
+
+  - name: Generate ISO codes
+    runs: |
+      python3 setup.py iso639
+      python3 setup.py iso3166
+
+  - name: Setup fonts
+    runs: |
+      python3 setup.py liberation_fonts --system-liberation_fonts --path-to-liberation_fonts /usr/share/fonts/liberation
+
+  - name: Download mathjax
+    runs: |
+      python3 setup.py mathjax
+
+  - name: Build GUI
+    runs: |
+      python3 setup.py gui
+
+  - name: Install calibre
+    runs: |
+      # Create needed directories
+      mkdir -p "${{targets.destdir}}"/usr/share/zsh/site-functions
+      mkdir -p "${{targets.destdir}}"/usr/share/man
+      
+      # Install calibre
+      python3 setup.py install \
+        --staging-root="${{targets.destdir}}"/usr \
+        --system-plugins-location=/usr/share/calibre/system-plugins
+
+  - name: Install man pages
+    runs: |
+      cp -a man-pages/* "${{targets.destdir}}"/usr/share/man/
+
+  - name: Cleanup and compile
+    runs: |
+      # Remove rapydscript (not needed)
+      rm -rf "${{targets.destdir}}"/usr/share/calibre/rapydscript/
+      
+      # Compile Python bytecode
+      python3 -m compileall -fq "${{targets.destdir}}"/usr
+
+  - uses: strip
+
+subpackages:
+  - name: calibre-doc
+    description: Calibre documentation
+    pipeline:
+      - uses: split/manpages
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify calibre installation
+      runs: |
+        test -f /usr/bin/calibre
+        test -x /usr/bin/calibre
