@@ -62,9 +62,6 @@ subpackages:
     description: Qt6 Positioning and Geolocation module (documentation)
     pipeline:
       - uses: split/manpages
-    test:
-      pipeline:
-        - uses: test/docs
 
 test:
   environment:

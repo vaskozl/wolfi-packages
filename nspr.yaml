@@ -8,7 +8,6 @@ package:
   dependencies:
     runtime:
       - glibc
-    dev:
       - linux-headers
   resources:
     cpu: "4"

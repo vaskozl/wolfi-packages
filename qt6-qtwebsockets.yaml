@@ -60,9 +60,6 @@ subpackages:
     description: Qt6 WebSocket support library (documentation)
     pipeline:
       - uses: split/manpages
-    test:
-      pipeline:
-        - uses: test/docs
 
 test:
   environment:

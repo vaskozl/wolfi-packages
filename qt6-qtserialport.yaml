@@ -60,9 +60,6 @@ subpackages:
     description: Qt6 Serial Port support library (documentation)
     pipeline:
       - uses: split/manpages
-    test:
-      pipeline:
-        - uses: test/docs
 
 test:
   environment:

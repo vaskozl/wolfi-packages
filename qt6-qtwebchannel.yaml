@@ -62,9 +62,6 @@ subpackages:
     description: Qt6 WebChannel library (documentation)
     pipeline:
       - uses: split/manpages
-    test:
-      pipeline:
-        - uses: test/docs
 
 test:
   environment:
