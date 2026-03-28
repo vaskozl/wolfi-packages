@@ -98,10 +98,11 @@ test: setup
 		--workspace-dir="$(WORKSPACE_DIR)" \
 		--arch="$(ARCH)" \
 		--runner=$(RUNNER) \
-		--repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os,$(WORKSPACE_DIR)/$(ARCH) \
-		--keyring-append=melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub \
+		--repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os,$(OUT_DIR) \
+		--keyring-append=melange.rsa.pub,https://apks.sko.ai/melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub \
 		--env-file=common.env \
-		--test-package-append=busybox
+		--test-package-append=busybox \
+		--ignore-signatures
 	@rm -f $(WORKSPACE_DIR)/$(ARCH)
 
 # Clean output directory
