@@ -1,0 +1,70 @@
+package:
+  name: py3-qt6
+  version: "6.10.2"
+  epoch: 0
+  description: Python 3 bindings for the Qt6 toolkit
+  copyright:
+    - license: GPL-3.0-only
+  dependencies:
+    runtime:
+      - dbus-libs
+      - glibc
+      - libgcc
+      - libstdc++
+      - py3-pyqt6-sip
+      - python3
+      - qt6-qtbase
+      - qt6-qtdeclarative
+      - qt6-qtmultimedia
+      - qt6-qtsvg
+  resources:
+    cpu: "8"
+    memory: 16Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - dbus-dev
+      - glibc-dev
+      - libgcc-dev
+      - libstdc++-dev
+      - py3-pyqt6-sip
+      - py3-installer
+      - py3-wheel
+      - py3-build
+      - py3-setuptools
+      - python3
+      - python3-dev
+      - qt6-qtbase-dev
+      - qt6-qtdeclarative-dev
+      - qt6-qtmultimedia-dev
+      - qt6-qtsvg-dev
+      - samurai
+
+pipeline:
+  - uses: fetch
+    with:
+      uri: https://files.pythonhosted.org/packages/96/03/e756f52e8b0d7bb5527baf8c46d59af0746391943bdb8655acba22ee4168/pyqt6-${{package.version}}.tar.gz
+      expected-sha256: 6c0db5d8cbb9a3e7e2b5b51d0ff3f283121fa27b864db6d2f35b663c9be5cc83
+
+  - runs: |
+      python3 -m build --wheel
+      python3 -m installer --destdir="${{targets.destdir}}" dist/*.whl
+
+  - uses: strip
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+        - python3
+  pipeline:
+    - name: Verify PyQt6 modules exist
+      runs: |
+        python3 -c "from PyQt6 import QtCore; print('PyQt6.QtCore loaded successfully')"
+        python3 -c "from PyQt6 import QtGui; print('PyQt6.QtGui loaded successfully')"
+        python3 -c "from PyQt6 import QtWidgets; print('PyQt6.QtWidgets loaded successfully')"
