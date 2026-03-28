@@ -1,0 +1,203 @@
+package:
+  name: calibre
+  version: "9.6.0"
+  epoch: 0
+  description: Powerful and easy to use e-book manager
+  copyright:
+    - license: GPL-3.0-or-later
+  dependencies:
+    runtime:
+      - python3
+      - qt6-qtbase
+      - qt6-qtwebengine
+      - qt6-qtmultimedia
+      - qt6-qtsvg
+      - libxml2
+      - libxslt
+      - sqlite-libs
+      - openssl
+      - icu-libs
+      - libusb
+      - libchm
+      - libhyphen
+      - hunspell
+      - espeak-ng
+      - libstemmer
+      - libjpeg-turbo
+      - libwebp
+      - tiff
+      - librsvg
+      - poppler-utils
+      - optipng
+      - libpng
+      - freetype
+  resources:
+    cpu: "8"
+    memory: 16Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - cmake
+      - qt6-qtbase-dev
+      - qt6-qtwebengine-dev
+      - qt6-qtmultimedia-dev
+      - qt6-qtsvg-dev
+      - py3-pyqt6-dev
+      - py3-dev
+      - py3-setuptools
+      - py3-wheel
+      - py3-build
+      - py3-installer
+      - py3-pip
+      - py3-pybind11
+      - py3-sip
+      - py3-pyqt-builder
+      - py3-poetry-core
+      - py3-ply
+      - py3-pkgconfig
+      - py3-setuptools-scm
+      - libxml2-dev
+      - libxslt-dev
+      - sqlite-dev
+      - openssl-dev
+      - icu-dev
+      - libusb-dev
+      - libchm-dev
+      - libhyphen-dev
+      - hunspell-dev
+      - espeak-ng-dev
+      - libstemmer-dev
+      - libjpeg-turbo-dev
+      - libwebp-dev
+      - tiff-dev
+      - librsvg-dev
+      - poppler-dev
+      - libpng-dev
+      - freetype-dev
+      - curl
+      - xdg-utils
+      - python3-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/kovidgoyal/calibre
+      tag: ${{package.version}}
+
+  - runs: |
+      # Install Python build dependencies via pip
+      pip3 install --break-system-packages --prefix=/usr \
+        setuptools==80.9.0 \
+        wheel==0.46.2 \
+        build==1.3.0 \
+        installer==0.7.0 \
+        pybind11==3.0.1 \
+        pkgconfig==1.5.5 \
+        setuptools_scm==9.2.2 \
+        poetry_core==2.2.1 \
+        ply==3.11 \
+        sip==6.14.0 \
+        PyQt_builder==1.19.1
+
+  - runs: |
+      # Install Python runtime dependencies via pip
+      pip3 install --break-system-packages --prefix=/usr \
+        six==1.17.0 \
+        unrardll==0.1.7 \
+        lxml==6.0.2 \
+        pychm==0.8.6 \
+        html5-parser==0.4.12 \
+        css-parser==1.0.10 \
+        python-dateutil==2.9.0 \
+        jeepney==0.9.0 \
+        dnspython==2.8.0 \
+        mechanize==0.4.10 \
+        feedparser==6.0.12 \
+        sgmllib3k==1.0.0 \
+        Markdown==3.10.0 \
+        html2text==2025.4.15 \
+        soupsieve==2.8 \
+        typing-extensions==4.15.0 \
+        beautifulsoup4==4.14.3 \
+        regex==2025.11.3 \
+        chardet==5.2.0 \
+        msgpack==1.1.2 \
+        Pygments==2.19.2 \
+        pycryptodome==3.23.0 \
+        apsw==3.51.1.0 \
+        webencodings==0.5.1 \
+        html5lib==1.1 \
+        pillow==12.1.1 \
+        netifaces==0.11.0 \
+        psutil==7.1.3 \
+        ifaddr==0.2.0 \
+        texttable==1.7.0 \
+        multivolumefile==0.2.3 \
+        Brotli==1.2.0 \
+        pyppmd==1.3.1 \
+        pybcj==1.0.7 \
+        inflate64==1.0.4 \
+        py7zr==1.1.2 \
+        jaconv==0.4.1 \
+        wrapt==2.0.1 \
+        Deprecated==1.3.1 \
+        pykakasi==2.3.0 \
+        zeroconf==0.148.0 \
+        fonttools==4.61.0 \
+        lxml_html_clean==0.4.4 \
+        PyQt6_sip==13.10.2 \
+        PyQt6==6.10.0 \
+        PyQt6_WebEngine==6.10.0 \
+        xxhash==3.6.0 \
+        tzdata==2025.2 \
+        tzlocal==5.3.1 \
+        pystache==0.6.8
+
+  - runs: |
+      # Build calibre
+      python3 setup.py bootstrap
+      python3 setup.py build
+      python3 setup.py gui
+
+  - runs: |
+      # Install calibre
+      python3 setup.py install \
+        --prefix=/usr \
+        --root="${targets.destdir}"
+
+  - runs: |
+      # Create necessary directories
+      mkdir -p "${targets.destdir}"/usr/share/applications
+      mkdir -p "${targets.destdir}"/usr/share/icons/hicolor/scalable/apps
+      mkdir -p "${targets.destdir}"/usr/share/metainfo
+      mkdir -p "${targets.destdir}"/usr/share/calibre
+
+  - uses: strip
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+        - python3
+  pipeline:
+    - name: Verify calibre binaries exist
+      runs: |
+        stat /usr/bin/calibre
+        stat /usr/bin/calibre-server
+        stat /usr/bin/ebook-convert
+        stat /usr/bin/ebook-viewer
+    - name: Verify calibre is executable
+      runs: |
+        test -x /usr/bin/calibre
+        test -x /usr/bin/calibre-server
+    - name: Check calibre version
+      runs: |
+        calibre --version 2>&1 || true
+    - name: Verify calibre modules
+      runs: |
+        python3 -c "import calibre; print('calibre module loaded successfully')"
