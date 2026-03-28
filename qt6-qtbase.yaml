@@ -67,7 +67,7 @@ pipeline:
   - uses: fetch
     with:
       uri: https://download.qt.io/official_releases/qt/6.10/6.10.2/submodules/qtbase-everywhere-src-6.10.2.tar.xz
-      expected-sha256: aeb78d29291a2b5fd55950f8f5065b4978c25fb1d77f627d695ab9adf21e
+      expected-sha256: aeb78d29291a2b5fd53cb55950f8f5065b4978c25fb1d77f627d695ab9adf21e
 
   - runs: |
       # -g1: significantly reduce debug symbol size
