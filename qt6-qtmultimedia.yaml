@@ -1,0 +1,82 @@
+package:
+  name: qt6-qtmultimedia
+  version: "6.10.2"
+  epoch: 0
+  description: Classes for audio, video, radio and camera functionality
+  copyright:
+    - license: LGPL-2.1-only AND LGPL-3.0-only AND GPL-3.0-only AND Qt-GPL-exception-1.0
+  dependencies:
+    runtime:
+      - glibc
+      - libgcc
+      - libstdc++
+      - pulseaudio-libs
+      - qt6-qtbase
+      - qt6-qtdeclarative
+  resources:
+    cpu: "4"
+    memory: 8Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - cmake
+      - glibc-dev
+      - libgcc-dev
+      - libstdc++-dev
+      - pulseaudio-dev
+      - qt6-qtbase-dev
+      - qt6-qtdeclarative-dev
+      - samurai
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/qt/qtmultimedia
+      tag: v${{package.version}}
+
+  - runs: |
+      cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DBUILD_SHARED_LIBS=ON \
+        -DBUILD_TESTING=OFF
+      cmake --build build
+      cmake --install build --destdir "${{targets.destdir}}"
+
+  - uses: strip
+
+subpackages:
+  - name: qt6-qtmultimedia-dev
+    description: Classes for audio, video, radio and camera functionality (development files)
+    pipeline:
+      - uses: split/dev
+    test:
+      pipeline:
+        - runs: |
+            test -f /usr/include/QtMultimedia/QAudioDevice
+            test -f /usr/lib/libQt6Multimedia.so
+  - name: qt6-qtmultimedia-doc
+    description: Classes for audio, video, radio and camera functionality (documentation)
+    pipeline:
+      - uses: split/manpages
+    test:
+      pipeline:
+        - uses: test/docs
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify QtMultimedia library exists
+      runs: |
+        test -f /usr/lib/libQt6Multimedia.so
+    - name: Verify QtMultimediaWidgets library exists
+      runs: |
+        test -f /usr/lib/libQt6MultimediaWidgets.so

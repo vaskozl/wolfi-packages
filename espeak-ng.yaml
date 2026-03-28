@@ -1,0 +1,81 @@
+package:
+  name: espeak-ng
+  version: "1.52.0"
+  epoch: 0
+  description: Multi-lingual software speech synthesizer
+  copyright:
+    - license: GPL-3.0-or-later
+  dependencies:
+    runtime:
+      - glibc
+      - libgcc
+      - libstdc++
+      - portaudio
+  resources:
+    cpu: "4"
+    memory: 8Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - cmake
+      - glibc-dev
+      - libgcc-dev
+      - libstdc++-dev
+      - portaudio-dev
+      - git
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/espeak-ng/espeak-ng
+      tag: ${{package.version}}
+
+  - runs: |
+      mkdir -p build && cd build
+      cmake \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DLIBESPEAK_INSTALL=ON \
+        ..
+      cmake --build .
+      cmake --install . --destdir "${{targets.destdir}}"
+
+  - uses: strip
+
+subpackages:
+  - name: espeak-ng-dev
+    description: Multi-lingual software speech synthesizer (development files)
+    pipeline:
+      - uses: split/dev
+    test:
+      pipeline:
+        - runs: |
+            test -f /usr/include/espeak-ng/speak_lib.h
+            test -f /usr/lib/libespeak-ng.so
+  - name: espeak-ng-doc
+    description: Multi-lingual software speech synthesizer (documentation)
+    pipeline:
+      - uses: split/manpages
+    test:
+      pipeline:
+        - uses: test/docs
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify espeak-ng binary exists
+      runs: |
+        test -x /usr/bin/espeak
+    - name: Verify espeak-ng library exists
+      runs: |
+        test -f /usr/lib/libespeak-ng.so
+    - name: Check espeak version
+      runs: |
+        espeak --version 2>&1 | head -3

@@ -1,0 +1,71 @@
+package:
+  name: hyphen
+  version: "2.8.8"
+  epoch: 0
+  description: Abstract hyphenation library
+  copyright:
+    - license: GPL-2.0-or-later OR LGPL-2.1-or-later
+  dependencies:
+    runtime:
+      - glibc
+  resources:
+    cpu: "2"
+    memory: 4Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - glibc-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://sourceforge.net/p/hunspell/code
+      tag: hyphen-2.8.8
+      strip_components: 2
+
+  - runs: |
+      ./autogen.sh
+      ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --disable-static
+      make
+      make install DESTDIR="${{targets.destdir}}"
+
+  - uses: strip
+
+subpackages:
+  - name: hyphen-dev
+    description: Abstract hyphenation library (development files)
+    pipeline:
+      - uses: split/dev
+    test:
+      pipeline:
+        - runs: |
+            test -f /usr/include/hyphen.h
+            test -f /usr/lib/libhyphen.so
+  - name: hyphen-doc
+    description: Abstract hyphenation library (documentation)
+    pipeline:
+      - uses: split/manpages
+    test:
+      pipeline:
+        - uses: test/docs
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify hyphen library exists
+      runs: |
+        test -f /usr/lib/libhyphen.so
+    - name: Verify hyphen binary exists
+      runs: |
+        test -x /usr/bin/hyphen
