@@ -29,15 +29,12 @@ pipeline:
 
   - uses: go/build
     with:
-      packages: ./...
+      packages: ./cmd/maddy
       output: maddy
       ldflags: |
         -X github.com/foxcpp/maddy/version.Tag=v${{package.version}}
 
   - runs: |
-      # Install binary
-      install -Dm755 maddy "${{targets.destdir}}"/usr/bin/maddy
-
       # Install example config
       install -Dm644 maddy.conf "${{targets.destdir}}"/etc/maddy/maddy.conf
 
@@ -52,9 +49,6 @@ subpackages:
     description: maddy documentation
     pipeline:
       - uses: split/manpages
-    test:
-      pipeline:
-        - uses: test/docs
 
 test:
   environment:
