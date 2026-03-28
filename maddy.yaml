@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: maddy
+  version: "0.9.2"
+  epoch: 0
+  description: All-in-one mail server (MTA, MDA, IMAP)
+  copyright:
+    - license: GPL-3.0-or-later
+  dependencies:
+    runtime:
+      - ca-certificates
+  resources:
+    cpu: "2"
+    memory: 4Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/foxcpp/maddy
+      tag: v${{package.version}}
+
+  - uses: go/build
+    with:
+      packages: ./...
+      output: maddy
+      ldflags: |
+        -X github.com/foxcpp/maddy/version.Tag=v${{package.version}}
+
+  - runs: |
+      # Install binary
+      install -Dm755 maddy "${{targets.destdir}}"/usr/bin/maddy
+
+      # Install example config
+      install -Dm644 maddy.conf "${{targets.destdir}}"/etc/maddy/maddy.conf
+
+      # Create directories
+      mkdir -p "${{targets.destdir}}"/var/lib/maddy
+      mkdir -p "${{targets.destdir}}"/var/spool/maddy
+
+  - uses: strip
+
+subpackages:
+  - name: maddy-doc
+    description: maddy documentation
+    pipeline:
+      - uses: split/manpages
+    test:
+      pipeline:
+        - uses: test/docs
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify maddy binary exists
+      runs: |
+        stat /usr/bin/maddy
+    - name: Verify maddy is executable
+      runs: |
+        test -x /usr/bin/maddy
+    - name: Check maddy version
+      runs: |
+        maddy version 2>&1 || true
+    - name: Check maddy help
+      runs: |
+        maddy --help 2>&1 | head -10
