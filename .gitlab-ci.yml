@@ -7,6 +7,7 @@ package:
           - anubis.yaml
           - baikal.yaml
           - blocky.yaml
+          - calibre.yaml
           - bootc-baselayout.yaml
           - bootc.yaml
           - bspwm.yaml
@@ -29,6 +30,7 @@ package:
           - maddy.yaml
           - minilb.yaml
           - nori-user.yaml
+          - ntfy.yaml
           - ostree.yaml
           - perl-email-date-format.yaml
           - perl-mailtools.yaml
@@ -53,6 +55,7 @@ package:
           - trusttunnel.yaml
           - tllist.yaml
           - tsidp.yaml
+          - v2ray.yaml
           - wlroots.yaml
           - wolfi-scanner.yaml
           - zsh-autosuggestions.yaml
