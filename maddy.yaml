@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: maddy
+  version: 0.8.2
+  epoch: 0
+  description: Composable all-in-one mail server
+  copyright:
+    - license: GPL-3.0-or-later
+  dependencies:
+    runtime:
+      - sqlite
+      - linux-pam
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+      - scdoc
+      - sqlite-dev
+      - linux-pam-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/foxcpp/maddy
+      tag: v${{package.version}}
+  - name: Build maddy
+    runs: |
+      export GOFLAGS="-trimpath -mod=readonly -modcacherw -tags=libsqlite3"
+      export GOCACHE="${GOCACHE:-"$srcdir/go-cache"}"
+      export GOTMPDIR="${GOTMPDIR:-"$srcdir"}"
+      export GOMODCACHE="${GOMODCACHE:-"$srcdir/go"}"
+      
+      ldflags="-extldflags \"$LDFLAGS\" -X github.com/foxcpp/maddy.Version=$package.version"
+      go build -ldflags="$ldflags" -v -o bin/maddy ./cmd/maddy
+  - name: Generate man page
+    runs: |
+      if command -v scdoc >/dev/null 2>&1; then
+        scdoc < docs/man/maddy.1.scd > maddy.1
+      fi
+  - name: Install maddy
+    runs: |
+      install -Dm755 bin/maddy "${{targets.destdir}}"/usr/bin/maddy
+      install -Dm644 maddy.conf "${{targets.destdir}}"/etc/maddy/maddy.conf
+      if [ -f maddy.1 ]; then
+        install -Dm644 maddy.1 "${{targets.destdir}}"/usr/share/man/man1/maddy.1
+      fi
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-doc
+    description: Documentation for maddy
+    pipeline:
+      - uses: split/manpages
+  - name: ${{package.name}}-vim
+    description: Vim syntax files for maddy
+    pipeline:
+      - name: Install vim syntax
+        runs: |
+          if [ -d dist/vim ]; then
+            mkdir -p "${{targets.subpkgdir}}"/usr/share/vim/vimfiles
+            cp -r dist/vim/* "${{targets.subpkgdir}}"/usr/share/vim/vimfiles/
+          fi
+  - name: ${{package.name}}-systemd
+    description: Systemd service files for maddy
+    pipeline:
+      - name: Install systemd service files
+        runs: |
+          if [ -d dist/systemd ]; then
+            install -Dm644 dist/systemd/maddy.service "${{targets.subpkgdir}}"/usr/lib/systemd/system/maddy.service
+            install -Dm644 dist/systemd/maddy@.service "${{targets.subpkgdir}}"/usr/lib/systemd/system/maddy@.service
+          fi
+    dependencies:
+      runtime:
+        - systemd
+test:
+  pipeline:
+    - name: Verify maddy installation
+      runs: |
+        maddy version
+        maddy --help
+        stat /etc/maddy/maddy.conf
