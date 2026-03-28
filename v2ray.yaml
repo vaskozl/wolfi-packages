@@ -32,16 +32,21 @@ pipeline:
     with:
       packages: ./main
       output: v2ray
+      ldflags: |
+        -X github.com/v2fly/v2ray-core/v5.codename=v2ray
+        -X github.com/v2fly/v2ray-core/v5.version=${{package.version}}
 
   - runs: |
       # Install geosite and geoip databases
       mkdir -p ${{targets.destdir}}/usr/share/v2ray
       curl -L -o ${{targets.destdir}}/usr/share/v2ray/geosite.dat https://raw.githubusercontent.com/v2fly/domain-list-community/release/dlc.dat
       curl -L -o ${{targets.destdir}}/usr/share/v2ray/geoip.dat https://raw.githubusercontent.com/v2fly/geoip/release/geoip.dat
+      curl -L -o ${{targets.destdir}}/usr/share/v2ray/geoip-only-cn-private.dat https://raw.githubusercontent.com/v2fly/geoip/release/geoip-only-cn-private.dat
 
   - runs: |
-      # Install config directory
-      mkdir -p ${{targets.destdir}}/etc/v2ray
+      # Install default JSON config files
+      install -Dm755 -d ${{targets.destdir}}/etc/v2ray
+      install -m644 release/config/*.json ${{targets.destdir}}/etc/v2ray/
 
   - uses: strip
 
@@ -60,3 +65,11 @@ test:
     - name: Check v2ray version
       runs: |
         v2ray --version 2>&1 | head -5 || true
+    - name: Verify data files
+      runs: |
+        stat /usr/share/v2ray/geosite.dat
+        stat /usr/share/v2ray/geoip.dat
+        stat /usr/share/v2ray/geoip-only-cn-private.dat
+    - name: Verify config files
+      runs: |
+        ls /etc/v2ray/*.json
