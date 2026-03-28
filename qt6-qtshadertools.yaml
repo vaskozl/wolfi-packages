@@ -27,7 +27,6 @@ environment:
       - libstdc++-dev
       - mesa-dev
       - qt6-qtbase-dev
-      - qt6-qtbase-private-dev
       - samurai
 
 pipeline:
