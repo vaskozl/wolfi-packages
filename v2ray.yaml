@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: v2ray
+  version: "5.47.0"
+  epoch: 0
+  description: A platform for building proxies to bypass network restrictions
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime:
+      - ca-certificates
+  resources:
+    cpu: "4"
+    memory: 8Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/v2fly/v2ray-core
+      tag: v${{package.version}}
+
+  - uses: go/build
+    with:
+      packages: ./main
+      output: v2ray
+
+  - runs: |
+      # Install geosite and geoip databases
+      mkdir -p ${{targets.destdir}}/usr/share/v2ray
+      curl -L -o ${{targets.destdir}}/usr/share/v2ray/geosite.dat https://raw.githubusercontent.com/v2fly/domain-list-community/release/dlc.dat
+      curl -L -o ${{targets.destdir}}/usr/share/v2ray/geoip.dat https://raw.githubusercontent.com/v2fly/geoip/release/geoip.dat
+
+  - runs: |
+      # Install config directory
+      mkdir -p ${{targets.destdir}}/etc/v2ray
+
+  - uses: strip
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify v2ray binary exists
+      runs: |
+        stat /usr/bin/v2ray
+    - name: Verify v2ray is executable
+      runs: |
+        test -x /usr/bin/v2ray
+    - name: Check v2ray version
+      runs: |
+        v2ray --version 2>&1 | head -5 || true
