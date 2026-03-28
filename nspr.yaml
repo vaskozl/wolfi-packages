@@ -1,0 +1,120 @@
+package:
+  name: nspr
+  version: "4.38.2"
+  epoch: 0
+  description: Netscape Portable Runtime
+  copyright:
+    - license: MPL-2.0
+  dependencies:
+    runtime:
+      - glibc
+    dev:
+      - linux-headers
+  resources:
+    cpu: "4"
+    memory: 4Gi
+
+environment:
+  contents:
+    packages:
+      - autoconf
+      - automake
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - glibc-dev
+      - libtool
+      - linux-headers
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/nicholasbishop/nspr-mirror
+      tag: nspr-4-38-2
+
+  - runs: |
+      mkdir build inst
+      cd build
+      
+      case "$CARCH" in
+        arm*|x86) conf="";;
+        *) conf="--enable-64bit";;
+      esac
+      
+      # Configure for musl libc
+      CFLAGS="$CFLAGS -D_PR_POLL_AVAILABLE -D_PR_HAVE_OFF64_T -D_PR_INET6 -D_PR_HAVE_INET_NTOP -D_PR_HAVE_GETHOSTBYNAME2 -D_PR_HAVE_GETADDRINFO -D_PR_INET6_PROBE" \
+      ../nspr/configure \
+        --build=${CBUILD:-x86_64-linux-musl} \
+        --host=${CHOST:-x86_64-linux-musl} \
+        --prefix=/usr \
+        --disable-debug \
+        --enable-optimize \
+        --enable-ipv6 \
+        $conf
+      
+      make CC="${CC:-gcc}" CXX="${CXX:-g++}"
+
+  - runs: |
+      cd build
+      make DESTDIR="${{targets.destdir}}" install
+      
+      # Remove static libraries
+      rm -f "${{targets.destdir}}"/usr/lib/*.a
+      
+      # Install nspr-config and pkgconfig file
+      cd build/config
+      install -Dm755 nspr-config "${{targets.destdir}}"/usr/bin/nspr-config
+      install -Dm644 nspr.pc "${{targets.destdir}}"/usr/lib/pkgconfig/nspr.pc
+      
+      # Remove unnecessary files
+      rm -rf "${{targets.destdir}}"/usr/bin/prerr.properties \
+        "${{targets.destdir}}"/usr/bin/compile-et.pl \
+        "${{targets.destdir}}"/usr/share/aclocal/nspr.m4 \
+        "${{targets.destdir}}"/usr/include/nspr/md
+
+  - uses: strip
+
+subpackages:
+  - name: nspr-dev
+    description: Netscape Portable Runtime (development files)
+    dependencies:
+      runtime:
+        - nspr=${{package.full-version}}
+        - linux-headers
+    pipeline:
+      - runs: |
+          # Move headers and pkgconfig to dev package
+          mkdir -p "${{targets.subpkgdir}}"/usr/include
+          mkdir -p "${{targets.subpkgdir}}"/usr/lib/pkgconfig
+          mkdir -p "${{targets.subpkgdir}}"/usr/bin
+          
+          if [ -d "${{targets.destdir}}"/usr/include/nspr ]; then
+            mv "${{targets.destdir}}"/usr/include/nspr "${{targets.subpkgdir}}"/usr/include/
+          fi
+          
+          if [ -f "${{targets.destdir}}"/usr/lib/pkgconfig/nspr.pc ]; then
+            mv "${{targets.destdir}}"/usr/lib/pkgconfig/nspr.pc "${{targets.subpkgdir}}"/usr/lib/pkgconfig/
+          fi
+          
+          if [ -f "${{targets.destdir}}"/usr/bin/nspr-config ]; then
+            mv "${{targets.destdir}}"/usr/bin/nspr-config "${{targets.subpkgdir}}"/usr/bin/
+          fi
+    test:
+      pipeline:
+        - runs: |
+            test -f /usr/include/nspr/prprf.h
+            test -f /usr/lib/pkgconfig/nspr.pc
+            test -f /usr/bin/nspr-config
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify nspr library exists
+      runs: |
+        test -f /usr/lib/libnspr4.so
+    - name: Verify nspr headers exist
+      runs: |
+        test -d /usr/include/nspr

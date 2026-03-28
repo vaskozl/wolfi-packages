@@ -1,0 +1,77 @@
+package:
+  name: qt6-qtwebchannel
+  version: "6.10.2"
+  epoch: 0
+  description: Qt6 WebChannel library for client-server communication
+  copyright:
+    - license: LGPL-2.1-only AND LGPL-3.0-only AND GPL-3.0-only AND Qt-GPL-exception-1.0
+  dependencies:
+    runtime:
+      - glibc
+      - libgcc
+      - libstdc++
+      - qt6-qtbase
+      - qt6-qtdeclarative
+  resources:
+    cpu: "4"
+    memory: 8Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - cmake
+      - glibc-dev
+      - libgcc-dev
+      - libstdc++-dev
+      - qt6-qtbase-dev
+      - qt6-qtdeclarative-dev
+      - samurai
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/qt/qtwebchannel
+      tag: v${{package.version}}
+
+  - runs: |
+      cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DBUILD_SHARED_LIBS=ON \
+        -DBUILD_TESTING=OFF
+      cmake --build build
+      cmake --install build --destdir "${{targets.destdir}}"
+
+  - uses: strip
+
+subpackages:
+  - name: qt6-qtwebchannel-dev
+    description: Qt6 WebChannel library (development files)
+    pipeline:
+      - uses: split/dev
+    test:
+      pipeline:
+        - runs: |
+            test -f /usr/include/QtWebChannel/QWebChannel
+            test -f /usr/lib/libQt6WebChannel.so
+  - name: qt6-qtwebchannel-doc
+    description: Qt6 WebChannel library (documentation)
+    pipeline:
+      - uses: split/manpages
+    test:
+      pipeline:
+        - uses: test/docs
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify QtWebChannel library exists
+      runs: |
+        test -f /usr/lib/libQt6WebChannel.so
