@@ -1,6 +1,6 @@
 package:
   name: fcft
-  version: "3.3.2"
+  version: "3.3.3"
   epoch: 0
   description: Simple library for font loading and glyph rasterization using FontConfig, FreeType and pixman
   copyright:
