@@ -42,8 +42,10 @@ package:
           - pinewall-config.yaml
           - prometheus-node-exporter.yaml
           - prowlarr.yaml
+          - qbittorrent-nox.yaml
           - qwen-code.yaml
           - radarr.yaml
+          - rakudo.yaml
           - redis.yaml
           - renovate-apk-indexer.yaml
           - seatd.yaml
