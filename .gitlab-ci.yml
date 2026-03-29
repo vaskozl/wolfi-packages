@@ -29,6 +29,7 @@ package:
           - lidarr.yaml
           - maddy.yaml
           - minilb.yaml
+          - moarvm.yaml
           - nori-user.yaml
           - ntfy.yaml
           - ostree.yaml

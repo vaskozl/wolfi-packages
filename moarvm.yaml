@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: moarvm
+  version: "2026.02"
+  epoch: 0
+  description: VM with adaptive optimization and JIT compilation, built for Rakudo
+  copyright:
+    - license: Artistic-2.0
+  dependencies:
+    runtime:
+      - libffi
+      - libuv
+      - mimalloc2
+      - zstd
+  resources:
+    cpu: "4"
+    memory: 8Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - libffi-dev
+      - libuv-dev
+      - mimalloc2-dev
+      - perl
+      - perl-utils
+      - zstd-dev
+
+pipeline:
+  - uses: fetch
+    with:
+      uri: https://github.com/MoarVM/MoarVM/releases/download/${{package.version}}/MoarVM-${{package.version}}.tar.gz
+      expected-sha256: 7c07f509fefeb8e9682e44e24a4f65bb401b6628444c39f1a8e6c7f4782b944c
+
+  - runs: |
+      unset CPPFLAGS CFLAGS
+      perl Configure.pl \
+        --prefix=/usr \
+        --has-libffi \
+        --has-libuv \
+        --has-mimalloc \
+        --debug \
+        --cc="$CC"
+
+  - runs: make
+
+  - runs: make PKGCONFIGDIR=/usr/lib/pkgconfig DESTDIR="${{targets.destdir}}" install
+
+  - uses: strip
+
+subpackages:
+  - name: moarvm-dev
+    pipeline:
+      - uses: split/dev
+    dependencies:
+      runtime:
+        - moarvm=${{package.full-version}}
+        - libffi-dev
+        - libuv-dev
+        - mimalloc2-dev
+        - zstd-dev
+    description: moarvm development headers and libraries
+
+  - name: moarvm-doc
+    pipeline:
+      - uses: split/manpages
+    description: moarvm documentation
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify moar binary
+      runs: |
+        test -x /usr/bin/moar
+        /usr/bin/moar --version 2>&1 | head -2
