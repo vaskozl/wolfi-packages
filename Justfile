@@ -11,12 +11,17 @@ arches := "x86_64 aarch64"
 default:
     @just --list
 
+# Regenerate RSA signing keys and remove stale package indexes
+keygen:
+    melange keygen
+    find {{out_dir}} -name 'APKINDEX.tar.gz' -delete
+
 # Setup RSA signing key if missing
 setup:
     #!/usr/bin/env sh
     if [ ! -f {{key}} ]; then
         echo "RSA key file {{key}} not found. Generating..."
-        melange keygen
+        just keygen
     fi
     echo "RSA key setup complete"
 
