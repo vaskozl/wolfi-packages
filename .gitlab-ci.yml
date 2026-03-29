@@ -29,7 +29,9 @@ package:
           - lidarr.yaml
           - maddy.yaml
           - minilb.yaml
+          - moarvm.yaml
           - nori-user.yaml
+          - nqp.yaml
           - ntfy.yaml
           - ostree.yaml
           - perl-email-date-format.yaml
@@ -42,8 +44,10 @@ package:
           - pinewall-config.yaml
           - prometheus-node-exporter.yaml
           - prowlarr.yaml
+          - qbittorrent-nox.yaml
           - qwen-code.yaml
           - radarr.yaml
+          - rakudo.yaml
           - redis.yaml
           - renovate-apk-indexer.yaml
           - seatd.yaml

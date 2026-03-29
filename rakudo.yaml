@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: rakudo
+  version: "2026.02"
+  epoch: 0
+  description: Rakudo is a compiler for the Raku programming language
+  copyright:
+    - license: Artistic-2.0
+  dependencies:
+    runtime:
+      - moarvm~${{package.version}}
+      - nqp~${{package.version}}
+  resources:
+    cpu: "4"
+    memory: 8Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - moarvm~${{package.version}}
+      - moarvm-dev~${{package.version}}
+      - nqp~${{package.version}}
+      - perl
+      - perl-utils
+
+pipeline:
+  - uses: fetch
+    with:
+      uri: https://github.com/rakudo/rakudo/releases/download/${{package.version}}/rakudo-${{package.version}}.tar.gz
+      expected-sha256: 1d9cc55427dfdf39ef088c0f22649f341d11e34b966ef2fa28280c8d94052bf7
+
+  - runs: |
+      perl Configure.pl \
+        --prefix=/usr \
+        --backends=moar \
+        --rakudo-home=/usr/share/rakudo
+
+  - runs: make
+
+  - runs: make DESTDIR="${{targets.destdir}}" install
+
+  - uses: strip
+
+subpackages:
+  - name: rakudo-dev
+    pipeline:
+      - uses: split/dev
+    description: rakudo development files
+
+  - name: rakudo-doc
+    pipeline:
+      - uses: split/manpages
+    description: rakudo documentation
+
+test:
+  environment:
+    contents:
+      packages:
+        - busybox
+  pipeline:
+    - name: Verify raku binary
+      runs: |
+        test -x /usr/bin/raku
+        /usr/bin/raku --version 2>&1 | head -2
+    - name: Test basic Raku execution
+      runs: |
+        /usr/bin/raku -e 'say "Hello, Raku!"'
