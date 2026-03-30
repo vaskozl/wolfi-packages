@@ -63,6 +63,12 @@ package:
           - zsh-autosuggestions.yaml
           - zsh-history-substring-search.yaml
           - zsh-syntax-highliting.yaml
+      - ARCH: [amd64, arm64]
+        PKG:
+          - intel-gmmlib.yaml
+      - ARCH: [amd64]
+        PKG:
+          - intel-media-driver.yaml
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       changes:
