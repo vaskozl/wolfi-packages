@@ -30,6 +30,7 @@ package:
           - maddy.yaml
           - minilb.yaml
           - nori-user.yaml
+          - nqp.yaml
           - ntfy.yaml
           - ostree.yaml
           - perl-email-date-format.yaml
