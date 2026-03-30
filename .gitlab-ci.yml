@@ -25,6 +25,7 @@ package:
           - kube-network-policies.yaml
           - kubeconform.yaml
           - libdisplay-info.yaml
+          - libva-intel-driver.yaml
           - libliftoff.yaml
           - lidarr.yaml
           - maddy.yaml

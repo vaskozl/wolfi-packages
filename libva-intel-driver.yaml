@@ -1,0 +1,42 @@
+package:
+  name: libva-intel-driver
+  version: "2.4.1"
+  epoch: 0
+  description: VA-API implementation for Intel GMA chipsets and Intel HD Graphics
+  copyright:
+    - license: MIT
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - libdrm-dev
+      - libva-dev
+      - libxext-dev
+      - libxfixes-dev
+      - meson
+      - wayland-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/intel/intel-vaapi-driver
+      tag: ${{package.version}}
+
+  - runs: |
+      meson \
+        --prefix=/usr \
+        -Dwith_wayland=yes \
+        -Dwith_x11=yes \
+        . output
+
+  - uses: meson/compile
+
+  - uses: meson/install
+
+  - uses: strip
+
+subpackages:
+  - name: ${{package.name}}-dev
+    pipeline:
+      - uses: split/dev
