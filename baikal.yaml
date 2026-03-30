@@ -12,9 +12,7 @@ package:
       - php-8.5-iconv
       - php-8.5-openssl
       - php-8.5-pdo
-      - php-8.5-session
       - php-8.5-simplexml
-      - php-8.5-tokenizer
       - php-8.5-xmlreader
       - php-8.5-xmlwriter
   resources:
