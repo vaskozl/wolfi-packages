@@ -36,14 +36,15 @@ pipeline:
       expected-sha256: 7c07f509fefeb8e9682e44e24a4f65bb401b6628444c39f1a8e6c7f4782b944c
 
   - runs: |
-      unset CPPFLAGS CFLAGS
+      # Wolfi mimalloc2 ships libmimalloc-secure.so; MoarVM links -lmimalloc
+      ln -sf libmimalloc-secure.so /usr/lib/libmimalloc.so
+      ln -sf libmimalloc-secure.a  /usr/lib/libmimalloc.a
       perl Configure.pl \
         --prefix=/usr \
         --has-libffi \
         --has-libuv \
         --has-mimalloc \
-        --debug \
-        --cc="$CC"
+        --cc="${CC:-gcc}"
 
   - runs: make
 
