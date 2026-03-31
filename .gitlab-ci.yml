@@ -47,6 +47,7 @@ package:
           - qbittorrent-nox.yaml
           - qwen-code.yaml
           - radarr.yaml
+          - rakudo.yaml
           - redis.yaml
           - renovate-apk-indexer.yaml
           - seatd.yaml
