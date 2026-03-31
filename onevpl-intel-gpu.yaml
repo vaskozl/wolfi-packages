@@ -1,0 +1,53 @@
+package:
+  name: onevpl-intel-gpu
+  version: "25.4.6"
+  epoch: 0
+  description: Intel oneVPL GPU Runtime for hardware-accelerated video processing
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime:
+      - libgcc
+      - libstdc++
+      - libva
+      - libdrm
+      - libvpl
+  resources:
+    cpu: "8"
+    memory: 16Gi
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - cmake
+      - samurai
+      - libva-dev
+      - libdrm-dev
+      - libvpl-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/intel/vpl-gpu-rt
+      tag: intel-onevpl-${{package.version}}
+
+  - runs: |
+      cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DBUILD_TESTS=OFF \
+        -DBUILD_TOOLS=OFF
+      cmake --build build
+      DESTDIR="${{targets.destdir}}" cmake --install build
+
+  - uses: strip
+
+test:
+  pipeline:
+    - name: Verify shared library exists
+      runs: |
+        ls /usr/lib/libmfx-gen.so*
