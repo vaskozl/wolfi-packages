@@ -1,0 +1,55 @@
+package:
+  name: libvpl
+  version: "2.16.0"
+  epoch: 0
+  description: Intel oneVPL (Video Processing Library) dispatcher
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime:
+      - libgcc
+      - libstdc++
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - cmake
+      - samurai
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/intel/libvpl
+      tag: v${{package.version}}
+
+  - runs: |
+      cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DBUILD_SHARED_LIBS=ON \
+        -DBUILD_TESTS=OFF \
+        -DBUILD_EXAMPLES=OFF \
+        -DINSTALL_EXAMPLE_CODE=OFF
+      cmake --build build
+      DESTDIR="${{targets.destdir}}" cmake --install build
+
+  - uses: strip
+
+subpackages:
+  - name: ${{package.name}}-dev
+    pipeline:
+      - uses: split/dev
+    description: ${{package.name}} dev
+    dependencies:
+      runtime:
+        - libvpl
+
+test:
+  pipeline:
+    - name: Verify shared library exists
+      runs: |
+        ls /usr/lib/libvpl.so*
