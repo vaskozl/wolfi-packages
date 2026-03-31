@@ -1,0 +1,53 @@
+package:
+  name: intel-media-driver
+  version: "25.4.6"
+  epoch: 0
+  description: Intel Media Driver for VAAPI (iHD, Gen9+ Intel GPUs)
+  copyright:
+    - license: BSD-3-Clause AND MIT
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - cmake
+      - intel-gmmlib-dev
+      - libpciaccess-dev
+      - libva-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/intel/media-driver
+      tag: intel-media-${{package.version}}
+
+  - runs: |
+      cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DBUILD_SHARED_LIBS=True \
+        -DINSTALL_DRIVER_SYSCONF=OFF \
+        -DMEDIA_BUILD_FATAL_WARNINGS=OFF
+      cmake --build build
+      DESTDIR="${{targets.destdir}}" cmake --install build
+
+  - uses: strip
+
+subpackages:
+  - name: ${{package.name}}-dev
+    pipeline:
+      - uses: split/dev
+    description: ${{package.name}} dev
+    dependencies:
+      runtime:
+        - intel-media-driver
+
+test:
+  pipeline:
+    - name: Verify iHD driver library exists
+      runs: |
+        stat /usr/lib/dri/iHD_drv_video.so
+    - name: Verify libigfxcmrt exists
+      runs: |
+        ls /usr/lib/libigfxcmrt*.so*

@@ -1,0 +1,46 @@
+package:
+  name: intel-gmmlib
+  version: "22.10.0"
+  epoch: 0
+  description: Intel Graphics Memory Management Library
+  copyright:
+    - license: MIT
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - cmake
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/intel/gmmlib
+      tag: intel-gmmlib-${{package.version}}
+
+  - runs: |
+      cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DBUILD_SHARED_LIBS=True \
+        -DRUN_TEST_SUITE=OFF
+      cmake --build build
+      DESTDIR="${{targets.destdir}}" cmake --install build
+
+  - uses: strip
+
+subpackages:
+  - name: ${{package.name}}-dev
+    pipeline:
+      - uses: split/dev
+    description: ${{package.name}} dev
+    dependencies:
+      runtime:
+        - intel-gmmlib
+
+test:
+  pipeline:
+    - name: Verify shared library exists
+      runs: |
+        ls /usr/lib/libigdgmm*.so*
