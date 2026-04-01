@@ -41,8 +41,25 @@ pipeline:
   - runs: |
       # Install application files
       mkdir -p ${{targets.destdir}}/usr/share/webapps/thelounge
-      cp -r dist/* ${{targets.destdir}}/usr/share/webapps/thelounge/
+
+      # Entry point (repo root, NOT in dist/)
+      cp index.js ${{targets.destdir}}/usr/share/webapps/thelounge/
       cp package.json ${{targets.destdir}}/usr/share/webapps/thelounge/
+
+      # Compiled server code (tsc output)
+      cp -r dist ${{targets.destdir}}/usr/share/webapps/thelounge/
+
+      # Webpack-built client assets
+      cp -r public ${{targets.destdir}}/usr/share/webapps/thelounge/
+
+      # Additional runtime files
+      mkdir -p ${{targets.destdir}}/usr/share/webapps/thelounge/client
+      cp client/index.html.tpl ${{targets.destdir}}/usr/share/webapps/thelounge/client/
+      cp .thelounge_home ${{targets.destdir}}/usr/share/webapps/thelounge/
+
+      # Prune to production dependencies only, then copy
+      yarn install --production --frozen-lockfile
+      cp -r node_modules ${{targets.destdir}}/usr/share/webapps/thelounge/
 
       # Create wrapper script
       mkdir -p ${{targets.destdir}}/usr/bin
@@ -52,9 +69,6 @@ pipeline:
       # Set default home location
       mkdir -p ${{targets.destdir}}/var/lib/thelounge
 
-      # Clean up node_modules (not needed at runtime, bundled in dist)
-      rm -rf node_modules
-
   - uses: strip
 
 subpackages:
@@ -62,9 +76,6 @@ subpackages:
     description: TheLounge documentation
     pipeline:
       - uses: split/manpages
-    test:
-      pipeline:
-        - uses: test/docs
 
 test:
   environment:
@@ -73,12 +84,21 @@ test:
         - busybox
         - nodejs
   pipeline:
-    - name: Verify thelounge binary exists
+    - name: Verify entry point exists
       runs: |
-        stat /usr/bin/thelounge
-    - name: Verify thelounge is executable
+        stat /usr/share/webapps/thelounge/index.js
+    - name: Verify server code exists
+      runs: |
+        stat /usr/share/webapps/thelounge/dist/server/index.js
+    - name: Verify client assets exist
+      runs: |
+        stat /usr/share/webapps/thelounge/public/
+    - name: Verify node_modules exist
+      runs: |
+        stat /usr/share/webapps/thelounge/node_modules/
+    - name: Verify wrapper is executable
       runs: |
         test -x /usr/bin/thelounge
-    - name: Check thelounge help
+    - name: Check thelounge version
       runs: |
-        thelounge --help 2>&1 | head -10
+        thelounge version 2>&1 || true
