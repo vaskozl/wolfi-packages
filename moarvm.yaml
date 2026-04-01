@@ -2,7 +2,7 @@
 package:
   name: moarvm
   version: "2026.02"
-  epoch: 0
+  epoch: 1
   description: VM with adaptive optimization and JIT compilation, built for Rakudo
   copyright:
     - license: Artistic-2.0
@@ -28,10 +28,10 @@ environment:
       - zstd-dev
 
 pipeline:
-  - uses: fetch
+  - uses: git-checkout
     with:
-      uri: https://github.com/MoarVM/MoarVM/releases/download/${{package.version}}/MoarVM-${{package.version}}.tar.gz
-      expected-sha256: 7c07f509fefeb8e9682e44e24a4f65bb401b6628444c39f1a8e6c7f4782b944c
+      repository: https://github.com/MoarVM/MoarVM
+      tag: ${{package.version}}
 
   - runs: |
       unset CPPFLAGS CFLAGS
