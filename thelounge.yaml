@@ -1,7 +1,7 @@
 package:
   name: thelounge
   version: "4.4.3"
-  epoch: 0
+  epoch: 1
   description: Web IRC client that you host on your own server
   copyright:
     - license: MIT
