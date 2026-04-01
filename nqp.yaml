@@ -2,7 +2,7 @@
 package:
   name: nqp
   version: "2026.02"
-  epoch: 0
+  epoch: 1
   description: Not Quite Perl (NQP) is a minimal Perl 6-like language for building compilers
   copyright:
     - license: Artistic-2.0
@@ -25,10 +25,10 @@ environment:
       - perl-utils
 
 pipeline:
-  - uses: fetch
+  - uses: git-checkout
     with:
-      uri: https://github.com/Raku/nqp/releases/download/${{package.version}}/nqp-${{package.version}}.tar.gz
-      expected-sha256: 63d151194d634accb373b73fb734413a4a143a7248e530b75ca686f3f68e2539
+      repository: https://github.com/Raku/nqp
+      tag: ${{package.version}}
 
   - runs: |
       perl Configure.pl \

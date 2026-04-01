@@ -2,7 +2,7 @@
 package:
   name: rakudo
   version: "2026.02"
-  epoch: 0
+  epoch: 1
   description: Rakudo is a compiler for the Raku programming language
   copyright:
     - license: Artistic-2.0
@@ -27,10 +27,10 @@ environment:
       - perl-utils
 
 pipeline:
-  - uses: fetch
+  - uses: git-checkout
     with:
-      uri: https://github.com/rakudo/rakudo/releases/download/${{package.version}}/rakudo-${{package.version}}.tar.gz
-      expected-sha256: 1d9cc55427dfdf39ef088c0f22649f341d11e34b966ef2fa28280c8d94052bf7
+      repository: https://github.com/rakudo/rakudo
+      tag: ${{package.version}}
 
   - runs: |
       perl Configure.pl \
