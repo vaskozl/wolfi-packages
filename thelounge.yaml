@@ -1,16 +1,20 @@
 package:
   name: thelounge
   version: "4.4.3"
-  epoch: 1
+  epoch: 2
   description: Web IRC client that you host on your own server
   copyright:
     - license: MIT
   dependencies:
     runtime:
-      - nodejs
+      - nodejs-${{vars.node-version}}
+      - sqlite-libs
   resources:
     cpu: "4"
     memory: 8Gi
+
+vars:
+  node-version: 22
 
 environment:
   contents:
@@ -18,7 +22,7 @@ environment:
       - build-base
       - busybox
       - ca-certificates-bundle
-      - nodejs
+      - nodejs-${{vars.node-version}}
       - npm
       - python3
       - yarn
@@ -82,7 +86,7 @@ test:
     contents:
       packages:
         - busybox
-        - nodejs
+        - nodejs-${{vars.node-version}}
   pipeline:
     - name: Verify entry point exists
       runs: |
@@ -99,6 +103,9 @@ test:
     - name: Verify wrapper is executable
       runs: |
         test -x /usr/bin/thelounge
+    - name: Check node version is 22.x
+      runs: |
+        node --version | grep -E '^v22\.'
     - name: Check thelounge version
       runs: |
         thelounge version 2>&1 || true
