@@ -1,6 +1,6 @@
 package:
   name: prometheus-node-exporter
-  version: 1.11.0
+  version: 1.11.1
   epoch: 6
   description: Prometheus Exporter for machine metrics
   copyright:
