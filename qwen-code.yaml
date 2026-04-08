@@ -1,6 +1,6 @@
 package:
   name: qwen-code
-  version: "0.14.0"
+  version: "0.14.1"
   epoch: 0
   description: AI agent that lives in your terminal, optimized for Qwen3-Coder
   copyright:
