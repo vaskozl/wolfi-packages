@@ -1,6 +1,6 @@
 package:
   name: calibre
-  version: "9.6.0"
+  version: "9.7.0"
   epoch: 0
   description: Powerful and easy to use e-book manager
   copyright:
