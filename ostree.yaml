@@ -1,6 +1,6 @@
 package:
   name: ostree
-  version: "2025.7"
+  version: "2026.1"
   epoch: 0
   description: "Operating system and container binary deployment and upgrades"
   copyright:
