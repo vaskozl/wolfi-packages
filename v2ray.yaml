@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: v2ray
-  version: "5.47.0"
+  version: "5.48.0"
   epoch: 0
   description: A platform for building proxies to bypass network restrictions
   copyright:
