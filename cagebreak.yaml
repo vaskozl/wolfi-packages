@@ -1,6 +1,6 @@
 package:
   name: cagebreak
-  version: "3.1.0"
+  version: "3.2.0"
   epoch: 0
   description: Wayland tiling compositor inspired by Ratpoison
   copyright:
