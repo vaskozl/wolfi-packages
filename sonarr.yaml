@@ -3,7 +3,7 @@
 package:
   name: sonarr
   version: 5.0.0_alpha
-  epoch: 1
+  epoch: 2
   description: TV download automation for usenet and torrents.
   copyright:
     - license: GPL-3.0-only
