@@ -64,6 +64,7 @@ pipeline:
           --runtime linux-$_dotnet_arch \
           --configuration Release
 
+          export NODE_OPTIONS="--max-old-space-size=4096"
           yarn build --env production --no-stats
 
           chmod +x "$_artifacts/ffprobe"
