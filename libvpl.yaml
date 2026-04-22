@@ -5,6 +5,8 @@ package:
   description: Intel oneVPL (Video Processing Library) dispatcher
   copyright:
     - license: MIT
+  target-architecture:
+    - x86_64
   dependencies:
     runtime:
       - libgcc

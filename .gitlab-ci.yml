@@ -25,7 +25,6 @@ package:
           - kube-network-policies.yaml
           - kubeconform.yaml
           - libdisplay-info.yaml
-          - libva-intel-driver.yaml
           - libliftoff.yaml
           - lidarr.yaml
           - maddy.yaml
@@ -66,12 +65,13 @@ package:
           - zsh-autosuggestions.yaml
           - zsh-history-substring-search.yaml
           - zsh-syntax-highliting.yaml
-      - ARCH: [amd64, arm64]
-        PKG:
-          - intel-gmmlib.yaml
       - ARCH: [amd64]
         PKG:
+          - intel-compute-runtime.yaml
+          - intel-gmmlib.yaml
+          - intel-graphics-compiler.yaml
           - intel-media-driver.yaml
+          - libvpl.yaml
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       changes:

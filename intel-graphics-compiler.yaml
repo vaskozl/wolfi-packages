@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 # Repackages Intel's upstream .deb releases rather than building from source.
-# See https://github.com/intel/intel-graphics-compiler/releases
+# repository: https://github.com/intel/intel-graphics-compiler
 package:
   name: intel-graphics-compiler
   version: "2.32.7"
@@ -8,11 +8,8 @@ package:
   description: Intel Graphics Compiler for OpenCL (repackaged upstream binaries)
   copyright:
     - license: MIT
-
-vars:
-  # The full Debian version string (includes build metadata after +).
-  # Grab from the filename at the GitHub release.
-  deb-version: "2.32.7+21184"
+  target-architecture:
+    - x86_64
 
 environment:
   contents:
@@ -20,24 +17,27 @@ environment:
       - binutils
       - busybox
       - ca-certificates-bundle
-      - zstd
+      - curl
 
 pipeline:
-  - uses: fetch
-    with:
-      uri: https://github.com/intel/intel-graphics-compiler/releases/download/v${{package.version}}/intel-igc-core-2_${{vars.deb-version}}_amd64.deb
-      expected-sha256: 64e5230788e3a31e611e8d815a141b1facb91e5f0ef239233ef3f0614bfe3fd6
-      extract: false
-
-  - uses: fetch
-    with:
-      uri: https://github.com/intel/intel-graphics-compiler/releases/download/v${{package.version}}/intel-igc-opencl-2_${{vars.deb-version}}_amd64.deb
-      expected-sha256: 3c9bddbfe558279402bbeaabcf9c63b8de46b956b0ad9625415fd35dda53ad52
-      extract: false
+  # Upstream ships each tag with assets named intel-igc-{core,opencl}-2_<version>+<build>_amd64.deb,
+  # where <build> is an opaque build counter that varies per release. Discover the URLs via the
+  # releases API so renovate only needs to bump package.version.
+  - runs: |
+      set -eu
+      api="https://api.github.com/repos/intel/intel-graphics-compiler/releases/tags/v${{package.version}}"
+      release=$(curl -sfL "$api")
+      for asset in intel-igc-core-2 intel-igc-opencl-2; do
+        url=$(printf '%s' "$release" \
+          | busybox sed -nE "s#.*\"browser_download_url\":[[:space:]]*\"(https://[^\"]*${asset}_[^\"]*_amd64\\.deb)\".*#\\1#p" \
+          | busybox head -n 1)
+        [ -n "$url" ] || { echo "asset $asset not found in $api" >&2; exit 1; }
+        curl -sfL -o "${asset}.deb" "$url"
+      done
 
   - runs: |
       install -d "${{targets.destdir}}/usr/lib"
-      for deb in intel-igc-core-2_*.deb intel-igc-opencl-2_*.deb; do
+      for deb in intel-igc-core-2.deb intel-igc-opencl-2.deb; do
         ar p "$deb" data.tar.gz | tar xz -C "${{targets.destdir}}"
       done
       # Debian ships under /usr/local/lib — relocate to /usr/lib for Wolfi.
