@@ -107,6 +107,37 @@ Sections to check (in order): `main`, `community`, `testing`
 - When debugging failed builds, clone the source code locally to study the build system
 - Explore APK contents: `tar tzv -f packages/aarch64/<package>-*.apk`
 
+## Renovate
+
+Renovate bumps `version:` when it sees a paired `repository: https://github.com/OWNER/REPO` (or codeberg/gitlab.freedesktop.org). `uses: git-checkout` provides it naturally; otherwise add a `# repository: ...` comment. Use `curl` in downloading URLs is required and don't pin `expected-sha256` - renovate can't update hashes.
+
+## Architecture restrictions
+
+If a package only makes sense on one arch (e.g. Intel GPU drivers are x86_64-only), add:
+
+```yaml
+package:
+  target-architecture:
+    - x86_64
+```
+
+Melange will then skip other arches with `nothing to build`, safely. Also move the package into the `ARCH: [amd64]`-only block in `.gitlab-ci.yml` so CI doesn't waste arm64 runner time on the guaranteed skip.
+
+## Repackaging upstream binaries
+
+If compiling from source is being troublesome, when upstream ships official `.deb` / `.rpm` releases (e.g. on GitHub releases) and those binaries are compatible with Wolfi's glibc, repackaging is often dramatically faster than building from source. Pattern:
+
+```sh
+ar p <pkg>.deb data.tar.gz | tar xz -C "${{targets.destdir}}"
+# Relocate Debian multiarch paths (/usr/lib/x86_64-linux-gnu, /usr/local/lib) to Wolfi's /usr/lib.
+```
+
+Sanity-check compatibility first: `readelf -V <sofile> | grep GLIBC_` should show a max `GLIBC_X.Y` ≤ Wolfi's current glibc.
+
+## Keeping `.gitlab-ci.yml` in sync
+
+Every `<pkg>.yaml` in the repo must also appear in the `parallel.matrix` in `.gitlab-ci.yml` — otherwise CI never builds it. When you add, rename, or delete a yaml, edit the matrix in the same change. Arch-restricted packages go under the `ARCH: [amd64]` (or `[arm64]`) entry; general packages under the both-arch entry.
+
 ## Commit Guidelines
 
 - Create a feature branch for each change
