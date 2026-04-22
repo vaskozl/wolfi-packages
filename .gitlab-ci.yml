@@ -51,6 +51,7 @@ package:
           - redis.yaml
           - renovate-apk-indexer.yaml
           - seatd.yaml
+          - sing-box.yaml
           - sonarr.yaml
           - sxhkd.yaml
           - synology-csi.yaml
