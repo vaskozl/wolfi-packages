@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Generated from https://gitlab.alpinelinux.org/alpine/aports/-/raw/master/community/sing-box/APKBUILD
+package:
+  name: sing-box
+  version: "1.13.7"
+  epoch: 0
+  description: The universal proxy platform
+  copyright:
+    - license: GPL-3.0-or-later
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/SagerNet/sing-box
+      tag: v${{package.version}}
+
+  - uses: go/build
+    with:
+      packages: ./cmd/sing-box
+      output: sing-box
+      tags: with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_acme,with_clash_api,with_tailscale,badlinkname,tfogo_checklinkname0
+      ldflags: -X github.com/sagernet/sing-box/constant.Version=${{package.version}} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0 -buildid= -linkmode=external
+
+  - runs: |
+      bin="${{targets.destdir}}/usr/bin/sing-box"
+      install -Dm644 LICENSE -t "${{targets.destdir}}/usr/share/licenses/sing-box"
+      install -Dm644 release/config/config.json -t "${{targets.destdir}}/etc/sing-box"
+
+      install -d "${{targets.destdir}}/usr/share/bash-completion/completions"
+      install -d "${{targets.destdir}}/usr/share/fish/vendor_completions.d"
+      install -d "${{targets.destdir}}/usr/share/zsh/site-functions"
+      "$bin" completion bash > "${{targets.destdir}}/usr/share/bash-completion/completions/sing-box"
+      "$bin" completion fish > "${{targets.destdir}}/usr/share/fish/vendor_completions.d/sing-box.fish"
+      "$bin" completion zsh  > "${{targets.destdir}}/usr/share/zsh/site-functions/_sing-box"
+
+subpackages:
+  - name: sing-box-bash-completion
+    description: Bash completion for sing-box
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/share/bash-completion"
+          mv "${{targets.destdir}}/usr/share/bash-completion/completions" \
+             "${{targets.subpkgdir}}/usr/share/bash-completion/"
+
+  - name: sing-box-fish-completion
+    description: Fish completion for sing-box
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/share/fish"
+          mv "${{targets.destdir}}/usr/share/fish/vendor_completions.d" \
+             "${{targets.subpkgdir}}/usr/share/fish/"
+
+  - name: sing-box-zsh-completion
+    description: Zsh completion for sing-box
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/share/zsh"
+          mv "${{targets.destdir}}/usr/share/zsh/site-functions" \
+             "${{targets.subpkgdir}}/usr/share/zsh/"
+
+test:
+  pipeline:
+    - name: Verify sing-box
+      runs: sing-box version
