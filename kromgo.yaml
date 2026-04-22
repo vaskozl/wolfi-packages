@@ -18,9 +18,6 @@ pipeline:
     with:
       repository: https://github.com/kashalls/kromgo
       tag: v${{package.version}}
-  - uses: patch
-    with:
-      patches: 731529f65719325af4e2cb7db6122ee70dba80cc.patch
   - uses: go/build
     with:
       packages: ./cmd/kromgo
