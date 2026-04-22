@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Repackages Intel's upstream .deb releases rather than building from source.
+# See https://github.com/intel/compute-runtime/releases
+package:
+  name: intel-compute-runtime
+  version: "26.14.37833.4"
+  epoch: 0
+  description: Intel Graphics Compute Runtime for OpenCL (NEO, repackaged upstream binaries)
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime:
+      - intel-gmmlib
+      - intel-graphics-compiler
+      - opencl
+
+environment:
+  contents:
+    packages:
+      - binutils
+      - busybox
+      - ca-certificates-bundle
+      - zstd
+
+pipeline:
+  - uses: fetch
+    with:
+      uri: https://github.com/intel/compute-runtime/releases/download/${{package.version}}/intel-opencl-icd_${{package.version}}-0_amd64.deb
+      expected-sha256: 2e15eeb4fe9c1bba467a655967373eec6a20dd04cc7159de53c359f17ab53e41
+      extract: false
+
+  - runs: |
+      install -d "${{targets.destdir}}/usr/lib/intel-opencl"
+      install -d "${{targets.destdir}}/etc/OpenCL/vendors"
+
+      ar p intel-opencl-icd_*.deb data.tar.zst | zstd -d | tar x -C "${{targets.destdir}}"
+
+      # Debian's multiarch layout -> Wolfi's single lib dir.
+      mv "${{targets.destdir}}"/usr/lib/x86_64-linux-gnu/intel-opencl/libigdrcl.so \
+         "${{targets.destdir}}"/usr/lib/intel-opencl/libigdrcl.so
+      rmdir "${{targets.destdir}}"/usr/lib/x86_64-linux-gnu/intel-opencl \
+            "${{targets.destdir}}"/usr/lib/x86_64-linux-gnu
+
+      # The ICD vendor file is a plaintext pointer; rewrite to the new path.
+      printf '/usr/lib/intel-opencl/libigdrcl.so\n' \
+        > "${{targets.destdir}}"/etc/OpenCL/vendors/intel.icd
+
+      rm -rf "${{targets.destdir}}"/usr/share/doc
+
+test:
+  pipeline:
+    - name: Verify NEO ICD is registered
+      runs: |
+        test -e /usr/lib/intel-opencl/libigdrcl.so
+        grep -q '^/usr/lib/intel-opencl/libigdrcl.so$' /etc/OpenCL/vendors/intel.icd

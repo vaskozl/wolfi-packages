@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Repackages Intel's upstream .deb releases rather than building from source.
+# See https://github.com/intel/intel-graphics-compiler/releases
+package:
+  name: intel-graphics-compiler
+  version: "2.32.7"
+  epoch: 0
+  description: Intel Graphics Compiler for OpenCL (repackaged upstream binaries)
+  copyright:
+    - license: MIT
+
+vars:
+  # The full Debian version string (includes build metadata after +).
+  # Grab from the filename at the GitHub release.
+  deb-version: "2.32.7+21184"
+
+environment:
+  contents:
+    packages:
+      - binutils
+      - busybox
+      - ca-certificates-bundle
+      - zstd
+
+pipeline:
+  - uses: fetch
+    with:
+      uri: https://github.com/intel/intel-graphics-compiler/releases/download/v${{package.version}}/intel-igc-core-2_${{vars.deb-version}}_amd64.deb
+      expected-sha256: 64e5230788e3a31e611e8d815a141b1facb91e5f0ef239233ef3f0614bfe3fd6
+      extract: false
+
+  - uses: fetch
+    with:
+      uri: https://github.com/intel/intel-graphics-compiler/releases/download/v${{package.version}}/intel-igc-opencl-2_${{vars.deb-version}}_amd64.deb
+      expected-sha256: 3c9bddbfe558279402bbeaabcf9c63b8de46b956b0ad9625415fd35dda53ad52
+      extract: false
+
+  - runs: |
+      install -d "${{targets.destdir}}/usr/lib"
+      for deb in intel-igc-core-2_*.deb intel-igc-opencl-2_*.deb; do
+        ar p "$deb" data.tar.gz | tar xz -C "${{targets.destdir}}"
+      done
+      # Debian ships under /usr/local/lib — relocate to /usr/lib for Wolfi.
+      mv "${{targets.destdir}}"/usr/local/lib/* "${{targets.destdir}}"/usr/lib/
+      rmdir "${{targets.destdir}}"/usr/local/lib "${{targets.destdir}}"/usr/local
+
+test:
+  pipeline:
+    - name: Verify IGC libraries
+      runs: |
+        test -e /usr/lib/libigc.so.2
+        test -e /usr/lib/libiga64.so.2
+        test -e /usr/lib/libigdfcl.so.2
+        test -e /usr/lib/libopencl-clang2.so.16
