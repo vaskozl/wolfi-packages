@@ -1,7 +1,8 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/community/perl-mojolicious/APKBUILD
+# repository: https://github.com/mojolicious/mojo
 package:
   name: perl-mojolicious
-  version: "9.41"
+  version: "9.42"
   epoch: 0
   description: Real-time web framework
   copyright:
@@ -12,12 +13,12 @@ environment:
       - build-base
       - busybox
       - ca-certificates-bundle
+      - curl
       - perl
 pipeline:
-  - uses: fetch
-    with:
-      expected-sha256: "c13db80169698fa3d76901cf03a06ef78fb496ed0b9275b4f558f6e878c281c6"
-      uri: https://cpan.metacpan.org/authors/id/S/SR/SRI/Mojolicious-${{package.version}}.tar.gz
+  - runs: |
+      curl -sfL "https://cpan.metacpan.org/authors/id/S/SR/SRI/Mojolicious-${{package.version}}.tar.gz" \
+        | tar xz --strip-components=1
   - uses: perl/make
   - uses: autoconf/make
   - uses: autoconf/make-install

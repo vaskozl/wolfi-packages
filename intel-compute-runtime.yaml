@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 # Repackages Intel's upstream .deb releases rather than building from source.
-# See https://github.com/intel/compute-runtime/releases
+# repository: https://github.com/intel/compute-runtime
 package:
   name: intel-compute-runtime
   version: "26.14.37833.4"
@@ -8,6 +8,8 @@ package:
   description: Intel Graphics Compute Runtime for OpenCL (NEO, repackaged upstream binaries)
   copyright:
     - license: MIT
+  target-architecture:
+    - x86_64
   dependencies:
     runtime:
       - intel-gmmlib
@@ -20,20 +22,19 @@ environment:
       - binutils
       - busybox
       - ca-certificates-bundle
+      - curl
       - zstd
 
 pipeline:
-  - uses: fetch
-    with:
-      uri: https://github.com/intel/compute-runtime/releases/download/${{package.version}}/intel-opencl-icd_${{package.version}}-0_amd64.deb
-      expected-sha256: 2e15eeb4fe9c1bba467a655967373eec6a20dd04cc7159de53c359f17ab53e41
-      extract: false
-
   - runs: |
+      set -eu
+      curl -sfL -o icd.deb \
+        "https://github.com/intel/compute-runtime/releases/download/${{package.version}}/intel-opencl-icd_${{package.version}}-0_amd64.deb"
+
       install -d "${{targets.destdir}}/usr/lib/intel-opencl"
       install -d "${{targets.destdir}}/etc/OpenCL/vendors"
 
-      ar p intel-opencl-icd_*.deb data.tar.zst | zstd -d | tar x -C "${{targets.destdir}}"
+      ar p icd.deb data.tar.zst | zstd -d | tar x -C "${{targets.destdir}}"
 
       # Debian's multiarch layout -> Wolfi's single lib dir.
       mv "${{targets.destdir}}"/usr/lib/x86_64-linux-gnu/intel-opencl/libigdrcl.so \

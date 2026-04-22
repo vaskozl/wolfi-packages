@@ -5,6 +5,8 @@ package:
   description: Intel Graphics Memory Management Library
   copyright:
     - license: MIT
+  target-architecture:
+    - x86_64
 
 environment:
   contents:
