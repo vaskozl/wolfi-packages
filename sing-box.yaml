@@ -2,7 +2,7 @@
 # Generated from https://gitlab.alpinelinux.org/alpine/aports/-/raw/master/community/sing-box/APKBUILD
 package:
   name: sing-box
-  version: "1.13.7"
+  version: "1.13.11"
   epoch: 0
   description: The universal proxy platform
   copyright:
