@@ -71,6 +71,7 @@ package:
           - intel-gmmlib.yaml
           - intel-graphics-compiler.yaml
           - intel-media-driver.yaml
+          - libva-intel-driver.yaml
           - libvpl.yaml
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
