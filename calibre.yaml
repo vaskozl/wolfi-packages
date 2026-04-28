@@ -167,14 +167,14 @@ pipeline:
       # Install calibre
       python3 setup.py install \
         --prefix=/usr \
-        --root="${targets.destdir}"
+        --root="${{targets.destdir}}"
 
   - runs: |
       # Create necessary directories
-      mkdir -p "${targets.destdir}"/usr/share/applications
-      mkdir -p "${targets.destdir}"/usr/share/icons/hicolor/scalable/apps
-      mkdir -p "${targets.destdir}"/usr/share/metainfo
-      mkdir -p "${targets.destdir}"/usr/share/calibre
+      mkdir -p "${{targets.destdir}}"/usr/share/applications
+      mkdir -p "${{targets.destdir}}"/usr/share/icons/hicolor/scalable/apps
+      mkdir -p "${{targets.destdir}}"/usr/share/metainfo
+      mkdir -p "${{targets.destdir}}"/usr/share/calibre
 
   - uses: strip
 
