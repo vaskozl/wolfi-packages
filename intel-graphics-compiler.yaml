@@ -1,9 +1,10 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 # Repackages Intel's upstream .deb releases rather than building from source.
 # repository: https://github.com/intel/intel-graphics-compiler
+# datasource: github-releases
 package:
   name: intel-graphics-compiler
-  version: "2.34.2"
+  version: "2.32.7"
   epoch: 0
   description: Intel Graphics Compiler for OpenCL (repackaged upstream binaries)
   copyright:
