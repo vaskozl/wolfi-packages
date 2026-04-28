@@ -45,7 +45,6 @@ package:
           - prometheus-node-exporter.yaml
           - prowlarr.yaml
           - qbittorrent-nox.yaml
-          - qwen-code.yaml
           - radarr.yaml
           - rakudo.yaml
           - redis.yaml
