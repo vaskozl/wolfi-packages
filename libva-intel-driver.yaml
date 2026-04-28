@@ -5,6 +5,8 @@ package:
   description: VA-API user mode driver for Intel Gen4-Gen9 GPUs (i965)
   copyright:
     - license: MIT
+  target-architecture:
+    - x86_64
   dependencies:
     runtime:
       - libva
