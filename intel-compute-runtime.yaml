@@ -1,6 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 # Repackages Intel's upstream .deb releases rather than building from source.
 # repository: https://github.com/intel/compute-runtime
+# datasource: github-releases
 package:
   name: intel-compute-runtime
   version: "26.14.37833.4"

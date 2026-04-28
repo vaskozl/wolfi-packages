@@ -111,6 +111,16 @@ Sections to check (in order): `main`, `community`, `testing`
 
 Renovate bumps `version:` when it sees a paired `repository: https://github.com/OWNER/REPO` (or codeberg/gitlab.freedesktop.org). `uses: git-checkout` provides it naturally; otherwise add a `# repository: ...` comment. Use `curl` in downloading URLs is required and don't pin `expected-sha256` - renovate can't update hashes.
 
+If a package **repackages upstream `.deb`/`.rpm` assets** (i.e. depends on a published GitHub Release, not just a git tag), add `# datasource: github-releases` immediately after the `# repository: ...` line:
+
+```yaml
+# Repackages Intel's upstream .deb releases rather than building from source.
+# repository: https://github.com/intel/intel-graphics-compiler
+# datasource: github-releases
+```
+
+Renovate will then use the `github-releases` datasource and only open a bump PR when upstream publishes a full release with assets — not for bare git tags without a release.
+
 ## Architecture restrictions
 
 If a package only makes sense on one arch (e.g. Intel GPU drivers are x86_64-only), add:
