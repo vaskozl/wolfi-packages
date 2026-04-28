@@ -58,9 +58,6 @@ subpackages:
 
   - name: maddy-vim
     description: maddy vim syntax files
-    install-if:
-      - vim
-      - maddy
     pipeline:
       - runs: |
           mkdir -p "${{targets.subpkgdir}}"/usr/share/vim
