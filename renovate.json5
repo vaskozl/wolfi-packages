@@ -15,9 +15,21 @@
       "matchStringsStrategy": "combination",
       "matchStrings": [
         "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
-        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>.*)"
+        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)\\n(?!#\\s*datasource:)"
       ],
       "datasourceTemplate": "github-tags",
+      "versioningTemplate": "loose",
+      "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/.+\\.ya?ml$/"],
+      "matchStringsStrategy": "combination",
+      "matchStrings": [
+        "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
+        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)\\n#\\s*datasource:\\s*github-releases"
+      ],
+      "datasourceTemplate": "github-releases",
       "versioningTemplate": "loose",
       "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
     },
@@ -50,7 +62,7 @@
   ],
   "packageRules": [
     {
-      "matchDatasources": ["github-tags","gitlab-tags","forgejo-tags"],
+      "matchDatasources": ["github-tags","gitlab-tags","forgejo-tags","github-releases"],
       "groupName": "tags",
     }
   ]
