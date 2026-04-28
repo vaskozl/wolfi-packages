@@ -50,6 +50,7 @@ package:
           - redis.yaml
           - renovate-apk-indexer.yaml
           - seatd.yaml
+          - seerr.yaml
           - sing-box.yaml
           - sonarr.yaml
           - sxhkd.yaml
