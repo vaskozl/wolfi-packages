@@ -1,6 +1,6 @@
 package:
   name: wlroots
-  version: "0.19.2"
+  version: "0.20.0"
   epoch: 0
   description: Modular Wayland compositor library
   copyright:
@@ -29,6 +29,7 @@ environment:
       - vulkan-headers
       - wayland-dev
       - wayland-protocols
+      - wayland-protocols-dev
       - xcb-util-image-dev
       - xcb-util-renderutil-dev
       - xcb-util-wm-dev
