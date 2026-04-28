@@ -21,7 +21,6 @@ package:
       - libchm
       - libhyphen
       - hunspell
-      - espeak-ng
       - libstemmer
       - libjpeg-turbo
       - libwebp
@@ -69,7 +68,6 @@ environment:
       - libchm-dev
       - libhyphen-dev
       - hunspell-dev
-      - espeak-ng-dev
       - libstemmer-dev
       - libjpeg-turbo-dev
       - libwebp-dev
