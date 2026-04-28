@@ -17,7 +17,7 @@ environment:
       - busybox
       - ca-certificates-bundle
       - curl
-      - go
+      - go-1.26
 pipeline:
   - uses: git-checkout
     with:
@@ -27,6 +27,9 @@ pipeline:
 #    with:
 #      patches: static-endpoints-internal-ip.patch
   - runs: |
+      export VERSION_LONG="${{package.version}}"
+      export VERSION_SHORT="${{package.version}}"
+      export VERSION_GIT_HASH=""
       ./build_dist.sh tailscale.com/cmd/containerboot
       ./build_dist.sh tailscale.com/cmd/${{package.name}}
       ./build_dist.sh tailscale.com/cmd/${{package.name}}d
@@ -53,6 +56,9 @@ subpackages:
     description: "Tailscale Kubernetes Operator"
     pipeline:
       - runs: |
+          export VERSION_LONG="${{package.version}}"
+          export VERSION_SHORT="${{package.version}}"
+          export VERSION_GIT_HASH=""
           ./build_dist.sh -o operator tailscale.com/cmd/k8s-operator
       - runs: |
           install -Dm755 operator "${{targets.subpkgdir}}"/usr/bin/operator
