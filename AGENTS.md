@@ -121,6 +121,8 @@ If a package **repackages upstream `.deb`/`.rpm` assets** (i.e. depends on a pub
 
 Renovate will then use the `github-releases` datasource and only open a bump PR when upstream publishes a full release with assets — not for bare git tags without a release.
 
+**Important:** Also add the package to the `packageRules` disable list in `renovate.json5` (the entry with `"matchDatasources": ["github-tags"]`). This prevents the github-tags manager — which matches all GitHub URLs — from also opening a duplicate bump MR. The package name must match the `depName` captured from the `repository:` URL (e.g. `intel/compute-runtime`).
+
 ## Architecture restrictions
 
 If a package only makes sense on one arch (e.g. Intel GPU drivers are x86_64-only), add:
