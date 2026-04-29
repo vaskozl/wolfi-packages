@@ -15,7 +15,7 @@
       "matchStringsStrategy": "combination",
       "matchStrings": [
         "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
-        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)\\n(?!#\\s*datasource:)"
+        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)"
       ],
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "loose",
@@ -52,7 +52,7 @@
       "matchStringsStrategy": "combination",
       "matchStrings": [
         "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
-        "repository:\\s*https:\\/\\//gitlab\\.freedesktop\\.org/(?<depName>.*)"
+        "repository:\\s*https:\\/\\/gitlab\\.freedesktop\\.org\\/(?<depName>.*)"
       ],
       "registryUrlTemplate": "https://gitlab.freedesktop.org",
       "datasourceTemplate": "gitlab-tags",
@@ -64,6 +64,19 @@
     {
       "matchDatasources": ["github-tags","gitlab-tags","forgejo-tags","github-releases"],
       "groupName": "tags",
+    },
+    {
+      // Packages that repackage GitHub Release assets (not bare git tags) have
+      // "# datasource: github-releases" and are handled by the github-releases
+      // manager. Disable the github-tags manager for them to avoid duplicate MRs.
+      // Add new packages here if they also use "# datasource: github-releases".
+      "matchManagers": ["custom.regex"],
+      "matchDatasources": ["github-tags"],
+      "matchPackageNames": [
+        "intel/intel-graphics-compiler",
+        "intel/compute-runtime"
+      ],
+      "enabled": false
     }
   ]
 }
