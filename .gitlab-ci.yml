@@ -1,104 +1,24 @@
-package:
-  stage: build
-  parallel:
-    matrix:
-      - ARCH: [amd64, arm64]
-        PKG:
-          - anubis.yaml
-          - baikal.yaml
-          - blocky.yaml
-          - calibre.yaml
-          - bootc-baselayout.yaml
-          - bootc.yaml
-          - bspwm.yaml
-          - cage.yaml
-          - cagebreak.yaml
-          - catatonit.yaml
-          - composefs.yaml
-          - dracut.yaml
-          - fcft.yaml
-          - foot.yaml
-          - golink.yaml
-          - kernel-initramfs.yaml
-          - kernel.yaml
-          - kromgo.yaml
-          - kube-network-policies.yaml
-          - kubeconform.yaml
-          - libdisplay-info.yaml
-          - libliftoff.yaml
-          - lidarr.yaml
-          - maddy.yaml
-          - minilb.yaml
-          - moarvm.yaml
-          - nori-user.yaml
-          - nqp.yaml
-          - ntfy.yaml
-          - ostree.yaml
-          - perl-email-date-format.yaml
-          - perl-mailtools.yaml
-          - perl-mime-lite.yaml
-          - perl-mime-types.yaml
-          - perl-mojolicious.yaml
-          - perl-path-tiny.yaml
-          - perl-timedate.yaml
-          - pinewall-config.yaml
-          - prometheus-node-exporter.yaml
-          - prowlarr.yaml
-          - qbittorrent-nox.yaml
-          - radarr.yaml
-          - rakudo.yaml
-          - redis.yaml
-          - renovate-apk-indexer.yaml
-          - seatd.yaml
-          - seerr.yaml
-          - sing-box.yaml
-          - sonarr.yaml
-          - sxhkd.yaml
-          - synology-csi.yaml
-          - tailscale.yaml
-          - thelounge.yaml
-          - trusttunnel.yaml
-          - tllist.yaml
-          - tsidp.yaml
-          - v2ray.yaml
-          - wlroots.yaml
-          - wolfi-scanner.yaml
-          - zsh-autosuggestions.yaml
-          - zsh-history-substring-search.yaml
-          - zsh-syntax-highliting.yaml
-      - ARCH: [amd64]
-        PKG:
-          - intel-compute-runtime.yaml
-          - intel-gmmlib.yaml
-          - intel-graphics-compiler.yaml
-          - intel-media-driver.yaml
-          - libva-intel-driver.yaml
-          - libvpl.yaml
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-      changes:
-        - $PKG
-        - ${PKG%.yaml}/*
-    - when: never
-  tags: ["$ARCH"]
+stages: [generate, build]
+
+generate:
+  stage: generate
   image:
     name: ghcr.io/vaskozl/melange:0.50.4@sha256:5213c379264b4e2b360451b42d531f8e8d9be19797b935afe7bc5ac12e2b3bb8
     entrypoint: [""]
-  before_script:
-    - echo "${MELANGE_RSA}" > melange.rsa
-  variables:
-    MELANGE_FLAGS: >-
-      --workspace-dir="$CI_PROJECT_DIR"
-      --arch="$ARCH"
-      --runner=bubblewrap
-      --cache-dir=/apks/melange-cache
-      --apk-cache-dir=/apks/apks-cache
-      --repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os
-      --keyring-append melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
-      --pipeline-dir ./pipelines
-      --env-file common.env
-    OUT_DIR: /apks
-  retry: 2
   script:
-    - melange build "$PKG" $MELANGE_FLAGS --source-dir="${PKG%.yaml}" --out-dir="${OUT_DIR}" --signing-key=melange.rsa
-#    - melange test "$PKG" $MELANGE_FLAGS --test-package-append=busybox
+    - .gitlab/gen-dag.sh > generated-pipeline.yml
+  artifacts:
+    paths: [generated-pipeline.yml]
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+build:
+  stage: build
+  needs: [generate]
+  trigger:
+    include:
+      - artifact: generated-pipeline.yml
+        job: generate
+    strategy: depend
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
