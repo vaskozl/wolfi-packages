@@ -1,0 +1,57 @@
+name: help-check
+
+needs:
+  packages:
+    - busybox
+
+inputs:
+  bins:
+    description: |
+      Binary names whose help flag must succeed. One per line (block scalar).
+      Only exit code is checked — never assert on help output content beyond
+      a single keyword presence at most (text changes between releases).
+    required: true
+  flag:
+    description: Help flag. 'auto' tries --help then -h then help.
+    required: false
+    default: "auto"
+
+pipeline:
+  - name: "verify each binary's help flag exits 0"
+    runs: |
+      set -eu
+      flag="${{inputs.flag}}"
+      fails=0
+      passes=0
+      while IFS= read -r bin; do
+        bin=$(echo "$bin" | xargs)
+        [ -z "$bin" ] && continue
+        if [ "$flag" = "auto" ]; then
+          ok=false
+          for f in --help -h help; do
+            if "$bin" "$f" >/dev/null 2>&1; then
+              echo "PASS: $bin $f"
+              ok=true
+              break
+            fi
+          done
+          if [ "$ok" = "false" ]; then
+            echo "FAIL: $bin (no help flag worked: --help, -h, help)" >&2
+            fails=$((fails+1))
+          else
+            passes=$((passes+1))
+          fi
+        else
+          if "$bin" "$flag" >/dev/null 2>&1; then
+            echo "PASS: $bin $flag"
+            passes=$((passes+1))
+          else
+            echo "FAIL: $bin $flag" >&2
+            fails=$((fails+1))
+          fi
+        fi
+      done <<EOF
+      ${{inputs.bins}}
+      EOF
+      echo "help-check: $passes pass, $fails fail"
+      exit $fails

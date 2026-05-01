@@ -1,0 +1,26 @@
+name: perl-module-check
+
+needs:
+  packages:
+    - perl
+
+inputs:
+  modules:
+    description: Whitespace-separated list of Perl module names that must be loadable.
+    required: true
+    default: ''
+
+pipeline:
+  - name: "Check that modules can be used"
+    runs: |
+      set -eu
+      result=0
+      for mod in ${{inputs.modules}}; do
+        if perl -e "use $mod;"; then
+          echo "PASS: use $mod"
+        else
+          echo "FAIL: use $mod" >&2
+          result=1
+        fi
+      done
+      exit $result
