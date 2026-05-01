@@ -1,7 +1,7 @@
 package:
   name: bootc
   version: 1.15.2
-  epoch: 0
+  epoch: 1 # drop automake, alphabetize, tighten test
   description: Boot and upgrade via container images
   copyright:
     - license: Apache-2.0-only
@@ -16,13 +16,12 @@ package:
 environment:
   contents:
     packages:
-      - automake
-      - busybox
       - build-base
-      - ostree-dev
+      - busybox
       - cargo-auditable
-      - rust
       - go-md2man
+      - ostree-dev
+      - rust
 pipeline:
   - uses: git-checkout
     with:
@@ -50,6 +49,6 @@ test:
         - yq
   pipeline:
     - runs: |
-        set -o pipefail
+        set -eu
         bootc --version | grep -F -e "${{package.version}}"
         bootc status | yq .apiVersion | grep -F -e "org.containers.bootc/v1"
