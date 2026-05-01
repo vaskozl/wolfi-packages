@@ -2,7 +2,7 @@
 package:
   name: kernel-initramfs
   version: 7.0.3
-  epoch: 0
+  epoch: 1 # alphabetize package list
   description: The Linux kernel initramfs
   copyright:
     - license: GPL-2.0
@@ -13,32 +13,32 @@ package:
 environment:
   contents:
     packages:
-      - kernel=${{package.version}}
-      - busybox
-      - build-base
+      - attr
       - bash
       - binutils-dev
-      - wolfi-baselayout
       - bootc
+      - busybox
+      - build-base
       - dracut
-      - kmod
-      - zstd
-      - posix-libc-utils
-      - attr
       - findutils
+      - kernel=${{package.version}}
+      - kmod
+      - posix-libc-utils
+      - wolfi-baselayout
+      - zstd
       # For modules
-      - lvm2
-      - cryptsetup
-      - btrfs-progs
-      - systemd
-      - util-linux
-      - device-mapper
-      - openssl
-      - util-linux-login
-      - mount
-      - umount
       - blkid
+      - btrfs-progs
+      - cryptsetup
+      - device-mapper
       - losetup
+      - lvm2
+      - mount
+      - openssl
+      - systemd
+      - umount
+      - util-linux
+      - util-linux-login
 pipeline:
   - runs: |
       mkdir -p /var/tmp ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable
