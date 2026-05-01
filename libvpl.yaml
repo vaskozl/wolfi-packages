@@ -1,7 +1,7 @@
 package:
   name: libvpl
   version: "2.16.0"
-  epoch: 0
+  epoch: 1 # switch test to ldd-check
   description: Intel oneVPL (Video Processing Library) dispatcher
   copyright:
     - license: MIT
@@ -52,6 +52,6 @@ subpackages:
 
 test:
   pipeline:
-    - name: Verify shared library exists
-      runs: |
-        ls /usr/lib/libvpl.so*
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
