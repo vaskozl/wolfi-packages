@@ -146,7 +146,7 @@ package:
     - x86_64
 ```
 
-Melange will then skip other arches with `nothing to build`, safely. Also move the package into the `ARCH: [amd64]`-only block in `.gitlab-ci.yml` so CI doesn't waste arm64 runner time on the guaranteed skip.
+Melange will then skip other arches with `nothing to build`, safely. CI reads `target-architecture` automatically (via `.gitlab/gen-dag.sh`) and skips emitting jobs for unsupported arches.
 
 ## Repackaging upstream binaries
 
@@ -159,9 +159,9 @@ ar p <pkg>.deb data.tar.gz | tar xz -C "${{targets.destdir}}"
 
 Sanity-check compatibility first: `readelf -V <sofile> | grep GLIBC_` should show a max `GLIBC_X.Y` ≤ Wolfi's current glibc.
 
-## Keeping `.gitlab-ci.yml` in sync
+## CI build graph
 
-Every `<pkg>.yaml` in the repo must also appear in the `parallel.matrix` in `.gitlab-ci.yml` — otherwise CI never builds it. When you add, rename, or delete a yaml, edit the matrix in the same change. Arch-restricted packages go under the `ARCH: [amd64]` (or `[arm64]`) entry; general packages under the both-arch entry.
+CI uses a generated child pipeline. `.gitlab/gen-dag.sh` introspects every `*.yaml` via `melange query`, resolves build-time + runtime deps against a map of locally-provided package and subpackage names, and emits one job per `(yaml, arch)` with `needs:` set on local dependencies. Adding, renaming, or deleting a yaml needs no `.gitlab-ci.yml` edit — the graph is rebuilt every pipeline run.
 
 ## Commit Guidelines
 
