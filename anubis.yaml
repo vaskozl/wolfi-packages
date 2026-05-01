@@ -3,22 +3,22 @@
 package:
   name: anubis
   version: 1.25.0
-  epoch: 0
+  epoch: 1 # pin go-1.26, alphabetize build env
   description: Block AI scrapers using a sha256 proof-of-work challenge
   copyright:
     - license: MIT
 environment:
   contents:
     packages:
+      - brotli
       - build-base
       - busybox
       - ca-certificates-bundle
-      - go
       - esbuild
-      - npm
+      - go-1.26
       - nodejs
+      - npm
       - zstd
-      - brotli
 pipeline:
   - uses: git-checkout
     with:
@@ -29,6 +29,7 @@ pipeline:
       opts: assets
   - uses: go/build
     with:
+      go-package: go-1.26
       packages: ./cmd/anubis
       output: anubis
       tags: limitedsupportability
