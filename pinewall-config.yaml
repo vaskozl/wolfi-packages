@@ -2,7 +2,7 @@
 package:
   name: pinewall-config
   version: "0.0.9"
-  epoch: 0
+  epoch: 1 # add set -eu to test
   description: pinewall router config
   copyright:
     - license: MIT
@@ -27,6 +27,7 @@ pipeline:
 test:
   pipeline:
     - runs: |
+        set -eu
         # Verify key config files exist
         stat /etc/hostname
         stat /etc/hosts
