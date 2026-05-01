@@ -59,6 +59,19 @@ test:
 | `just list` | List packages in remote APK repo |
 | `just withdraw <pkg>...` | Withdraw packages from all architectures |
 
+### Building inside an unprivileged container
+
+`bubblewrap` refuses to start when launched as non-root with inherited ambient
+caps (`bwrap: Unexpected capabilities but not setuid, old file caps config?`),
+which is the default state inside the Claude Code sandbox and similar nested
+environments. Wrap the build in `unshare -r` to create a fresh user namespace
+where the current uid maps to root — bwrap then sees the expected uid+caps and
+proceeds normally:
+
+```sh
+unshare -r just build <pkg>.yaml
+```
+
 ## Parameters
 
 Override defaults via environment variables:
