@@ -3,18 +3,17 @@
 package:
   name: catatonit
   version: 0.2.1
-  epoch: 0
+  epoch: 1 # build-env trim + functional test
   description: Container init that is so simple it's effectively brain-dead
   copyright:
     - license: GPL-2.0-or-later
 environment:
   contents:
     packages:
-      - build-base
-      - busybox
-      - ca-certificates-bundle
       - autoconf
       - automake
+      - build-base
+      - busybox
       - libtool
 pipeline:
   - uses: git-checkout
@@ -27,5 +26,15 @@ pipeline:
   - uses: strip
 test:
   pipeline:
-    - name: Verify catatonit installation, please improve the test as needed
-      runs: catatonit -- echo hi || exit 1
+    - name: Verify catatonit can wrap a child process
+      runs: |
+        set -eu
+        # catatonit -V exits 0 and prints version; don't assert exact format.
+        catatonit -V
+        # Verify catatonit spawns a child and forwards its stdout.
+        output=$(catatonit -- echo "hello from catatonit")
+        echo "$output" | grep -F "hello from catatonit"
+        # Verify catatonit forwards a successful child exit code.
+        catatonit -- true
+        # Verify catatonit forwards a non-zero child exit code.
+        ! catatonit -- false
