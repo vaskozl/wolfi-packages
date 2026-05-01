@@ -2,7 +2,7 @@
 package:
   name: nqp
   version: "2026.04"
-  epoch: 1
+  epoch: 2 # functional test refactor
   description: Not Quite Perl (NQP) is a minimal Perl 6-like language for building compilers
   copyright:
     - license: Artistic-2.0
@@ -48,12 +48,13 @@ subpackages:
     description: nqp documentation
 
 test:
-  environment:
-    contents:
-      packages:
-        - busybox
   pipeline:
-    - name: Verify nqp binary
+    - uses: test/ver-check
+      with:
+        bins: |
+          nqp-m
+    - name: Run a simple NQP program
       runs: |
-        test -x /usr/bin/nqp-m
-        /usr/bin/nqp-m --version 2>&1 | head -2
+        set -eu
+        out=$(nqp-m -e 'say("ok")')
+        echo "$out" | grep -Fx ok
