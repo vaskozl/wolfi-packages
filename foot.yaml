@@ -1,7 +1,7 @@
 package:
   name: foot
   version: "1.26.1"
-  epoch: 0
+  epoch: 1 # functional tests + alphabetised build env
   description: Fast, lightweight and minimalistic Wayland terminal emulator
   copyright:
     - license: MIT
@@ -13,7 +13,6 @@ environment:
     packages:
       - build-base
       - cage
-      - ttf-dejavu
       - fcft-dev
       - fontconfig-dev
       - freetype-dev
@@ -23,6 +22,7 @@ environment:
       - pixman-dev
       - scdoc
       - tllist-dev
+      - ttf-dejavu
       - utf8proc-dev
       - wayland-dev
       - wayland-protocols
@@ -89,5 +89,13 @@ subpackages:
         - wolfi-baselayout
 test:
   pipeline:
-    - runs: |
-        foot --help
+    - uses: test/ver-check
+      with:
+        bins: |
+          foot
+          footclient
+    - uses: test/help-check
+      with:
+        bins: |
+          foot
+          footclient
