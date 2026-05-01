@@ -3,7 +3,7 @@
 package:
   name: bspwm
   version: 0.9.12
-  epoch: 0
+  epoch: 1 # build-env trim, real test
   description: A tiling window manager based on binary space partitioning
   copyright:
     - license: BSD-2-Clause
@@ -12,13 +12,10 @@ environment:
     packages:
       - build-base
       - busybox
-      - ca-certificates-bundle
-      - automake
-      - libtool
       - libxcb-dev
       - xcb-util-dev
-      - xcb-util-wm-dev
       - xcb-util-keysyms-dev
+      - xcb-util-wm-dev
 pipeline:
   - uses: git-checkout
     with:
@@ -70,5 +67,8 @@ subpackages:
         - wolfi-baselayout
 test:
   pipeline:
-    - name: Verify bspwm installation, please improve the test as needed
-      runs: bspc --help || exit 1
+    - name: bspwm help and version
+      runs: |
+        set -eu
+        bspwm -h
+        bspwm -v
