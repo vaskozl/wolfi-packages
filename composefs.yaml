@@ -1,7 +1,7 @@
 package:
   name: composefs
   version: 1.0.8
-  epoch: 0
+  epoch: 1 # add ldd-check, drop bashism in test
   description: The reliability of disk images, the flexibility of files
   copyright:
     - license: GPL-2.0-or-later OR Apache-2.0
@@ -45,8 +45,9 @@ subpackages:
         - uses: test/tw/ldd-check
 test:
   pipeline:
+    - uses: test/tw/ldd-check
     - runs: |
-        set -o pipefail
+        set -eu
         {
           mkcomposefs --help 2>&1 || true
         } | grep -F -e "Usage: mkcomposefs"
