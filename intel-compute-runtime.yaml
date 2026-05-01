@@ -5,7 +5,7 @@
 package:
   name: intel-compute-runtime
   version: "26.14.37833.4"
-  epoch: 0
+  epoch: 1 # switch test to ldd-check
   description: Intel Graphics Compute Runtime for OpenCL (NEO, repackaged upstream binaries)
   copyright:
     - license: MIT
@@ -51,7 +51,11 @@ pipeline:
 
 test:
   pipeline:
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
     - name: Verify NEO ICD is registered
       runs: |
+        set -eu
         test -e /usr/lib/intel-opencl/libigdrcl.so
-        grep -q '^/usr/lib/intel-opencl/libigdrcl.so$' /etc/OpenCL/vendors/intel.icd
+        grep -qF '/usr/lib/intel-opencl/libigdrcl.so' /etc/OpenCL/vendors/intel.icd
