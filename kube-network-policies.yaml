@@ -2,7 +2,7 @@
 package:
   name: kube-network-policies
   version: 1.0.0
-  epoch: 0
+  epoch: 1 # pin go-1.25, drop automake, alphabetize build env, tighten test
   description: Kubernetes network policies
   copyright:
     - license: Apache-2.0
@@ -12,8 +12,7 @@ environment:
       - build-base
       - busybox
       - ca-certificates-bundle
-      - go
-      - automake
+      - go-1.25
 pipeline:
   - uses: git-checkout
     with:
@@ -35,5 +34,7 @@ subpackages:
       - uses: strip
 test:
   pipeline:
-    - name: Verify kube-network-policies installation, please improve the test as needed
-      runs: kube-network-policies -h || exit 1
+    - name: Verify kube-network-policies installation
+      runs: |
+        set -eu
+        kube-network-policies -h
