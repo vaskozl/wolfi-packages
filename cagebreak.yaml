@@ -1,7 +1,7 @@
 package:
   name: cagebreak
   version: "3.2.0"
-  epoch: 1
+  epoch: 2 # functional tests + alphabetised build env
   description: Wayland tiling compositor inspired by Ratpoison
   copyright:
     - license: MIT
@@ -13,13 +13,13 @@ environment:
     packages:
       - build-base
       - libevdev-dev
+      - libinput-dev
       - meson
       - pango-dev
       - scdoc
       - wayland-protocols
       - wlroots
       - wlroots-dev
-      - libinput-dev
 pipeline:
   - uses: git-checkout
     with:
@@ -41,5 +41,13 @@ subpackages:
     description: cagebreak manpages
 test:
   pipeline:
-    - runs: |
-        cagebreak --help
+    - uses: test/ver-check
+      with:
+        bins: |
+          cagebreak
+        flag: "-v"
+    - uses: test/help-check
+      with:
+        bins: |
+          cagebreak
+        flag: "-h"
