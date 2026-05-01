@@ -2,7 +2,7 @@
 package:
   name: kromgo
   version: 0.9.1
-  epoch: 1
+  epoch: 2 # pin go-1.25 + go-package
   description: Expose prometheus metrics safely to a public source.
   copyright:
     - license: Apache-2.0
@@ -12,7 +12,7 @@ environment:
       - build-base
       - busybox
       - ca-certificates-bundle
-      - go
+      - go-1.25
 pipeline:
   - uses: git-checkout
     with:
@@ -22,6 +22,7 @@ pipeline:
     with:
       packages: ./cmd/kromgo
       output: kromgo
+      go-package: go-1.25
   - uses: strip
 test:
   pipeline:
