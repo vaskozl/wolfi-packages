@@ -5,7 +5,7 @@
 package:
   name: intel-graphics-compiler
   version: "2.32.7"
-  epoch: 0
+  epoch: 1 # switch test to ldd-check
   description: Intel Graphics Compiler for OpenCL (repackaged upstream binaries)
   copyright:
     - license: MIT
@@ -47,9 +47,6 @@ pipeline:
 
 test:
   pipeline:
-    - name: Verify IGC libraries
-      runs: |
-        test -e /usr/lib/libigc.so.2
-        test -e /usr/lib/libiga64.so.2
-        test -e /usr/lib/libigdfcl.so.2
-        test -e /usr/lib/libopencl-clang2.so.16
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
