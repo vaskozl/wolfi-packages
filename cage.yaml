@@ -1,7 +1,7 @@
 package:
   name: cage
   version: "0.3.0"
-  epoch: 1
+  epoch: 2 # functional test
   description: A Wayland kiosk
   copyright:
     - license: MIT
@@ -36,4 +36,5 @@ subpackages:
 test:
   pipeline:
     - runs: |
-        cage --help
+        set -eu
+        cage -v
