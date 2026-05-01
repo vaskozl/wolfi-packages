@@ -1,7 +1,7 @@
 package:
   name: fcft
   version: "3.3.3"
-  epoch: 0
+  epoch: 1 # add tests, alphabetize env
   description: Simple library for font loading and glyph rasterization using FontConfig, FreeType and pixman
   copyright:
     - license: MIT
@@ -9,12 +9,12 @@ environment:
   contents:
     packages:
       - build-base
-      - meson
-      - scdoc
       - fontconfig-dev
       - freetype-dev
       - harfbuzz-dev
+      - meson
       - pixman-dev
+      - scdoc
       - tllist-dev
       - utf8proc-dev
 pipeline:
@@ -33,7 +33,15 @@ subpackages:
     pipeline:
       - uses: split/alldocs
     description: fcft manpages
+    test:
+      pipeline:
+        - uses: test/docs
   - name: "${{package.name}}-dev"
     pipeline:
       - uses: split/dev
     description: fcft dev
+test:
+  pipeline:
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
