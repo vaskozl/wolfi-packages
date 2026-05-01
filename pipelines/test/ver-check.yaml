@@ -1,0 +1,57 @@
+name: ver-check
+
+needs:
+  packages:
+    - busybox
+
+inputs:
+  bins:
+    description: |
+      Binary names whose version flag must succeed. One per line (block scalar).
+      Each binary must be on $PATH; the test only checks exit code, not output
+      format (deliberately — version output formats change between releases).
+    required: true
+  flag:
+    description: Version flag. 'auto' tries --version then -V then -v then version.
+    required: false
+    default: "auto"
+
+pipeline:
+  - name: "verify each binary's version flag exits 0"
+    runs: |
+      set -eu
+      flag="${{inputs.flag}}"
+      fails=0
+      passes=0
+      while IFS= read -r bin; do
+        bin=$(echo "$bin" | xargs)  # trim
+        [ -z "$bin" ] && continue
+        if [ "$flag" = "auto" ]; then
+          ok=false
+          for f in --version -V -v version; do
+            if "$bin" "$f" >/dev/null 2>&1; then
+              echo "PASS: $bin $f"
+              ok=true
+              break
+            fi
+          done
+          if [ "$ok" = "false" ]; then
+            echo "FAIL: $bin (no version flag worked: --version, -V, -v, version)" >&2
+            fails=$((fails+1))
+          else
+            passes=$((passes+1))
+          fi
+        else
+          if "$bin" "$flag" >/dev/null 2>&1; then
+            echo "PASS: $bin $flag"
+            passes=$((passes+1))
+          else
+            echo "FAIL: $bin $flag" >&2
+            fails=$((fails+1))
+          fi
+        fi
+      done <<EOF
+      ${{inputs.bins}}
+      EOF
+      echo "ver-check: $passes pass, $fails fail"
+      exit $fails

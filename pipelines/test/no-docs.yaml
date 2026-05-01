@@ -1,0 +1,51 @@
+name: no-docs
+
+needs:
+  packages:
+    - apk-tools
+    - busybox
+
+pipeline:
+  - name: primary package docs check
+    runs: |
+      set -eu
+      primary_pkg=$(basename ${{targets.contextdir}})
+
+      case "$primary_pkg" in
+        *-doc)
+          echo "Skipping documentation package [$primary_pkg]"
+          echo "Remove the \"test/no-docs\" pipeline from documentation packages"
+          exit 0
+          ;;
+      esac
+
+      cd /
+      violations=0
+
+      # Manpages and info pages should be split into a -doc subpackage
+      while IFS= read -r f; do
+        case "$f" in
+          usr/share/man/*|usr/local/share/man/*|usr/man/*)
+            [ -f "/$f" ] || continue
+            echo "FAIL: /$f (manual page)"
+            violations=$((violations+1))
+            ;;
+          usr/share/info/*|usr/local/share/info/*)
+            [ -f "/$f" ] || continue
+            base=$(basename "$f")
+            [ "$base" = "dir" ] && continue
+            echo "FAIL: /$f (info page)"
+            violations=$((violations+1))
+            ;;
+        esac
+      done <<EOF
+      $(apk info -qL "$primary_pkg")
+      EOF
+
+      if [ "$violations" -gt 0 ]; then
+        echo ""
+        echo "Primary package [$primary_pkg] contains $violations doc files."
+        echo "Move them to a -doc subpackage using split/manpages or split/infodir."
+        exit 1
+      fi
+      echo "Primary package [$primary_pkg] does not contain documentation files"
