@@ -1,7 +1,7 @@
 package:
   name: intel-media-driver
   version: "25.4.6"
-  epoch: 0
+  epoch: 1 # switch test to ldd-check
   description: Intel Media Driver for VAAPI (iHD, Gen9+ Intel GPUs)
   copyright:
     - license: BSD-3-Clause AND MIT
@@ -48,9 +48,6 @@ subpackages:
 
 test:
   pipeline:
-    - name: Verify iHD driver library exists
-      runs: |
-        stat /usr/lib/dri/iHD_drv_video.so
-    - name: Verify libigfxcmrt exists
-      runs: |
-        ls /usr/lib/libigfxcmrt*.so*
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
