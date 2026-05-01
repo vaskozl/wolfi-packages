@@ -3,7 +3,7 @@
 package:
   name: lidarr
   version: 3.1.0.4875
-  epoch: 0
+  epoch: 1 # alphabetize build env, drop || exit 1 in test
   description: Music download automation for usenet and torrents.
   copyright:
     - license: GPL-3.0-only
@@ -17,14 +17,14 @@ vars:
 environment:
   contents:
     packages:
+      - aspnet-${{vars.dotnet_version}}-runtime
       - build-base
       - busybox
       - ca-certificates-bundle
-      - yarn
-      - nodejs
-      - aspnet-${{vars.dotnet_version}}-runtime
       - dotnet-${{vars.dotnet_version}}-sdk
+      - nodejs
       - sqlite-libs
+      - yarn
 pipeline:
   - uses: git-checkout
     with:
@@ -81,4 +81,6 @@ pipeline:
 test:
   pipeline:
     - name: Verify lidarr installation, please improve the test as needed
-      runs: lidarr --version || exit 1
+      runs: |
+        set -eu
+        lidarr --version
