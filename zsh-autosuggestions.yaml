@@ -2,7 +2,7 @@
 package:
   name: zsh-autosuggestions
   version: 0.7.1
-  epoch: 0
+  epoch: 1 # add test section
   description: Fish-like autosuggestions for zsh
   copyright:
     - license: MIT
@@ -20,3 +20,14 @@ pipeline:
       tag: v${{package.version}}
   - runs: |
       install -Dm644 *.zsh -t "${{targets.destdir}}"/usr/share/zsh/plugins/"${{package.name}}"
+test:
+  environment:
+    contents:
+      packages:
+        - zsh
+  pipeline:
+    - runs: |
+        set -eu
+        plugin=/usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+        test -f "$plugin"
+        zsh -c ". $plugin && typeset -f _zsh_autosuggest_start >/dev/null"
