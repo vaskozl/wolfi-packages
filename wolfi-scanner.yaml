@@ -2,17 +2,16 @@
 package:
   name: wolfi-scanner
   version: 0.0.4
-  epoch: 0
+  epoch: 1 # pin go-1.26, add go-package, drop build-base, fix test
   description: In cluster wolfi scanner.
   copyright:
     - license: Apache-2.0
 environment:
   contents:
     packages:
-      - build-base
       - busybox
       - ca-certificates-bundle
-      - go
+      - go-1.26
 pipeline:
   - uses: git-checkout
     with:
@@ -20,10 +19,13 @@ pipeline:
       tag: ${{package.version}}
   - uses: go/build
     with:
+      go-package: go-1.26
       packages: .
       output: wolfi-scanner
   - uses: strip
 test:
   pipeline:
-    - name: Verify scanner installation.
-      runs: wolfi-scanner -h || exit 1
+    - uses: test/help-check
+      with:
+        bins: |
+          wolfi-scanner
