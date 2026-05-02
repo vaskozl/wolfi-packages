@@ -47,9 +47,22 @@ awk -F'|' '
 arch_supported() { grep -qxF "$1 $2" "$WORK/supports"; }
 
 # Resolve a yaml's deps to other local yamls it depends on.
+# All lookups happen in one awk pass against $WORK/providers (busybox lacks `join`).
 resolve_deps() {
-    printf '%s\n' "$2" | tr ',' '\n' | sed 's/[~=<>!].*//' | awk 'NF' | sort -u |
-        join - "$WORK/providers" | awk '{print $2}' | sort -u | grep -vxF "$1" || true
+    awk -v self="$1" -v deps="$2" '
+        { p[$1] = p[$1] " " $2 }
+        END {
+            n = split(deps, d, ",")
+            for (i = 1; i <= n; i++) {
+                name = d[i]
+                sub(/[~=<>!].*/, "", name)
+                if (name == "" || !(name in p)) continue
+                m = split(p[name], a, " ")
+                for (j = 1; j <= m; j++)
+                    if (a[j] != "" && a[j] != self) print a[j]
+            }
+        }
+    ' "$WORK/providers" | sort -u
 }
 
 cat <<'YAML'
