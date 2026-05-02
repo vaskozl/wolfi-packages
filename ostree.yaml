@@ -52,10 +52,10 @@ subpackages:
 test:
   pipeline:
     - uses: test/tw/ldd-check
-    - uses: test/tw/ver-check
+    - uses: test/ver-check
       with:
         bins: ostree
-    - uses: test/tw/help-check
+    - uses: test/help-check
       with:
         bins: ostree
     - runs: |
