@@ -2,7 +2,7 @@
 package:
   name: zsh-syntax-highlighting
   version: 0.8.0
-  epoch: 0
+  epoch: 1 # drop automake, add test verifying .zsh files installed
   description: Fish shell like syntax highlighting for zsh
   copyright:
     - license: BSD-3-Clause
@@ -13,7 +13,6 @@ environment:
   contents:
     packages:
       - busybox
-      - automake
 pipeline:
   - uses: git-checkout
     with:
@@ -22,4 +21,8 @@ pipeline:
   - uses: autoconf/make-install
     with:
       opts: SHARE_DIR="${{targets.destdir}}/usr/share/zsh/plugins/${{package.name}}"
-
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        stat /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
