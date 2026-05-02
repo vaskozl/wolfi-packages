@@ -1,20 +1,20 @@
 package:
   name: trusttunnel
   version: 1.0.33
-  epoch: 0
+  epoch: 1 # add tests, alphabetize env
   description: Modern, fast and obfuscated VPN protocol
   copyright:
     - license: Apache-2.0-only
 environment:
   contents:
     packages:
-      - cmake
-      - busybox
       - build-base
+      - busybox
       - cargo-auditable
-      - rust
-      - libclang-cpp-19
       - clang-19
+      - cmake
+      - libclang-cpp-19
+      - rust
 pipeline:
   - uses: git-checkout
     with:
@@ -27,3 +27,14 @@ pipeline:
       install -Dm755 target/release/setup_wizard ${{targets.destdir}}/usr/bin/trusttunnel-setup
       install -Dm755 target/release/trusttunnel_endpoint ${{targets.destdir}}/usr/bin/trusttunnel
   - uses: strip
+test:
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          trusttunnel
+    - uses: test/help-check
+      with:
+        bins: |
+          trusttunnel
+          trusttunnel-setup
