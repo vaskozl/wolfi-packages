@@ -8,13 +8,6 @@
   ],
   "commitMessageTopic": "{{depName}}",
   "commitMessageExtra": "to {{newVersion}}",
-  "postUpgradeTasks": {
-    "commands": [
-      "sed -i -E 's/^([[:space:]]*epoch:)[[:space:]]+[0-9]+.*$/\\1 0/' '{{{packageFile}}}'",
-    ],
-    "fileFilters": ["**/*.yaml", "**/*.yml"],
-    "executionMode": "update",
-  },
   "customManagers": [
     {
       "customType": "regex",
@@ -65,12 +58,36 @@
       "datasourceTemplate": "gitlab-tags",
       "versioningTemplate": "loose",
       "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
+    },
+    {
+      // Bump pinned `go-1.X` toolchain references via the wolfi apk index.
+      "customType": "regex",
+      "managerFilePatterns": ["/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "\\bgo-(?<currentValue>1\\.\\d+)(?:[^\\d.]|$)"
+      ],
+      "depNameTemplate": "go",
+      "datasourceTemplate": "custom.wolfi-base",
+      "versioningTemplate": "loose"
     }
   ],
+  "customDatasources": {
+    "wolfi-base": {
+      "defaultRegistryUrlTemplate": "http://apk-wolfi:3000/{{packageName}}"
+    }
+  },
   "packageRules": [
     {
+      // Reset epoch to 0 only on upstream version bumps.
       "matchDatasources": ["github-tags","gitlab-tags","forgejo-tags","github-releases"],
       "groupName": "tags",
+      "postUpgradeTasks": {
+        "commands": [
+          "sed -i -E 's/^([[:space:]]*epoch:)[[:space:]]+[0-9]+.*$/\\1 0/' '{{{packageFile}}}'",
+        ],
+        "fileFilters": ["**/*.yaml", "**/*.yml"],
+        "executionMode": "update",
+      },
     },
     {
       // Packages that repackage GitHub Release assets (not bare git tags) have
@@ -84,6 +101,13 @@
         "intel/compute-runtime"
       ],
       "enabled": false
+    },
+    {
+      // Trim apk version to major.minor so PRs fire only on new minors.
+      "matchDatasources": ["custom.wolfi-base"],
+      "matchPackageNames": ["go"],
+      "extractVersion": "^([0-9]+\\.[0-9]+)",
+      "groupName": "go-toolchain"
     }
   ]
 }
