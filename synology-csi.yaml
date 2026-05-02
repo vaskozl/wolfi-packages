@@ -2,17 +2,16 @@
 package:
   name: synology-csi
   version: 1.2.1
-  epoch: 0
+  epoch: 1 # drop build-base, pin go-1.26, add go-package, fix test
   description: The official Container Storage Interface driver for Synology NAS
   copyright:
     - license: Apache-2.0-only
 environment:
   contents:
     packages:
-      - build-base
       - busybox
       - ca-certificates-bundle
-      - go
+      - go-1.26
 pipeline:
   - uses: git-checkout
     with:
@@ -20,14 +19,18 @@ pipeline:
       tag: v${{package.version}}
   - uses: go/build
     with:
-      packages: .
+      go-package: go-1.26
       output: synology-csi-driver
+      packages: .
   - uses: go/build
     with:
-      packages: ./synocli
+      go-package: go-1.26
       output: synologycli
+      packages: ./synocli
   - uses: strip
 test:
   pipeline:
     - name: Verify synology-csi installation
-      runs: synology-csi-driver --help || exit 1
+      runs: |
+        set -eu
+        synology-csi-driver --help
