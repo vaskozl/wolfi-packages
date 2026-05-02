@@ -34,9 +34,7 @@ test:
   pipeline:
     - uses: test/perl-module-check
       with:
-        modules: |
-          Date::Parse
-          Date::Format
+        modules: "Date::Parse Date::Format"
     - name: Verify Date::Parse and Date::Format roundtrip a known epoch
       runs: |
         set -eu

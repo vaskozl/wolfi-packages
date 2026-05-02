@@ -35,11 +35,7 @@ test:
   pipeline:
     - uses: test/perl-module-check
       with:
-        modules: |
-          Mail::Address
-          Mail::Header
-          Mail::Internet
-          Mail::Util
+        modules: "Mail::Address Mail::Header Mail::Internet Mail::Util"
     - name: Verify Mail::Address parses an RFC 822 address
       runs: |
         set -eu

@@ -15,6 +15,9 @@ export SOURCE_DATE_EPOCH := env_var_or_default("SOURCE_DATE_EPOCH", `git -C "$(g
 # Set LINT=yes to fail builds on melange lint warnings (catches drift early).
 lint_flag := if env_var_or_default("LINT", "no") == "yes" { "--fail-on-lint-warning" } else { "" }
 
+# Use `unshare -r` to run in a user namespace if available (avoids needing setuid bwrap).
+unshare := `command -v unshare >/dev/null 2>&1 && echo "unshare -r" || echo ""`
+
 # Show available recipes
 default:
     @just --list
@@ -38,7 +41,7 @@ build pkg: setup
     #!/usr/bin/env sh
     echo "Building {{pkg}} for {{arch}}..."
     mkdir -p {{out_dir}}
-    melange build "{{pkg}}" \
+    {{unshare}} melange build "{{pkg}}" \
         --workspace-dir="{{justfile_directory()}}" \
         --arch="{{arch}}" \
         --runner={{runner}} \
@@ -67,12 +70,13 @@ test pkg: setup
     echo "Testing {{pkg}} for {{arch}}..."
     mkdir -p {{out_dir}}/{{arch}}
     ln -sfn {{out_dir}}/{{arch}} {{justfile_directory()}}/{{arch}}
-    melange test "{{pkg}}" \
+    {{unshare}} melange test "{{pkg}}" \
         --workspace-dir="{{justfile_directory()}}" \
         --arch="{{arch}}" \
         --runner={{runner}} \
         --repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os,{{out_dir}} \
         --keyring-append=melange.rsa.pub,https://apks.sko.ai/melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub \
+        --pipeline-dirs ./pipelines \
         --env-file=common.env \
         --test-package-append=busybox \
         --ignore-signatures

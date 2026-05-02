@@ -271,7 +271,7 @@ Build envs accumulate cruft from copy-paste. Trim aggressively.
 - Pure-Perl distributions need only `busybox` + `perl` at build time.
 - Don't list `perl-*` runtime deps that come transitively via the dist's own `Makefile.PL`/`cpanfile`. melange's SCA picks them up.
 - Ship manpages in a `-doc` subpackage via `split/manpages`.
-- Test with `test/perl-module-check` plus a functional assertion (instantiate, call a method, compare output).
+- Test with `test/perl-module-check` plus a functional assertion (instantiate, call a method, compare output). **Always pass `modules:` as a space-separated string** (`modules: "Foo::Bar Baz::Qux"`), never a multiline block scalar — melange's shell parser rejects `for mod in\nFoo` as missing `do`.
 
 ### Python
 
