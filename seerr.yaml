@@ -2,7 +2,7 @@ package:
   name: seerr
   version: 3.2.0
   description: "Open-source media request and discovery manager for Jellyfin, Plex, and Emby."
-  epoch: 2 # fix path-fix step targeting wrong dir
+  epoch: 3 # refresh npm.patch for upstream package.json drift
   copyright:
     - license: MIT
 environment:
