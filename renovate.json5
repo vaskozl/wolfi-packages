@@ -3,7 +3,6 @@
   "extends": [
     "config:best-practices",
     ":automergeAll",
-    ":skipStatusChecks",
     ":disableRateLimiting",
   ],
   "commitMessageTopic": "{{depName}}",

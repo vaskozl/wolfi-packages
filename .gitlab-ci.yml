@@ -1,3 +1,8 @@
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+
 stages: [generate, build]
 
 generate:
@@ -9,8 +14,6 @@ generate:
     - .gitlab/gen-dag.sh > generated-pipeline.yml
   artifacts:
     paths: [generated-pipeline.yml]
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
 
 build:
   stage: build
@@ -22,3 +25,8 @@ build:
     strategy: depend
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
+      variables:
+        IS_MAIN: "true"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      variables:
+        IS_MAIN: "false"
