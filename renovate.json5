@@ -8,6 +8,13 @@
   ],
   "commitMessageTopic": "{{depName}}",
   "commitMessageExtra": "to {{newVersion}}",
+  "postUpgradeTasks": {
+    "commands": [
+      "sed -i -E 's/^([[:space:]]*epoch:)[[:space:]]+[0-9]+.*$/\\1 0/' '{{{packageFile}}}'",
+    ],
+    "fileFilters": ["**/*.yaml", "**/*.yml"],
+    "executionMode": "update",
+  },
   "customManagers": [
     {
       "customType": "regex",
