@@ -8,8 +8,8 @@ package:
 environment:
   contents:
     packages:
-      - build-base
       - meson
+      - pkgconf
       - python3
       - samurai
       - wayland-dev
@@ -19,6 +19,8 @@ pipeline:
       repository: https://gitlab.freedesktop.org/wayland/wayland-protocols
       tag: ${{package.version}}
   - uses: meson/configure
+    with:
+      opts: -Dtests=false
   - uses: meson/compile
   - uses: meson/install
   - uses: strip
@@ -28,8 +30,12 @@ subpackages:
       - uses: split/dev
     description: ${{package.name}} headers and pkg-config files
     test:
+      environment:
+        contents:
+          packages:
+            - pkgconf
       pipeline:
-        - uses: test/pkgconf
+        - runs: pkg-config --modversion wayland-protocols
 test:
   pipeline:
     - runs: |
