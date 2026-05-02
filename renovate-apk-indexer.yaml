@@ -2,17 +2,16 @@
 package:
   name: renovate-apk-indexer
   version: 0.1.0
-  epoch: 2
+  epoch: 3 # drop build-base, pin go-1.26, add go-package, fix test
   description: APK custom datasource HTTP server for renovate
   copyright:
     - license: Apache-2.0
 environment:
   contents:
     packages:
-      - build-base
       - busybox
       - ca-certificates-bundle
-      - go
+      - go-1.26
 pipeline:
   - uses: git-checkout
     with:
@@ -23,10 +22,13 @@ pipeline:
       patches: e1d0ce8629e288cac062e748e62ee2204026f6ab.patch
   - uses: go/build
     with:
-      packages: .
+      go-package: go-1.26
       output: renovate-apk-indexer
+      packages: .
   - uses: strip
 test:
   pipeline:
     - name: Verify renovate-apk-indexer installation
-      runs: renovate-apk-indexer -h || exit 1
+      runs: |
+        set -eu
+        renovate-apk-indexer -h
