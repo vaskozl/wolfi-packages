@@ -3,7 +3,7 @@
 package:
   name: sonarr
   version: 5.0.0_alpha
-  epoch: 2
+  epoch: 3 # alphabetize build env, fix test style
   description: TV download automation for usenet and torrents.
   copyright:
     - license: GPL-3.0-only
@@ -17,14 +17,14 @@ vars:
 environment:
   contents:
     packages:
+      - aspnet-${{vars.dotnet_version}}-runtime
       - build-base
       - busybox
       - ca-certificates-bundle
-      - yarn
-      - nodejs
-      - aspnet-${{vars.dotnet_version}}-runtime
       - dotnet-${{vars.dotnet_version}}-sdk
+      - nodejs
       - sqlite-libs
+      - yarn
 var-transforms:
   # Transform 1.0.0_beta55 -> 1.0.0-beta.55
   - from: ${{package.version}}
@@ -85,5 +85,7 @@ pipeline:
   - uses: strip
 test:
   pipeline:
-    - name: Verify sonarr installation, please improve the test as needed
-      runs: sonarr --version || exit 1
+    - name: Verify sonarr installation
+      runs: |
+        set -eu
+        sonarr --version
