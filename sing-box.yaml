@@ -3,7 +3,7 @@
 package:
   name: sing-box
   version: "1.13.11"
-  epoch: 0
+  epoch: 1 # pin go-1.26, add go-package, fix test
   description: The universal proxy platform
   copyright:
     - license: GPL-3.0-or-later
@@ -14,7 +14,7 @@ environment:
       - build-base
       - busybox
       - ca-certificates-bundle
-      - go
+      - go-1.26
 
 pipeline:
   - uses: git-checkout
@@ -24,10 +24,11 @@ pipeline:
 
   - uses: go/build
     with:
-      packages: ./cmd/sing-box
-      output: sing-box
-      tags: with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_acme,with_clash_api,with_tailscale,badlinkname,tfogo_checklinkname0
+      go-package: go-1.26
       ldflags: -X github.com/sagernet/sing-box/constant.Version=${{package.version}} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0 -buildid= -linkmode=external
+      output: sing-box
+      packages: ./cmd/sing-box
+      tags: with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_acme,with_clash_api,with_tailscale,badlinkname,tfogo_checklinkname0
 
   - runs: |
       bin="${{targets.destdir}}/usr/bin/sing-box"
@@ -69,4 +70,6 @@ subpackages:
 test:
   pipeline:
     - name: Verify sing-box
-      runs: sing-box version
+      runs: |
+        set -eu
+        sing-box version
