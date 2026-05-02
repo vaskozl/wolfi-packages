@@ -1,7 +1,7 @@
 package:
   name: ostree
   version: "2026.1"
-  epoch: 0
+  epoch: 1 # functional test improvements
   description: "Operating system and container binary deployment and upgrades"
   copyright:
     - license: GPL-2.0-only
@@ -51,17 +51,23 @@ subpackages:
         - uses: test/tw/ldd-check
 test:
   pipeline:
+    - uses: test/tw/ldd-check
+    - uses: test/tw/ver-check
+      with:
+        bins: ostree
+    - uses: test/tw/help-check
+      with:
+        bins: ostree
     - runs: |
-        set -o pipefail
+        set -eu
         ostree --help | grep -F -e "Commands for managing a host system booted with ostree"
-        ostree --version | grep -F -e "${{package.version}}"
     - name: Ensure expected modules are installed
       runs: |
-        set -o pipefail
+        set -eu
         MODULES_OUTPUT=$(mktemp)
         ostree --version 2>&1 | tee "${MODULES_OUTPUT}"
         grep_file() {
-          grep -F -e $@ "${MODULES_OUTPUT}"
+          grep -F -e "$@" "${MODULES_OUTPUT}"
         }
         grep_file "inode64"
         grep_file "initial-var"

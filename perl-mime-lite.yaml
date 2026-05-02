@@ -3,21 +3,15 @@
 package:
   name: perl-mime-lite
   version: "3.033"
-  epoch: 0
+  epoch: 1 # pure-Perl env trim + functional test
   description: low-calorie MIME generator
   copyright:
     - license: GPL-1.0-or-later OR Artistic-1.0-Perl
 environment:
   contents:
     packages:
-      - build-base
       - busybox
-      - ca-certificates-bundle
       - perl
-      - perl-mime-types
-      - perl-email-date-format
-      - perl-mailtools
-      - perl-test-pod-coverage
 pipeline:
   - uses: fetch
     with:
@@ -33,7 +27,29 @@ subpackages:
     pipeline:
       - uses: split/manpages
     description: perl-mime-lite manpages
+    test:
+      pipeline:
+        - uses: test/docs
 test:
   pipeline:
-    - name: Verify perl-mime-lite installation
-      runs: perl -MMIME::Lite -e 'print 1' || exit 1
+    - uses: test/perl-module-check
+      with:
+        modules: MIME::Lite
+    - name: Verify MIME::Lite builds a multipart message with expected headers
+      runs: |
+        set -eu
+        out=$(perl -MMIME::Lite -e '
+          my $msg = MIME::Lite->new(
+            From    => "from\@example.com",
+            To      => "to\@example.com",
+            Subject => "test subject",
+            Type    => "multipart/mixed",
+          );
+          $msg->attach(Type => "TEXT", Data => "hello world");
+          print $msg->as_string;
+        ')
+        echo "$out" | grep -F 'From: from@example.com'
+        echo "$out" | grep -F 'To: to@example.com'
+        echo "$out" | grep -F 'Subject: test subject'
+        echo "$out" | grep -F 'multipart/mixed'
+        echo "$out" | grep -F 'hello world'

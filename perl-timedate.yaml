@@ -1,17 +1,16 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/wolfi-dev/melange/main/pkg/config/melange.schema.json
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/main/perl-timedate/APKBUILD
 package:
   name: perl-timedate
   version: "2.33"
-  epoch: 0
+  epoch: 1 # pure-Perl env trim + functional test
   description: Perl module for TimeDate
   copyright:
     - license: GPL-1.0-or-later OR Artistic-1.0-Perl
 environment:
   contents:
     packages:
-      - build-base
       - busybox
-      - ca-certificates-bundle
       - perl
 pipeline:
   - uses: fetch
@@ -28,7 +27,20 @@ subpackages:
     pipeline:
       - uses: split/manpages
     description: perl-timedate manpages
+    test:
+      pipeline:
+        - uses: test/docs
 test:
   pipeline:
-    - name: Verify perl-timedate installation, please improve the test as needed
-      runs: perl -MTimeDate 'print 1' | exit 1
+    - uses: test/perl-module-check
+      with:
+        modules: |
+          Date::Parse
+          Date::Format
+    - name: Verify Date::Parse and Date::Format roundtrip a known epoch
+      runs: |
+        set -eu
+        out=$(perl -MDate::Parse -MDate::Format -e \
+          'print time2str("%Y-%m-%dT%H:%M:%SZ", str2time("1970-01-01T00:00:00Z"), "UTC")')
+        echo "$out"
+        echo "$out" | grep -Fq '1970-01-01T00:00:00Z'

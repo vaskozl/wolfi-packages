@@ -3,16 +3,14 @@
 package:
   name: perl-mailtools
   version: "2.22"
-  epoch: 0
+  epoch: 1 # pure-Perl env trim + functional test
   description: Various ancient e-mail related modules
   copyright:
     - license: GPL-1.0-or-later OR Artistic-1.0-Perl
 environment:
   contents:
     packages:
-      - build-base
       - busybox
-      - ca-certificates-bundle
       - perl
       - perl-timedate
 pipeline:
@@ -30,7 +28,24 @@ subpackages:
     pipeline:
       - uses: split/manpages
     description: perl-mailtools manpages
+    test:
+      pipeline:
+        - uses: test/docs
 test:
   pipeline:
-    - name: Verify perl-mailtools installation
-      runs: perl -MMail::Address -e 'print 1' || exit 1
+    - uses: test/perl-module-check
+      with:
+        modules: |
+          Mail::Address
+          Mail::Header
+          Mail::Internet
+          Mail::Util
+    - name: Verify Mail::Address parses an RFC 822 address
+      runs: |
+        set -eu
+        out=$(perl -MMail::Address -e '
+          my ($a) = Mail::Address->parse("Foo Bar <foo@example.com>");
+          print $a->address, "|", $a->name;
+        ')
+        echo "$out"
+        echo "$out" | grep -qF 'foo@example.com|Foo Bar'
