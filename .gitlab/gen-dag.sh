@@ -79,6 +79,13 @@ stages: [build]
   script:
     - melange build "$PKG" $MELANGE_FLAGS --source-dir="${PKG%.yaml}" --out-dir="$OUT_DIR" --signing-key=melange.rsa
 
+noop:
+  stage: build
+  image: busybox
+  script: ["true"]
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
 YAML
 
 while IFS='|' read -r base _ _ deps; do
