@@ -1,7 +1,7 @@
 package:
   name: wlroots
   version: "0.20.0"
-  epoch: 0
+  epoch: 1 # alphabetize env, add tests
   description: Modular Wayland compositor library
   copyright:
     - license: MIT
@@ -12,21 +12,24 @@ environment:
       - glslang-dev
       - hwdata-dev
       - hwdata-pnp
+      - lcms2-dev
       - libcap-dev
       - libdisplay-info-dev
       - libinput-dev
       - libliftoff-dev
+      - libseat-dev
+      - libsystemd
       - libxcb-dev
       - libxkbcommon-dev
-      - lcms2-dev
       - mesa-dev
       - mesa-gbm
       - meson
       - ninja-build
-      - samurai
       - pixman-dev
-      - vulkan-loader
+      - samurai
+      - systemd-dev
       - vulkan-headers
+      - vulkan-loader
       - wayland-dev
       - wayland-protocols
       - wayland-protocols-dev
@@ -34,9 +37,6 @@ environment:
       - xcb-util-renderutil-dev
       - xcb-util-wm-dev
       - xkeyboard-config-dev
-      - systemd-dev
-      - libsystemd
-      - libseat-dev
 pipeline:
   - uses: git-checkout
     with:
@@ -62,3 +62,13 @@ subpackages:
     dependencies:
       runtime:
         - wlroots
+    test:
+      pipeline:
+        - runs: |
+            set -eu
+            stat /usr/include/wlr/render/wlr_renderer.h
+test:
+  pipeline:
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
