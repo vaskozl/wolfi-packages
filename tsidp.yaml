@@ -2,14 +2,13 @@
 package:
   name: tsidp
   version: 0.0.12
-  epoch: 0
+  epoch: 1 # add go-package, drop build-base, improve tests
   description: A simple OIDC / OAuth Identity Provider (IdP) server for your tailnet.
   copyright:
     - license: BSD-3-Clause
 environment:
   contents:
     packages:
-      - build-base
       - busybox
       - ca-certificates-bundle
       - go-1.26
@@ -20,10 +19,13 @@ pipeline:
       tag: v${{package.version}}
   - uses: go/build
     with:
+      go-package: go-1.26
       packages: ./
       output: tsidp-server
   - uses: strip
 test:
   pipeline:
-    - name: Verify tsidp installation
-      runs: tsidp-server --help || exit 1
+    - uses: test/help-check
+      with:
+        bins: |
+          tsidp-server
