@@ -1,7 +1,7 @@
 package:
   name: seatd
   version: "0.9.1"
-  epoch: 0
+  epoch: 1 # add test section
   description: Minimal seat management daemon
   copyright:
     - license: MIT
@@ -40,3 +40,9 @@ subpackages:
     pipeline:
       - uses: split/manpages
     description: ${{package.name}} manpages
+
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        seatd --help
