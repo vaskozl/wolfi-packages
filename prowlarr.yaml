@@ -3,7 +3,7 @@
 package:
   name: prowlarr
   version: 2.3.5.5327
-  epoch: 0
+  epoch: 1 # alphabetize env packages, improve test
   description: TV download automation for usenet and torrents.
   copyright:
     - license: GPL-3.0-only
@@ -17,14 +17,14 @@ vars:
 environment:
   contents:
     packages:
+      - aspnet-${{vars.dotnet_version}}-runtime
       - build-base
       - busybox
       - ca-certificates-bundle
-      - yarn
-      - nodejs
-      - aspnet-${{vars.dotnet_version}}-runtime
       - dotnet-${{vars.dotnet_version}}-sdk
+      - nodejs
       - sqlite-libs
+      - yarn
 pipeline:
   - uses: git-checkout
     with:

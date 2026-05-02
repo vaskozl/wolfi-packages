@@ -1,7 +1,7 @@
 package:
   name: qbittorrent-nox
   version: "5.1.4"
-  epoch: 0
+  epoch: 1 # functional tests
   description: qBittorrent BitTorrent client (headless/webui only)
   copyright:
     - license: GPL-2.0-or-later
@@ -55,17 +55,12 @@ pipeline:
   - uses: strip
 
 test:
-  environment:
-    contents:
-      packages:
-        - busybox
   pipeline:
-    - name: Verify qbittorrent-nox binary exists
+    - name: Version check
       runs: |
-        stat /usr/bin/qbittorrent-nox
-    - name: Verify qbittorrent-nox is executable
+        set -eu
+        qbittorrent-nox --version
+    - name: Help check
       runs: |
-        test -x /usr/bin/qbittorrent-nox
-    - name: Check qbittorrent-nox version
-      runs: |
-        qbittorrent-nox --version 2>&1 || true
+        set -eu
+        qbittorrent-nox --help

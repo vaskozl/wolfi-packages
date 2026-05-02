@@ -1,23 +1,22 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/wolfi-dev/melange/main/pkg/config/melange.schema.json
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/main/perl-path-tiny/APKBUILD
 package:
   name: perl-path-tiny
   version: "0.148"
-  epoch: 0
+  epoch: 1 # pure-Perl env trim + functional test
   description: File path utility
   copyright:
     - license: Apache-2.0
 environment:
   contents:
     packages:
-      - build-base
       - busybox
-      - ca-certificates-bundle
       - perl
 pipeline:
   - uses: fetch
     with:
-      uri: https://cpan.metacpan.org/authors/id/D/DA/DAGOLDEN/Path-Tiny-${{package.version}}.tar.gz
       expected-sha256: "818aed754b74f399e42c238bea738e20a52af89a6e3feb58bec9d0130eea4746"
+      uri: https://cpan.metacpan.org/authors/id/D/DA/DAGOLDEN/Path-Tiny-${{package.version}}.tar.gz
   - uses: perl/make
   - uses: autoconf/make
   - uses: autoconf/make-install
@@ -28,7 +27,21 @@ subpackages:
     pipeline:
       - uses: split/manpages
     description: perl-path-tiny manpages
+    test:
+      pipeline:
+        - uses: test/docs
 test:
   pipeline:
-    - name: Verify perl-path-tiny installation, please improve the test as needed
-      runs: perl -MPath::Tiny 'print 1' || exit 1
+    - uses: test/perl-module-check
+      with:
+        modules: Path::Tiny
+    - name: Verify Path::Tiny round-trips file content
+      runs: |
+        set -eu
+        out=$(perl -MPath::Tiny -e '
+          my $f = Path::Tiny->tempfile;
+          $f->spew("hello path-tiny");
+          print $f->slurp;
+        ')
+        echo "$out"
+        echo "$out" | grep -Fq 'hello path-tiny'
