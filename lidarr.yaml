@@ -3,7 +3,7 @@
 package:
   name: lidarr
   version: 3.1.0.4875
-  epoch: 1 # alphabetize build env, drop || exit 1 in test
+  epoch: 2 # disable NuGetAudit (MailKit advisory)
   description: Music download automation for usenet and torrents.
   copyright:
     - license: GPL-3.0-only
@@ -38,6 +38,8 @@ pipeline:
           # remove upstream dotnet version
           rm global.json
       - runs: |
+          export NuGetAudit=false
+
           # increase max opened files
           ulimit -n 4096
 

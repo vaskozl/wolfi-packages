@@ -3,7 +3,7 @@
 package:
   name: radarr
   version: 6.1.1.10360
-  epoch: 1 # alphabetize build env, fix test
+  epoch: 2 # disable NuGetAudit (MailKit advisory)
   description: TV download automation for usenet and torrents.
   copyright:
     - license: GPL-3.0-only
@@ -39,6 +39,8 @@ pipeline:
           rm global.json
 
       - runs: |
+          export NuGetAudit=false
+
           # map arch to dotnet
           case "${{build.arch}}" in
               x86_64) _dotnet_arch="x64" ;;
