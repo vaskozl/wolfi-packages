@@ -3,22 +3,19 @@
 package:
   name: perl-mojolicious
   version: "9.42"
-  epoch: 0
+  epoch: 1 # pure-Perl env trim + functional test
   description: Real-time web framework
   copyright:
     - license: Artistic-2.0
 environment:
   contents:
     packages:
-      - build-base
       - busybox
-      - ca-certificates-bundle
-      - curl
       - perl
 pipeline:
-  - runs: |
-      curl -sfL "https://cpan.metacpan.org/authors/id/S/SR/SRI/Mojolicious-${{package.version}}.tar.gz" \
-        | tar xz --strip-components=1
+  - uses: fetch
+    with:
+      uri: https://cpan.metacpan.org/authors/id/S/SR/SRI/Mojolicious-${{package.version}}.tar.gz
   - uses: perl/make
   - uses: autoconf/make
   - uses: autoconf/make-install
@@ -29,7 +26,24 @@ subpackages:
     pipeline:
       - uses: split/manpages
     description: perl-mojolicious manpages
+    test:
+      pipeline:
+        - uses: test/docs
 test:
   pipeline:
-    - name: Verify perl-mojolicious installation, please improve the test as needed
-      runs: perl -Mojo -E 'a(sub ($c) { $c->render(text => "Hello!") })->start' get / || exit 1
+    - uses: test/perl-module-check
+      with:
+        modules: |
+          Mojo
+          Mojo::URL
+          Mojo::UserAgent
+          Mojolicious
+    - name: Verify Mojo::URL parses and round-trips a URL correctly
+      runs: |
+        set -eu
+        out=$(perl -MMojo::URL -e '
+          my $url = Mojo::URL->new("https://example.com/path?foo=bar");
+          print $url->host, "|", $url->path, "|", $url->query->param("foo");
+        ')
+        echo "$out"
+        echo "$out" | grep -qF 'example.com|/path|bar'
