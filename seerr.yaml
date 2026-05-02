@@ -2,21 +2,21 @@ package:
   name: seerr
   version: 3.2.0
   description: "Open-source media request and discovery manager for Jellyfin, Plex, and Emby."
-  epoch: 0
+  epoch: 1 # drop wolfi-base from build env, add set -eu, add test
   copyright:
     - license: MIT
 environment:
   contents:
     packages:
+      - bash
       - build-base
+      - busybox
       - ca-certificates-bundle
       - jq
+      - node-gyp
       - nodejs-${{vars.node-version}}
       - pnpm
-      - wolfi-base
       - python3
-      - bash
-      - node-gyp
 vars:
   node-version: 25
 pipeline:
@@ -30,6 +30,7 @@ pipeline:
   - name: pnpm-build
     pipeline:
       - runs: |
+          set -eu
           echo "{\"commitTag\": \"${{package.version}}\"}" > committag.json
           export NEXT_TELEMETRY_DISABLED=1
           export CYPRESS_INSTALL_BINARY=0
@@ -42,6 +43,7 @@ pipeline:
           rm -rf .next/cache
 
   - runs: |
+      set -eu
       mkdir -p ${{targets.contextdir}}/usr/bin \
       ${{targets.contextdir}}/usr/lib/seerr \
       ${{targets.contextdir}}/usr/local
@@ -58,5 +60,16 @@ pipeline:
       # Fix paths
       find "${{targets.contextdir}}/usr/lib/jellyseerr/.next" -type f -print0 | xargs -0 sed -i "s^${{package.srcdir}}^/usr/lib/jellyseerr^g"
 
+      printf '#!/bin/sh\nexec node /usr/lib/seerr/dist/index.js "$@"\n' > ${{targets.contextdir}}/usr/bin/seerr
+      chmod 755 ${{targets.contextdir}}/usr/bin/seerr
 
-      echo '#!/bin/sh\nexec node /usr/lib/seerr/dist/index.js "$@"\n' > ${{targets.contextdir}}/usr/bin/seerr
+test:
+  environment:
+    contents:
+      packages:
+        - nodejs-${{vars.node-version}}
+  pipeline:
+    - runs: |
+        set -eu
+        test -x /usr/bin/seerr
+        test -f /usr/lib/seerr/dist/index.js
