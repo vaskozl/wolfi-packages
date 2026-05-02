@@ -3,7 +3,7 @@
 package:
   name: prowlarr
   version: 2.3.5.5327
-  epoch: 1 # alphabetize env packages, improve test
+  epoch: 2 # disable NuGetAudit (MailKit advisory)
   description: TV download automation for usenet and torrents.
   copyright:
     - license: GPL-3.0-only
@@ -38,6 +38,8 @@ pipeline:
           # remove upstream dotnet version
           rm global.json
       - runs: |
+          export NuGetAudit=false
+
           # map arch to dotnet
           case "${{build.arch}}" in
               x86_64) _dotnet_arch="x64" ;;
