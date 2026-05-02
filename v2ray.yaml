@@ -2,7 +2,7 @@
 package:
   name: v2ray
   version: "5.48.0"
-  epoch: 0
+  epoch: 1 # pin go-1.26, add go-package, drop build-base, improve tests
   description: A platform for building proxies to bypass network restrictions
   copyright:
     - license: MIT
@@ -16,11 +16,10 @@ package:
 environment:
   contents:
     packages:
-      - build-base
       - busybox
       - ca-certificates-bundle
       - curl
-      - go
+      - go-1.26
 
 pipeline:
   - uses: git-checkout
@@ -30,6 +29,7 @@ pipeline:
 
   - uses: go/build
     with:
+      go-package: go-1.26
       packages: ./main
       output: v2ray
       ldflags: |
@@ -51,25 +51,19 @@ pipeline:
   - uses: strip
 
 test:
-  environment:
-    contents:
-      packages:
-        - busybox
   pipeline:
-    - name: Verify v2ray binary exists
+    - uses: test/ver-check
+      with:
+        bins: |
+          v2ray
+    - uses: test/help-check
+      with:
+        bins: |
+          v2ray
+    - name: Verify data and config files
       runs: |
-        stat /usr/bin/v2ray
-    - name: Verify v2ray is executable
-      runs: |
-        test -x /usr/bin/v2ray
-    - name: Check v2ray version
-      runs: |
-        v2ray --version 2>&1 | head -5 || true
-    - name: Verify data files
-      runs: |
+        set -eu
         stat /usr/share/v2ray/geosite.dat
         stat /usr/share/v2ray/geoip.dat
         stat /usr/share/v2ray/geoip-only-cn-private.dat
-    - name: Verify config files
-      runs: |
         ls /etc/v2ray/*.json
