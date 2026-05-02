@@ -1,7 +1,7 @@
 package:
   name: thelounge
   version: "4.4.3"
-  epoch: 2
+  epoch: 3 # fix test anti-patterns
   description: Web IRC client that you host on your own server
   copyright:
     - license: MIT
@@ -85,27 +85,10 @@ test:
   environment:
     contents:
       packages:
-        - busybox
         - nodejs-${{vars.node-version}}
   pipeline:
-    - name: Verify entry point exists
+    - name: Verify thelounge wrapper and version
       runs: |
-        stat /usr/share/webapps/thelounge/index.js
-    - name: Verify server code exists
-      runs: |
-        stat /usr/share/webapps/thelounge/dist/server/index.js
-    - name: Verify client assets exist
-      runs: |
-        stat /usr/share/webapps/thelounge/public/
-    - name: Verify node_modules exist
-      runs: |
-        stat /usr/share/webapps/thelounge/node_modules/
-    - name: Verify wrapper is executable
-      runs: |
-        test -x /usr/bin/thelounge
-    - name: Check node version is 22.x
-      runs: |
-        node --version | grep -E '^v22\.'
-    - name: Check thelounge version
-      runs: |
-        thelounge version 2>&1 || true
+        set -eu
+        thelounge --help
+        thelounge version
