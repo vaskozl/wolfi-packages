@@ -33,11 +33,7 @@ test:
   pipeline:
     - uses: test/perl-module-check
       with:
-        modules: |
-          Mojo
-          Mojo::URL
-          Mojo::UserAgent
-          Mojolicious
+        modules: "Mojo Mojo::URL Mojo::UserAgent Mojolicious"
     - name: Verify Mojo::URL parses and round-trips a URL correctly
       runs: |
         set -eu
