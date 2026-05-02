@@ -2,7 +2,7 @@
 package:
   name: rakudo
   version: "2026.04"
-  epoch: 1
+  epoch: 2 # drop busybox from test env (implicit), fix test anti-patterns
   description: Rakudo is a compiler for the Raku programming language
   copyright:
     - license: Artistic-2.0
@@ -56,15 +56,12 @@ subpackages:
     description: rakudo documentation
 
 test:
-  environment:
-    contents:
-      packages:
-        - busybox
   pipeline:
     - name: Verify raku binary
       runs: |
-        test -x /usr/bin/raku
-        /usr/bin/raku --version 2>&1 | head -2
+        set -eu
+        raku --version
     - name: Test basic Raku execution
       runs: |
-        /usr/bin/raku -e 'say "Hello, Raku!"'
+        set -eu
+        raku -e 'say "Hello, Raku!"'
