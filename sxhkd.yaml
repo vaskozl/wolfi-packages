@@ -3,17 +3,16 @@
 package:
   name: sxhkd
   version: 0.6.3
-  epoch: 0
+  epoch: 1 # drop ca-certificates-bundle, fix test style
   description: Simple X hotkey daemon
   copyright:
     - license: BSD-2-Clause
 environment:
   contents:
     packages:
+      - automake
       - build-base
       - busybox
-      - ca-certificates-bundle
-      - automake
       - libxcb-dev
       - xcb-util-keysyms-dev
 pipeline:
@@ -37,5 +36,7 @@ subpackages:
     description: sxhkd manpages
 test:
   pipeline:
-    - name: Verify bspwm installation, please improve the test as needed
-      runs: sxhkd --help || exit 1
+    - name: Verify sxhkd installation
+      runs: |
+        set -eu
+        sxhkd --help
