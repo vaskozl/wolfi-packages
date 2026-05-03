@@ -8,7 +8,7 @@ stages: [generate, build]
 generate:
   stage: generate
   image:
-    name: ghcr.io/vaskozl/melange:0.50.4@sha256:f25c622d9258a171971d5d3bee8a867643828a31e7ad39a56b02cd8d99432ac4
+    name: ghcr.io/vaskozl/melange:0.50.4@sha256:148463b7d7f11b4a4928d21a895e7601b379a0642f1568914661ec8bb7824e2c
     entrypoint: [""]
   script:
     - .gitlab/gen-dag.sh > generated-pipeline.yml
