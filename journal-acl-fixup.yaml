@@ -1,0 +1,40 @@
+package:
+  name: journal-acl-fixup
+  version: "1"
+  epoch: 0
+  description: Strip POSIX ACL xattrs from /var/log/journal so composefs/bootc can apply x86_64 layers
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime:
+      - attr
+      - systemd
+  scriptlets:
+    # Wolfi's x86_64 systemd .apk ships SCHILY.xattr POSIX/SGI ACL records on
+    # /var/log/journal that composefs's tar parser rejects ("malformed pax
+    # extension"), breaking `bootc switch` on amd64. Stripping them on the
+    # build host before apko snapshots prevents the bad PAX from being emitted
+    # in any layer. aarch64 doesn't set them, so the calls no-op there.
+    post-install: |
+      #!/bin/sh
+      setfattr -x system.posix_acl_access  /var/log/journal 2>/dev/null || true
+      setfattr -x system.posix_acl_default /var/log/journal 2>/dev/null || true
+      setfattr -x trusted.SGI_ACL_FILE     /var/log/journal 2>/dev/null || true
+      setfattr -x trusted.SGI_ACL_DEFAULT  /var/log/journal 2>/dev/null || true
+      exit 0
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - runs: |
+      install -d "${{targets.destdir}}"/usr/share/doc/${{package.name}}
+      cat > "${{targets.destdir}}"/usr/share/doc/${{package.name}}/README <<'EOF'
+      Workaround package: see post-install scriptlet.
+      EOF
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        # Scriptlets don't run in the test env; verify the package landed.
+        test -f /usr/share/doc/journal-acl-fixup/README
