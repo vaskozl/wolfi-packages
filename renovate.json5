@@ -68,17 +68,33 @@
       "depNameTemplate": "go",
       "datasourceTemplate": "custom.wolfi-base",
       "versioningTemplate": "loose"
+    },
+    {
+      // Generic apk-datasource manager. Annotate the line above `version:`:
+      //   # datasource: <name> packageName: <apk>
+      // where <name> is a key in customDatasources (e.g. alpine-base,
+      // wolfi-base). Avoids having one regex manager per datasource.
+      "customType": "regex",
+      "managerFilePatterns": ["/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "#\\s*datasource:\\s*(?<datasource>[\\w-]+)\\s+packageName:\\s*(?<depName>\\S+)\\s*\\n\\s*version:\\s*['\"]?(?<currentValue>(\\d+\\.)+\\d+)['\"]?"
+      ],
+      "datasourceTemplate": "custom.{{datasource}}",
+      "versioningTemplate": "loose"
     }
   ],
   "customDatasources": {
     "wolfi-base": {
       "defaultRegistryUrlTemplate": "http://apk-wolfi:3000/{{packageName}}"
+    },
+    "alpine-base": {
+      "defaultRegistryUrlTemplate": "http://apk-alpine:3000/{{packageName}}"
     }
   },
   "packageRules": [
     {
       // Reset epoch to 0 only on upstream version bumps.
-      "matchDatasources": ["github-tags","gitlab-tags","forgejo-tags","github-releases"],
+      "matchDatasources": ["github-tags","gitlab-tags","forgejo-tags","github-releases","custom.alpine-base"],
       "groupName": "tags",
       "postUpgradeTasks": {
         "commands": [
@@ -107,6 +123,12 @@
       "matchPackageNames": ["go"],
       "extractVersion": "^([0-9]+\\.[0-9]+)",
       "groupName": "go-toolchain"
+    },
+    {
+      // Strip the Alpine `-rN` suffix so the version written into the YAML
+      // matches melange's `version` field (epoch lives separately).
+      "matchDatasources": ["custom.alpine-base"],
+      "extractVersion": "^(?<version>(\\d+\\.)+\\d+)"
     }
   ]
 }
