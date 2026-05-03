@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: linux-lts-initramfs
+  # datasource: alpine-base packageName: linux-lts
+  version: 6.18.26
+  epoch: 1 # alphabetize package list
+  description: The Linux LTS kernel initramfs
+  copyright:
+    - license: GPL-2.0
+  dependencies:
+    runtime:
+      - linux-lts=${{package.version}}
+      - zstd
+environment:
+  contents:
+    packages:
+      - attr
+      - bash
+      - binutils-dev
+      - bootc
+      - busybox
+      - build-base
+      - dracut
+      - findutils
+      - kmod
+      - linux-lts=${{package.version}}
+      - posix-libc-utils
+      - wolfi-baselayout
+      - zstd
+      # For modules
+      - blkid
+      - btrfs-progs
+      - cryptsetup
+      - device-mapper
+      - losetup
+      - lvm2
+      - mount
+      - openssl
+      - systemd
+      - umount
+      - util-linux
+      - util-linux-login
+pipeline:
+  - runs: |
+      mkdir -p /var/tmp ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-lts
+      ls -al /lib/modules
+      depmod ${{package.version}}-${{package.epoch}}-lts
+      dracut --force --verbose --kernel-cmdline "SYSTEMD_SULOGIN_FORCE=1" \
+        ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-lts/initramfs.img
+  - runs: |
+      ls -la ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-lts/
