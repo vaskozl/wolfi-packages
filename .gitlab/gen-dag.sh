@@ -109,7 +109,7 @@ stages: [build]
       --runner=bubblewrap
       --repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os
       --keyring-append=melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
-      --pipeline-dir=./pipelines
+      --pipeline-dirs=./pipelines
       --env-file=common.env
   retry: 2
   script:

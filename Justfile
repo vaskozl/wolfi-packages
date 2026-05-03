@@ -48,7 +48,7 @@ build pkg: setup
         --repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os,{{out_dir}} \
         --keyring-append=melange.rsa.pub,https://apks.sko.ai/melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub \
         --signing-key={{key}} \
-        --pipeline-dir=./pipelines \
+        --pipeline-dirs=./pipelines \
         --env-file=common.env \
         --source-dir="$(basename {{pkg}} .yaml)" \
         --out-dir="{{out_dir}}" \
