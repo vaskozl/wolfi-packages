@@ -96,12 +96,6 @@ stages: [build]
       export APK_CACHE_DIR=/apks/apks-cache
       if [ "$IS_MAIN" = "true" ]; then
         echo "${MELANGE_RSA}" > melange.rsa
-        # Derive and publish the matching public key so consumers always see
-        # the key that matches the active signing key (self-heals on rotation).
-        openssl rsa -in melange.rsa -pubout -out melange.rsa.pub
-        if ! cmp -s melange.rsa.pub /apks/melange.rsa.pub; then
-          cp melange.rsa.pub /apks/melange.rsa.pub
-        fi
         export OUT_DIR=/apks
       else
         melange keygen melange.rsa
