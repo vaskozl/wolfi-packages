@@ -13,7 +13,6 @@ package:
       - gzip
     provides:
       - linux:${{package.version}}-${{package.epoch}}-lts
-
 environment:
   contents:
     packages:
@@ -22,7 +21,6 @@ environment:
       - busybox
       - wget
       - gzip
-
 pipeline:
   # Fetch Alpine linux-lts package
   - runs: |
@@ -39,7 +37,6 @@ pipeline:
       for f in *.apk; do
         tar -xzf "$f"
       done
-
   - runs: |
       out="${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-lts"
 
