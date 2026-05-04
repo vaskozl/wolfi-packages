@@ -2,7 +2,7 @@ package:
   name: seerr
   version: 3.2.0
   description: "Open-source media request and discovery manager for Jellyfin, Plex, and Emby."
-  epoch: 3 # refresh npm.patch for upstream package.json drift
+  epoch: 4 # drop musl libvips, fix SCA-emitted so:libc.musl dep
   copyright:
     - license: MIT
 environment:
@@ -36,11 +36,21 @@ pipeline:
           export CYPRESS_INSTALL_BINARY=0
           export SHARP_IGNORE_GLOBAL_LIBVIPS=1
           export NODE_OPTIONS=--max-old-space-size=7620
+          export npm_config_libc=glibc
+          export npm_config_os=linux
           pnpm update jwa
           pnpm install
           pnpm build
           pnpm prune --prod --ignore-scripts
           rm -rf .next/cache
+          # Scrub non-target platform native binaries so musl/darwin/win32 .so
+          # files are never packaged and SCA cannot emit foreign so: deps.
+          find node_modules -type d \( \
+              -name '*linuxmusl*' \
+              -o -name '*darwin*' \
+              -o -name '*win32*' \
+              -o -name '*freebsd*' \
+            \) -prune -exec rm -rf {} +
 
   - runs: |
       set -eu
