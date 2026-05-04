@@ -2,7 +2,7 @@ package:
   name: seerr
   version: 3.2.0
   description: "Open-source media request and discovery manager for Jellyfin, Plex, and Emby."
-  epoch: 4 # drop musl libvips, fix SCA-emitted so:libc.musl dep
+  epoch: 5 # also drop bcrypt's musl prebuilds (not just sharp's libvips)
   copyright:
     - license: MIT
 environment:
@@ -51,6 +51,11 @@ pipeline:
               -o -name '*win32*' \
               -o -name '*freebsd*' \
             \) -prune -exec rm -rf {} +
+          # bcrypt ships glibc + musl prebuilds *side by side* under one
+          # libc-agnostic dir (prebuilds/linux-x64/bcrypt.{glibc,musl}.node),
+          # so the dir-name pattern above misses the musl variant. Drop it
+          # by file suffix.
+          find node_modules -type f -name '*.musl.node' -delete
 
   - runs: |
       set -eu
