@@ -2,7 +2,7 @@
 package:
   name: kernel-initramfs
   version: 7.0.3
-  epoch: 1 # alphabetize package list
+  epoch: 2 # derive module dir from kernel package at build time
   description: The Linux kernel initramfs
   copyright:
     - license: GPL-2.0
@@ -41,10 +41,12 @@ environment:
       - util-linux-login
 pipeline:
   - runs: |
-      mkdir -p /var/tmp ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable
+      KMOD_DIR=$(ls /lib/modules | head -1)
+      mkdir -p /var/tmp ${{targets.destdir}}/usr/lib/modules/$KMOD_DIR
       ls -al /lib/modules
-      depmod ${{package.version}}-${{package.epoch}}-stable
+      depmod "$KMOD_DIR"
       dracut --force --verbose --kernel-cmdline "SYSTEMD_SULOGIN_FORCE=1" \
-        ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable/initramfs.img
+        ${{targets.destdir}}/usr/lib/modules/$KMOD_DIR/initramfs.img
   - runs: |
-      ls -la ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-stable/
+      KMOD_DIR=$(ls /lib/modules | head -1)
+      ls -la ${{targets.destdir}}/usr/lib/modules/$KMOD_DIR/
