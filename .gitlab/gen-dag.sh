@@ -108,7 +108,7 @@ stages: [build]
       --arch=$ARCH
       --runner=bubblewrap
       --repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os
-      --keyring-append=melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
+      --keyring-append=melange.rsa.pub,https://apks.sko.ai/melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
       --pipeline-dirs=./pipelines
       --env-file=common.env
   retry: 2
