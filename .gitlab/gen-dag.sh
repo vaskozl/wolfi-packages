@@ -84,7 +84,7 @@ stages: [build]
 .build:
   stage: build
   image:
-    name: ghcr.io/vaskozl/melange:0.50.4@sha256:5213c379264b4e2b360451b42d531f8e8d9be19797b935afe7bc5ac12e2b3bb8
+    name: ghcr.io/vaskozl/melange:0.50.4@sha256:fa3d4159ecf0402860fd768ed8dd9ba349e5623d4aab9138943d5fc00fd076ae
     entrypoint: [""]
   before_script:
     - |
@@ -96,6 +96,13 @@ stages: [build]
       export APK_CACHE_DIR=/apks/apks-cache
       if [ "$IS_MAIN" = "true" ]; then
         echo "${MELANGE_RSA}" > melange.rsa
+        # Derive and publish the matching public key so consumers always see
+        # the key that matches the active signing key (self-heals on rotation).
+        # Requires openssl in the melange image (apkontainers!750 — openssl-config).
+        openssl rsa -in melange.rsa -pubout -out melange.rsa.pub
+        if ! cmp -s melange.rsa.pub /apks/melange.rsa.pub; then
+          cp melange.rsa.pub /apks/melange.rsa.pub
+        fi
         export OUT_DIR=/apks
       else
         melange keygen melange.rsa

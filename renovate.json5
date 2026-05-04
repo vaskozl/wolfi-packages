@@ -70,6 +70,16 @@
       "versioningTemplate": "loose"
     },
     {
+      // Bump pinned docker image digests in shell scripts (e.g. .gitlab/gen-dag.sh)
+      // alongside the same image references in YAML.
+      "customType": "regex",
+      "managerFilePatterns": ["/\\.sh$/"],
+      "matchStrings": [
+        "(?<depName>ghcr\\.io/vaskozl/[^:]+):(?<currentValue>[\\d.]+)@(?<currentDigest>sha256:[a-f0-9]+)"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
       // Generic apk-datasource manager. Annotate the line above `version:`:
       //   # datasource: <name> packageName: <apk>
       // where <name> is a key in customDatasources (e.g. alpine-base,
