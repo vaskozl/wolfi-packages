@@ -1,0 +1,43 @@
+package:
+  name: wayland-protocols
+  version: "1.48"
+  epoch: 0
+  description: Wayland protocol extensions
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - meson
+      - pkgconf
+      - python3
+      - samurai
+      - wayland-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://gitlab.freedesktop.org/wayland/wayland-protocols
+      tag: ${{package.version}}
+  - uses: meson/configure
+    with:
+      opts: -Dtests=false
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-dev
+    pipeline:
+      - uses: split/dev
+    description: ${{package.name}} headers and pkg-config files
+    test:
+      environment:
+        contents:
+          packages:
+            - pkgconf
+      pipeline:
+        - runs: pkg-config --modversion wayland-protocols
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        stat /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml
