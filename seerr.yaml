@@ -2,7 +2,7 @@ package:
   name: seerr
   version: 3.2.0
   description: "Open-source media request and discovery manager for Jellyfin, Plex, and Emby."
-  epoch: 1 # drop wolfi-base from build env, add set -eu, add test
+  epoch: 2 # fix path-fix step targeting wrong dir
   copyright:
     - license: MIT
 environment:
@@ -58,7 +58,7 @@ pipeline:
       cp next.config.js ${{targets.contextdir}}/usr/lib/seerr/
 
       # Fix paths
-      find "${{targets.contextdir}}/usr/lib/jellyseerr/.next" -type f -print0 | xargs -0 sed -i "s^${{package.srcdir}}^/usr/lib/jellyseerr^g"
+      find "${{targets.contextdir}}/usr/lib/seerr/.next" -type f -print0 | xargs -0 sed -i "s^${{package.srcdir}}^/usr/lib/seerr^g"
 
       printf '#!/bin/sh\nexec node /usr/lib/seerr/dist/index.js "$@"\n' > ${{targets.contextdir}}/usr/bin/seerr
       chmod 755 ${{targets.contextdir}}/usr/bin/seerr
