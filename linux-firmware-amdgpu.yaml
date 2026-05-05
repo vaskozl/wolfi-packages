@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: linux-firmware-amdgpu
+  # datasource: alpine-base packageName: linux-firmware-amdgpu
+  version: 20260410
+  epoch: 0
+  description: Repackaged Alpine AMD GPU firmware blobs
+  copyright:
+    - license: GPL-2.0-or-later
+environment:
+  contents:
+    packages:
+      - busybox
+      - wget
+      - wolfi-base
+pipeline:
+  - runs: |
+      set -eux
+      mkdir alpinepkg
+      cd alpinepkg
+      branch="edge"
+      repo="main"
+      variant="linux-firmware-amdgpu"
+
+      wget "https://dl-cdn.alpinelinux.org/alpine/${branch}/${repo}/${{build.arch}}/${variant}-${{package.full-version}}.apk"
+
+      for f in *.apk; do
+        tar -xzf "$f"
+      done
+  - runs: |
+      set -eux
+      out="${{targets.destdir}}"
+      install -d "$out/usr/lib/firmware"
+      cp -a alpinepkg/lib/firmware/amdgpu "$out/usr/lib/firmware/"
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        test -d /usr/lib/firmware/amdgpu
+        # Navi 32 (RX 7900 GRE) needs gc_11_0_3 microcode
+        ls /usr/lib/firmware/amdgpu/gc_11_0_3_*.bin.zst >/dev/null
