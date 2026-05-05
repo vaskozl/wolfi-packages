@@ -2,7 +2,7 @@
 # repository: https://github.com/mojolicious/mojo
 package:
   name: perl-mojolicious
-  version: "9.42"
+  version: "9.43"
   epoch: 1 # pure-Perl env trim + functional test
   description: Real-time web framework
   copyright:
