@@ -9,7 +9,7 @@ package:
     - license: GPL-2.0
   dependencies:
     runtime:
-      - linux-lts=${{package.version}}
+      - linux-lts=${{package.full-version}}
       - zstd
 environment:
   contents:
@@ -23,7 +23,7 @@ environment:
       - dracut
       - findutils
       - kmod
-      - linux-lts=${{package.version}}
+      - linux-lts=${{package.full-version}}
       - posix-libc-utils
       - wolfi-baselayout
       - zstd
