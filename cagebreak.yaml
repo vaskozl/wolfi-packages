@@ -1,7 +1,7 @@
 package:
   name: cagebreak
   version: "3.2.0"
-  epoch: 2 # functional tests + alphabetised build env
+  epoch: 3 # ship example config for nori-user tmpfiles seed
   description: Wayland tiling compositor inspired by Ratpoison
   copyright:
     - license: MIT
@@ -33,6 +33,8 @@ pipeline:
         . output
   - uses: meson/compile
   - uses: meson/install
+  - runs: |
+      install -Dm0644 examples/config "${{targets.destdir}}/usr/share/cagebreak/example-config"
   - uses: strip
 subpackages:
   - name: ${{package.name}}-doc
