@@ -2,7 +2,7 @@ package:
   name: seerr
   version: 3.2.0
   description: "Open-source media request and discovery manager for Jellyfin, Plex, and Emby."
-  epoch: 5 # also drop bcrypt's musl prebuilds (not just sharp's libvips)
+  epoch: 6 # widen musl scrub to catch @next/swc-linux-x64-musl and friends
   copyright:
     - license: MIT
 environment:
@@ -47,6 +47,7 @@ pipeline:
           # files are never packaged and SCA cannot emit foreign so: deps.
           find node_modules -type d \( \
               -name '*linuxmusl*' \
+              -o -name '*-musl*' \
               -o -name '*darwin*' \
               -o -name '*win32*' \
               -o -name '*freebsd*' \
