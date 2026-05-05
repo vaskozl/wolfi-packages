@@ -77,7 +77,7 @@
       "customType": "regex",
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
       "matchStrings": [
-        "#\\s*datasource:\\s*(?<datasource>[\\w-]+)\\s+packageName:\\s*(?<depName>\\S+)\\s*\\n\\s*version:\\s*['\"]?(?<currentValue>(\\d+\\.)+\\d+)['\"]?"
+        "#\\s*datasource:\\s*(?<datasource>[\\w-]+)\\s+packageName:\\s*(?<depName>\\S+)\\s*\\n\\s*version:\\s*['\"]?(?<currentValue>\\d+(?:\\.\\d+)*)['\"]?"
       ],
       "datasourceTemplate": "custom.{{datasource}}",
       "versioningTemplate": "loose"
@@ -128,7 +128,7 @@
       // Strip the Alpine `-rN` suffix so the version written into the YAML
       // matches melange's `version` field (epoch lives separately).
       "matchDatasources": ["custom.alpine-base"],
-      "extractVersion": "^(?<version>(\\d+\\.)+\\d+)"
+      "extractVersion": "^(?<version>\\d+(?:\\.\\d+)*)"
     }
   ]
 }
