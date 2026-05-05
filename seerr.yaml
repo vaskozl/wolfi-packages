@@ -2,9 +2,11 @@ package:
   name: seerr
   version: 3.2.0
   description: "Open-source media request and discovery manager for Jellyfin, Plex, and Emby."
-  epoch: 6 # widen musl scrub to catch @next/swc-linux-x64-musl and friends
+  epoch: 7 # restrict to x86_64; arm64 OOMs on Pi 4 runner — see home-infra#125
   copyright:
     - license: MIT
+  target-architecture:
+    - x86_64
 environment:
   contents:
     packages:
