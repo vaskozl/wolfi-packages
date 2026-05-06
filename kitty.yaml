@@ -15,6 +15,7 @@ environment:
   contents:
     packages:
       - build-base
+      - ca-certificates-bundle
       - curl
       - dbus-dev
       - fontconfig-dev
