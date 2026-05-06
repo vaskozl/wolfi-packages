@@ -1,13 +1,19 @@
 package:
   name: cage
   version: "0.3.0"
-  epoch: 2 # functional test
+  epoch: 3 # add explicit libwlroots soname dep (melange SCA misses it)
   description: A Wayland kiosk
   copyright:
     - license: MIT
   dependencies:
     runtime:
-      - wlroots
+      # melange SCA misses the libwlroots-0.X.so soname dep — its detector
+      # only emits so: deps for names containing ".so.", and wlroots embeds
+      # the major version into the basename (libwlroots-0.20.so) instead of
+      # using a trailing .so.X suffix. Pin the soname manually so apk refuses
+      # to install us against an incompatible wlroots ABI. Update this when
+      # wlroots bumps to a new major version (e.g. 0.21).
+      - so:libwlroots-0.20.so
 environment:
   contents:
     packages:
@@ -15,6 +21,7 @@ environment:
       - meson
       - scdoc
       - wayland-protocols
+      - wayland-protocols-dev
       - wlroots
       - wlroots-dev
 pipeline:

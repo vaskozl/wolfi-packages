@@ -1,13 +1,19 @@
 package:
   name: cagebreak
   version: "3.2.0"
-  epoch: 3 # ship example config for nori-user tmpfiles seed
+  epoch: 4 # add explicit libwlroots soname dep (melange SCA misses it)
   description: Wayland tiling compositor inspired by Ratpoison
   copyright:
     - license: MIT
   dependencies:
     runtime:
-      - wlroots
+      # melange SCA misses the libwlroots-0.X.so soname dep — its detector
+      # only emits so: deps for names containing ".so.", and wlroots embeds
+      # the major version into the basename (libwlroots-0.20.so) instead of
+      # using a trailing .so.X suffix. Pin the soname manually so apk refuses
+      # to install us against an incompatible wlroots ABI. Update this when
+      # wlroots bumps to a new major version (e.g. 0.21).
+      - so:libwlroots-0.20.so
 environment:
   contents:
     packages:
@@ -18,6 +24,7 @@ environment:
       - pango-dev
       - scdoc
       - wayland-protocols
+      - wayland-protocols-dev
       - wlroots
       - wlroots-dev
 pipeline:
