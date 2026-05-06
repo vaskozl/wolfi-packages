@@ -1,7 +1,7 @@
 package:
   name: pipewire
   version: 1.4.10
-  epoch: 2 # disable default-enabled features that need missing build deps
+  epoch: 3 # enable alsa+dbus+pipewire-pulse for PulseAudio replacement capability
   description: Multimedia processing graphs
   copyright:
     - license: MIT
@@ -9,7 +9,9 @@ package:
 environment:
   contents:
     packages:
+      - alsa-lib-dev
       - build-base
+      - dbus-dev
       - meson
 
 pipeline:
@@ -21,15 +23,17 @@ pipeline:
     with:
       opts: |
         --auto-features=disabled \
-        -Ddbus=disabled \
+        -Dalsa=enabled \
+        -Ddbus=enabled \
+        -Dpipewire-pulse=enabled \
+        -Dudevrulesdir=/usr/lib/udev/rules.d \
+        -Dsession-managers=[] \
+        -Dtests=disabled \
+        -Dexamples=disabled \
+        -Dsystemd-user-service=disabled \
         -Dflatpak=disabled \
         -Dpipewire-jack=disabled \
-        -Dpipewire-v4l2=disabled \
-        -Dexamples=disabled \
-        -Dtests=disabled \
-        -Dsystemd-user-service=disabled \
-        -Dsession-managers=[] \
-        -Dudevrulesdir=/usr/lib/udev/rules.d
+        -Dpipewire-v4l2=disabled
   - uses: meson/compile
   - uses: meson/install
   - uses: strip
@@ -42,6 +46,33 @@ subpackages:
     test:
       pipeline:
         - uses: test/pkgconf
+
+  - name: ${{package.name}}-pulse
+    description: PulseAudio-compatible server daemon (drop-in replacement)
+    dependencies:
+      runtime:
+        - pipewire
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/bin"
+          mv "${{targets.destdir}}/usr/bin/pipewire-pulse" \
+             "${{targets.subpkgdir}}/usr/bin/"
+
+  - name: ${{package.name}}-alsa
+    description: ALSA SPA plugin and config to route ALSA apps through pipewire
+    dependencies:
+      runtime:
+        - pipewire
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/share" \
+                   "${{targets.subpkgdir}}/usr/lib/alsa-lib"
+          if [ -d "${{targets.destdir}}/usr/share/alsa" ]; then
+            mv "${{targets.destdir}}/usr/share/alsa" \
+               "${{targets.subpkgdir}}/usr/share/"
+          fi
+          find "${{targets.destdir}}/usr/lib" -name 'libasound_module*' \
+            -exec mv {} "${{targets.subpkgdir}}/usr/lib/alsa-lib/" \;
 
 test:
   pipeline:
