@@ -128,12 +128,6 @@ stages: [build]
       --repository-append="$OUT_DIR"
       --test-package-append=busybox
       --ignore-signatures
-  artifacts:
-    when: on_success
-    expire_in: 1 day
-    paths:
-      - packages/
-
 noop:
   stage: build
   image: busybox
