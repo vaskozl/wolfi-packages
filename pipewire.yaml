@@ -1,7 +1,7 @@
 package:
   name: pipewire
   version: 1.4.10
-  epoch: 3 # enable alsa+dbus+pipewire-pulse for PulseAudio replacement capability
+  epoch: 4 # remove invalid -Dpipewire-pulse meson opt; pulse binary built via dbus
   description: Multimedia processing graphs
   copyright:
     - license: MIT
@@ -25,7 +25,6 @@ pipeline:
         --auto-features=disabled \
         -Dalsa=enabled \
         -Ddbus=enabled \
-        -Dpipewire-pulse=enabled \
         -Dudevrulesdir=/usr/lib/udev/rules.d \
         -Dsession-managers=[] \
         -Dtests=disabled \
