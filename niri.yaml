@@ -1,0 +1,113 @@
+package:
+  name: niri
+  version: "26.04"
+  epoch: 0
+  description: A scrollable-tiling Wayland compositor
+  copyright:
+    - license: GPL-3.0-only
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - cargo-auditable
+      - cairo-dev
+      - clang
+      - glib-dev
+      - libclang-cpp
+      - libdisplay-info-dev
+      - libinput-dev
+      - libseat-dev
+      - libxkbcommon-dev
+      - mesa-dev
+      - mesa-gbm
+      - pango-dev
+      - pipewire-dev
+      - pixman-dev
+      - rust
+      - systemd-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/YaLTeR/niri
+      tag: v${{package.version}}
+  - runs: |
+      cargo auditable build --release --jobs $(nproc)
+  - runs: |
+      install -Dm755 target/release/niri "${{targets.destdir}}/usr/bin/niri"
+      install -Dm755 resources/niri-session "${{targets.destdir}}/usr/bin/niri-session"
+      install -Dm644 resources/niri.service "${{targets.destdir}}/usr/lib/systemd/user/niri.service"
+      install -Dm644 resources/niri-shutdown.target "${{targets.destdir}}/usr/lib/systemd/user/niri-shutdown.target"
+      install -Dm644 resources/niri.desktop "${{targets.destdir}}/usr/share/wayland-sessions/niri.desktop"
+      install -Dm644 resources/niri-portals.conf "${{targets.destdir}}/usr/share/xdg-desktop-portal/niri-portals.conf"
+
+      install -d "${{targets.destdir}}/usr/share/bash-completion/completions"
+      install -d "${{targets.destdir}}/usr/share/zsh/site-functions"
+      install -d "${{targets.destdir}}/usr/share/fish/vendor_completions.d"
+      target/release/niri completions bash > "${{targets.destdir}}/usr/share/bash-completion/completions/niri"
+      target/release/niri completions zsh  > "${{targets.destdir}}/usr/share/zsh/site-functions/_niri"
+      target/release/niri completions fish > "${{targets.destdir}}/usr/share/fish/vendor_completions.d/niri.fish"
+  - uses: strip
+
+subpackages:
+  - name: ${{package.name}}-doc
+    description: niri manpages and documentation
+    pipeline:
+      - uses: split/manpages
+      - runs: |
+          install -Dm644 resources/default-config.kdl README.md \
+            -t "${{targets.subpkgdir}}/usr/share/doc/niri/"
+    test:
+      pipeline:
+        - uses: test/docs
+
+  - name: ${{package.name}}-portals
+    description: xdg-desktop-portal config for niri
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/share"
+          mv "${{targets.destdir}}/usr/share/xdg-desktop-portal" \
+             "${{targets.subpkgdir}}/usr/share/"
+
+  - name: ${{package.name}}-bash-completion
+    description: Bash completion for niri
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/share/bash-completion"
+          mv "${{targets.destdir}}/usr/share/bash-completion/completions" \
+             "${{targets.subpkgdir}}/usr/share/bash-completion/"
+
+  - name: ${{package.name}}-zsh-completion
+    description: Zsh completion for niri
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/share/zsh"
+          mv "${{targets.destdir}}/usr/share/zsh/site-functions" \
+             "${{targets.subpkgdir}}/usr/share/zsh/"
+
+  - name: ${{package.name}}-fish-completion
+    description: Fish completion for niri
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/share/fish"
+          mv "${{targets.destdir}}/usr/share/fish/vendor_completions.d" \
+             "${{targets.subpkgdir}}/usr/share/fish/"
+
+test:
+  environment:
+    contents:
+      packages:
+        - niri-doc
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          niri
+    - uses: test/help-check
+      with:
+        bins: |
+          niri
+    - runs: |
+        set -eu
+        niri validate -c /usr/share/doc/niri/default-config.kdl
