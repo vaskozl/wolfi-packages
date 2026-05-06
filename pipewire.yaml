@@ -1,7 +1,7 @@
 package:
   name: pipewire
   version: 1.4.10
-  epoch: 7 # fix: remove invalid -Dpipewire-pulse meson option (not a valid pipewire option)
+  epoch: 8 # fix: remove invalid -Dncurses meson option (not valid in pipewire 1.4.10)
   description: Multimedia processing graphs
   copyright:
     - license: MIT
@@ -19,7 +19,6 @@ environment:
       - gstreamer-dev
       - libusb-dev
       - meson
-      - ncurses-dev
       - readline-dev
       - sbc-dev
       - systemd-dev
@@ -51,7 +50,6 @@ pipeline:
         -Dlibv4l2-path=/usr/lib \
         -Dlv2=disabled \
         -Dman=disabled \
-        -Dncurses=enabled \
         -Dpipewire-jack=enabled \
         -Dpipewire-v4l2=disabled \
         -Dreadline=enabled \
