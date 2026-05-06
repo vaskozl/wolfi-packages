@@ -2,7 +2,7 @@ package:
   name: seerr
   version: 3.2.0
   description: "Open-source media request and discovery manager for Jellyfin, Plex, and Emby."
-  epoch: 8 # prune foreign-arch and win64-bin from node_modules to reduce apk size
+  epoch: 9 # fix CSRF bypass in npm.patch; prune maps/types/react-native/foreign-arch from node_modules
   copyright:
     - license: MIT
 environment:
@@ -75,11 +75,22 @@ pipeline:
             -exec rm -rf {} + 2>/dev/null || true
           rm -rf node_modules/react-native node_modules/@react-native
           echo "node_modules after react-native removal: $(du -sh node_modules | cut -f1)"
-          # Prune test-only dirs that npm packages often ship but are never
-          # needed at runtime. Safe to drop after pnpm prune --prod.
+          # Prune development-only files never needed at runtime:
+          #  - .js.map: source maps for debuggers; large text, not used by Node
+          #  - .d.ts:   TypeScript declarations; only needed for TS compilation
+          #  - .js.flow: Flow type annotations; only needed for Flow type-checking
+          #  - .ts (non-.d.ts): TypeScript source files shipped by some packages
+          find node_modules -type f \
+            \( -name '*.js.map' -o -name '*.d.ts' -o -name '*.js.flow' \) \
+            -delete 2>/dev/null || true
+          # Prune test-only and docs dirs that npm packages often ship but are
+          # never needed at runtime. Safe to drop after pnpm prune --prod.
           find node_modules -type d \
-            \( -name '__tests__' -o -name '__mocks__' \) \
+            \( -name '__tests__' -o -name '__mocks__' \
+            -o -name 'test' -o -name 'tests' \
+            -o -name 'spec' -o -name 'specs' \) \
             -prune -exec rm -rf {} + 2>/dev/null || true
+          echo "node_modules after dev-file and test-dir pruning: $(du -sh node_modules | cut -f1)"
           # Prune architecture-foreign prebuilds. Many native modules ship
           # precompiled binaries for all linux arches; only keep the one
           # matching the current build target.
@@ -95,7 +106,7 @@ pipeline:
                 -prune -exec rm -rf {} + 2>/dev/null || true
               find node_modules -path '*/prebuilds/linux-ia32' -type d \
                 -prune -exec rm -rf {} + 2>/dev/null || true
-              find node_modules -path '*/prebuilds/linux-arm' -type d \
+              find node_modules -path '*/prebuilds/linux-arm*' -type d \
                 -prune -exec rm -rf {} + 2>/dev/null || true
               ;;
           esac

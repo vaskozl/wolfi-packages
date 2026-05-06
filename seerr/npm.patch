@@ -11,16 +11,3 @@ index 5dc75e2a..59b69621 100644
      "pnpm": "^10.0.0"
    },
    "config": {
-diff --git i/server/index.ts w/server/index.ts
-index cd34d7d5..54fd47cf 100644
---- i/server/index.ts
-+++ w/server/index.ts
-@@ -180,7 +180,7 @@ app
-       }
-     });
-     if (settings.network.csrfProtection) {
--      server.use(
-+      server.use(() =>
-         csurf({
-           cookie: {
-             httpOnly: true,
