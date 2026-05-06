@@ -2,7 +2,7 @@ package:
   name: seerr
   version: 3.2.0
   description: "Open-source media request and discovery manager for Jellyfin, Plex, and Emby."
-  epoch: 7 # reduce Node heap cap to 6144 MB to stay under 7 GiB cgroup limit
+  epoch: 8 # fix CSRF middleware bypass introduced by arrow-function wrapper in npm.patch
   copyright:
     - license: MIT
 environment:
