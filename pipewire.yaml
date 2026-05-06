@@ -14,15 +14,13 @@ environment:
       - bluez-dev
       - build-base
       - dbus-dev
-      - fftw-dev
       - gst-plugins-base-dev
       - gstreamer-dev
       - libusb-dev
       - meson
       - readline-dev
       - sbc-dev
-      - systemd-dev
-      - vulkan-headers-dev
+      - vulkan-headers
 
 pipeline:
   - uses: git-checkout
@@ -33,7 +31,6 @@ pipeline:
     with:
       opts: |
         --auto-features=disabled \
-        -Db_lto=true \
         -Dalsa=enabled \
         -Davahi=enabled \
         -Dbluez5=enabled \
@@ -44,7 +41,6 @@ pipeline:
         -Dgstreamer=enabled \
         -Djack-devel=true \
         -Dlibjack-path=/usr/lib \
-        -Dsystemd=enabled \
         -Dlibusb=enabled \
         -Dlibv4l2-path=/usr/lib \
         -Dlv2=disabled \
@@ -55,10 +51,9 @@ pipeline:
         -Droc=disabled \
         -Dsdl2=disabled \
         -Dsession-managers=[] \
-        -Dsystemd-user-service=enabled \
-        -Dsystemd-user-unit-dir=/usr/lib/systemd/user \
+        -Dsystemd=disabled \
+        -Dlogind=disabled \
         -Dtests=disabled \
-        -Dudevrulesdir=/usr/lib/udev/rules.d \
         -Dvulkan=enabled
   - uses: meson/compile
   - uses: meson/install
@@ -203,16 +198,6 @@ subpackages:
                "${{targets.subpkgdir}}/usr/lib/spa-0.2/"
           fi
 
-  - name: ${{package.name}}-udev
-    description: udev rules for PipeWire device detection
-    pipeline:
-      - runs: |
-          if [ -d "${{targets.destdir}}/usr/lib/udev" ]; then
-            mkdir -p "${{targets.subpkgdir}}/usr/lib"
-            mv "${{targets.destdir}}/usr/lib/udev" \
-               "${{targets.subpkgdir}}/usr/lib/"
-          fi
-
   - name: ${{package.name}}-pulse
     description: PulseAudio-compatible server daemon (drop-in replacement)
     dependencies:
@@ -220,9 +205,11 @@ subpackages:
         - pipewire
     pipeline:
       - runs: |
-          mkdir -p "${{targets.subpkgdir}}/usr/bin"
-          mv "${{targets.destdir}}/usr/bin/pipewire-pulse" \
-             "${{targets.subpkgdir}}/usr/bin/"
+          if [ -f "${{targets.destdir}}/usr/bin/pipewire-pulse" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/bin"
+            mv "${{targets.destdir}}/usr/bin/pipewire-pulse" \
+               "${{targets.subpkgdir}}/usr/bin/"
+          fi
 
   - name: ${{package.name}}-alsa
     description: ALSA SPA plugin and config to route ALSA apps through pipewire
