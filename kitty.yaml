@@ -98,9 +98,12 @@ subpackages:
     description: bash completion for kitty
     pipeline:
       - runs: |
-          mkdir -p ${{targets.subpkgdir}}/usr/share/bash-completion
-          mv ${{targets.destdir}}/usr/share/bash-completion/completions \
-             ${{targets.subpkgdir}}/usr/share/bash-completion/completions
+          set -eu
+          if [ -d "${{targets.destdir}}/usr/share/bash-completion/completions" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/share/bash-completion"
+            mv "${{targets.destdir}}/usr/share/bash-completion/completions" \
+               "${{targets.subpkgdir}}/usr/share/bash-completion/completions"
+          fi
     dependencies:
       runtime:
         - merged-usrsbin
@@ -110,9 +113,12 @@ subpackages:
     description: zsh completion for kitty
     pipeline:
       - runs: |
-          mkdir -p ${{targets.subpkgdir}}/usr/share/zsh
-          mv ${{targets.destdir}}/usr/share/zsh/site-functions \
-             ${{targets.subpkgdir}}/usr/share/zsh/site-functions
+          set -eu
+          if [ -d "${{targets.destdir}}/usr/share/zsh/site-functions" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/share/zsh"
+            mv "${{targets.destdir}}/usr/share/zsh/site-functions" \
+               "${{targets.subpkgdir}}/usr/share/zsh/site-functions"
+          fi
     dependencies:
       runtime:
         - merged-usrsbin
@@ -122,9 +128,12 @@ subpackages:
     description: fish completion for kitty
     pipeline:
       - runs: |
-          mkdir -p ${{targets.subpkgdir}}/usr/share/fish
-          mv ${{targets.destdir}}/usr/share/fish/vendor_completions.d \
-             ${{targets.subpkgdir}}/usr/share/fish/vendor_completions.d
+          set -eu
+          if [ -d "${{targets.destdir}}/usr/share/fish/vendor_completions.d" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/share/fish"
+            mv "${{targets.destdir}}/usr/share/fish/vendor_completions.d" \
+               "${{targets.subpkgdir}}/usr/share/fish/vendor_completions.d"
+          fi
     dependencies:
       runtime:
         - merged-usrsbin
