@@ -2,7 +2,7 @@ package:
   name: seerr
   version: 3.2.0
   description: "Open-source media request and discovery manager for Jellyfin, Plex, and Emby."
-  epoch: 7 # reduce Node heap cap to 6144 MB to stay under 7 GiB cgroup limit
+  epoch: 8 # prune foreign-arch and win64-bin from node_modules to reduce apk size
   copyright:
     - license: MIT
 environment:
@@ -45,11 +45,16 @@ pipeline:
           rm -rf .next/cache
           # Scrub non-target platform native binaries so musl/darwin/win32 .so
           # files are never packaged and SCA cannot emit foreign so: deps.
+          # Also catches hermesc-style bundled compiler dirs (win64-bin, osx-bin)
+          # that don't use the standard win32/darwin naming scheme.
           find node_modules -type d \( \
               -name '*linuxmusl*' \
               -o -name '*-musl*' \
               -o -name '*darwin*' \
               -o -name '*win32*' \
+              -o -name '*win64*' \
+              -o -name '*win-bin*' \
+              -o -name '*osx-bin*' \
               -o -name '*freebsd*' \
             \) -prune -exec rm -rf {} +
           # bcrypt ships glibc + musl prebuilds *side by side* under one
@@ -57,6 +62,33 @@ pipeline:
           # so the dir-name pattern above misses the musl variant. Drop it
           # by file suffix.
           find node_modules -type f -name '*.musl.node' -delete
+          # react-native is a transitive dep that survives pnpm prune --prod
+          # because it is incorrectly listed under dependencies (not
+          # devDependencies) by an upstream package. Seerr is a Next.js/Node
+          # server and has no runtime need for React Native or its bundled
+          # Hermes compiler (hermesc). Drop it to shed ~100-200 MB.
+          find node_modules/.pnpm -maxdepth 1 -type d -name 'react-native@*' \
+            -exec rm -rf {} + 2>/dev/null || true
+          rm -rf node_modules/react-native
+          # Prune architecture-foreign prebuilds. Many native modules ship
+          # precompiled binaries for all linux arches; only keep the one
+          # matching the current build target.
+          case "${{build.arch}}" in
+            x86_64)
+              find node_modules -path '*/prebuilds/linux-arm*' -type d \
+                -prune -exec rm -rf {} + 2>/dev/null || true
+              find node_modules -path '*/prebuilds/linux-ia32' -type d \
+                -prune -exec rm -rf {} + 2>/dev/null || true
+              ;;
+            aarch64)
+              find node_modules -path '*/prebuilds/linux-x64' -type d \
+                -prune -exec rm -rf {} + 2>/dev/null || true
+              find node_modules -path '*/prebuilds/linux-ia32' -type d \
+                -prune -exec rm -rf {} + 2>/dev/null || true
+              find node_modules -path '*/prebuilds/linux-arm' -type d \
+                -prune -exec rm -rf {} + 2>/dev/null || true
+              ;;
+          esac
 
   - runs: |
       set -eu
