@@ -68,6 +68,22 @@ pipeline:
         --update-check-interval=0 \
         --prefix="${{targets.destdir}}/usr"
       find "${{targets.destdir}}" -name '*.opt-?.pyc' -delete
+  - runs: |
+      # setup.py linux-package does not install shell completions for bash/zsh/fish.
+      # Generate them using the built kitten binary (pure CLI, no display required).
+      KITTEN="${{targets.destdir}}/usr/bin/kitten"
+
+      mkdir -p "${{targets.destdir}}/usr/share/bash-completion/completions"
+      "$KITTEN" __complete__ setup bash \
+        > "${{targets.destdir}}/usr/share/bash-completion/completions/kitty" 2>/dev/null || true
+
+      mkdir -p "${{targets.destdir}}/usr/share/zsh/site-functions"
+      "$KITTEN" __complete__ setup zsh \
+        > "${{targets.destdir}}/usr/share/zsh/site-functions/_kitty" 2>/dev/null || true
+
+      mkdir -p "${{targets.destdir}}/usr/share/fish/vendor_completions.d"
+      "$KITTEN" __complete__ setup fish \
+        > "${{targets.destdir}}/usr/share/fish/vendor_completions.d/kitty.fish" 2>/dev/null || true
   - uses: strip
 
 subpackages:
@@ -82,8 +98,9 @@ subpackages:
     description: bash completion for kitty
     pipeline:
       - runs: |
-          mkdir -p ${{targets.subpkgdir}}/usr/share/bash-completion/completions
-          mv ${{targets.destdir}}/usr/share/bash-completion/completions ${{targets.subpkgdir}}/usr/share/bash-completion/completions
+          mkdir -p ${{targets.subpkgdir}}/usr/share/bash-completion
+          mv ${{targets.destdir}}/usr/share/bash-completion/completions \
+             ${{targets.subpkgdir}}/usr/share/bash-completion/completions
     dependencies:
       runtime:
         - merged-usrsbin
@@ -94,7 +111,8 @@ subpackages:
     pipeline:
       - runs: |
           mkdir -p ${{targets.subpkgdir}}/usr/share/zsh
-          mv ${{targets.destdir}}/usr/share/zsh/site-functions ${{targets.subpkgdir}}/usr/share/zsh/site-functions
+          mv ${{targets.destdir}}/usr/share/zsh/site-functions \
+             ${{targets.subpkgdir}}/usr/share/zsh/site-functions
     dependencies:
       runtime:
         - merged-usrsbin
@@ -105,7 +123,8 @@ subpackages:
     pipeline:
       - runs: |
           mkdir -p ${{targets.subpkgdir}}/usr/share/fish
-          mv ${{targets.destdir}}/usr/share/fish/vendor_completions.d ${{targets.subpkgdir}}/usr/share/fish/vendor_completions.d
+          mv ${{targets.destdir}}/usr/share/fish/vendor_completions.d \
+             ${{targets.subpkgdir}}/usr/share/fish/vendor_completions.d
     dependencies:
       runtime:
         - merged-usrsbin
