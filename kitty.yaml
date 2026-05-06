@@ -17,7 +17,6 @@ environment:
       - build-base
       - curl
       - dbus-dev
-      - fontconfig
       - fontconfig-dev
       - freetype-dev
       - go-1.26
@@ -60,6 +59,7 @@ pipeline:
       mkdir -p fonts
       curl -fsSL -o fonts/SymbolsNerdFontMono-Regular.ttf \
         https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/patched-fonts/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf
+      echo "f0f624d9b474bea1662cf7e862d44aebe1ae1f6c7f9cb7a0ca5d0e5ac9561c60  fonts/SymbolsNerdFontMono-Regular.ttf" | sha256sum -c -
       export LDFLAGS="${LDFLAGS:-} -Wl,-z,stack-size=2097152"
       export CFLAGS="${CFLAGS:-} -DKITTY_NO_SIMD"
       python3 setup.py linux-package \
