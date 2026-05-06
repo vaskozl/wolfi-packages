@@ -114,7 +114,7 @@ stages: [build]
       --keyring-append=melange.rsa.pub,https://apks.sko.ai/melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
       --pipeline-dirs=./pipelines
       --env-file=common.env
-  retry: 2
+  retry: 1
   script:
     - >-
       melange build "$PKG" $MELANGE_FLAGS
