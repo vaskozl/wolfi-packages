@@ -2,7 +2,7 @@ package:
   name: seerr
   version: 3.2.0
   description: "Open-source media request and discovery manager for Jellyfin, Plex, and Emby."
-  epoch: 9 # fix CSRF bypass in npm.patch; prune maps/types/react-native/foreign-arch from node_modules
+  epoch: 10 # fix aarch64 native prebuild deletion (linux-arm* wildcard was also matching linux-arm64)
   copyright:
     - license: MIT
 environment:
@@ -102,12 +102,14 @@ pipeline:
                 -prune -exec rm -rf {} + 2>/dev/null || true
               ;;
             aarch64)
-              find node_modules -path '*/prebuilds/linux-x64' -type d \
-                -prune -exec rm -rf {} + 2>/dev/null || true
-              find node_modules -path '*/prebuilds/linux-ia32' -type d \
-                -prune -exec rm -rf {} + 2>/dev/null || true
-              find node_modules -path '*/prebuilds/linux-arm*' -type d \
-                -prune -exec rm -rf {} + 2>/dev/null || true
+              # Drop foreign-arch prebuilds; linux-arm64 is native and must be kept.
+              find node_modules -type d \
+                \( -path '*/prebuilds/linux-x64' \
+                  -o -path '*/prebuilds/linux-ia32' \
+                  -o -path '*/prebuilds/linux-arm' \
+                  -o -path '*/prebuilds/linux-armv7' \
+                  -o -path '*/prebuilds/linux-armhf' \
+                \) -prune -exec rm -rf {} + 2>/dev/null || true
               ;;
           esac
           echo "node_modules final size: $(du -sh node_modules | cut -f1)"
