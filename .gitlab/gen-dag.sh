@@ -100,6 +100,9 @@ stages: [build]
       else
         melange keygen melange.rsa
         export OUT_DIR=$CI_PROJECT_DIR/packages
+        # MR builds use a per-job throwaway key, so dependent jobs cannot
+        # verify signatures on locally-built packages from prior jobs.
+        export MELANGE_FLAGS="$MELANGE_FLAGS --ignore-signatures"
       fi
       mkdir -p "$OUT_DIR" "$CACHE_DIR" "$APK_CACHE_DIR"
   variables:
