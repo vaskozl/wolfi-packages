@@ -1,7 +1,7 @@
 package:
   name: pipewire
   version: 1.4.10
-  epoch: 4 # remove invalid -Dpipewire-pulse meson opt; pulse binary built via dbus
+  epoch: 5 # expand to match Alpine subpackage split; enable bluez5, gstreamer, jack, vulkan, avahi
   description: Multimedia processing graphs
   copyright:
     - license: MIT
@@ -10,9 +10,21 @@ environment:
   contents:
     packages:
       - alsa-lib-dev
+      - avahi-dev
+      - bluez-dev
       - build-base
       - dbus-dev
+      - fftw-dev
+      - gst-plugins-base-dev
+      - gstreamer-dev
+      - libusb-dev
       - meson
+      - ncurses-dev
+      - readline-dev
+      - sbc-dev
+      - systemd-dev
+      - vulkan-headers
+      - vulkan-loader-dev
 
 pipeline:
   - uses: git-checkout
@@ -23,28 +35,186 @@ pipeline:
     with:
       opts: |
         --auto-features=disabled \
+        -Db_lto=true \
         -Dalsa=enabled \
+        -Davahi=enabled \
+        -Dbluez5=enabled \
         -Ddbus=enabled \
-        -Dudevrulesdir=/usr/lib/udev/rules.d \
-        -Dsession-managers=[] \
-        -Dtests=disabled \
         -Dexamples=disabled \
-        -Dsystemd-user-service=disabled \
         -Dflatpak=disabled \
-        -Dpipewire-jack=disabled \
-        -Dpipewire-v4l2=disabled
+        -Dffmpeg=disabled \
+        -Dgstreamer=enabled \
+        -Djack-devel=true \
+        -Dlibjack-path=/usr/lib \
+        -Dlibsystemd=enabled \
+        -Dlibusb=enabled \
+        -Dlibv4l2-path=/usr/lib \
+        -Dlv2=disabled \
+        -Dman=disabled \
+        -Dncurses=enabled \
+        -Dpipewire-jack=enabled \
+        -Dpipewire-v4l2=disabled \
+        -Dreadline=enabled \
+        -Droc=disabled \
+        -Dsdl2=disabled \
+        -Dsession-managers=[] \
+        -Dsystemd-user-service=enabled \
+        -Dsystemd-user-unit-dir=/usr/lib/systemd/user \
+        -Dtests=disabled \
+        -Dudevrulesdir=/usr/lib/udev/rules.d \
+        -Dvulkan=enabled
   - uses: meson/compile
   - uses: meson/install
   - uses: strip
 
 subpackages:
-  - name: ${{package.name}}-dev
-    description: ${{package.name}} development libraries and headers
+  - name: ${{package.name}}-tools
+    description: PipeWire command-line tools (pw-cli, pw-top, pw-dump, pw-cat, pw-play, pw-record etc.)
+    dependencies:
+      runtime:
+        - pipewire
     pipeline:
-      - uses: split/dev
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/bin"
+          for bin in pw-cli pw-top pw-dump pw-play pw-record pw-cat pw-mididump \
+                     pw-jack pw-loopback pw-mon pw-profiler; do
+            if [ -f "${{targets.destdir}}/usr/bin/$bin" ]; then
+              mv "${{targets.destdir}}/usr/bin/$bin" \
+                 "${{targets.subpkgdir}}/usr/bin/"
+            fi
+          done
     test:
       pipeline:
-        - uses: test/pkgconf
+        - uses: test/help-check
+          with:
+            bins: pw-cli
+
+  - name: ${{package.name}}-spa-tools
+    description: SPA inspection and diagnostic tools (spa-inspect, spa-monitor)
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/bin"
+          for bin in spa-inspect spa-monitor spa-json-dump; do
+            if [ -f "${{targets.destdir}}/usr/bin/$bin" ]; then
+              mv "${{targets.destdir}}/usr/bin/$bin" \
+                 "${{targets.subpkgdir}}/usr/bin/"
+            fi
+          done
+
+  - name: ${{package.name}}-jack
+    description: JACK compatibility library — makes JACK apps use PipeWire transparently
+    dependencies:
+      runtime:
+        - pipewire
+    pipeline:
+      - runs: |
+          # libjack.so compatibility library
+          mkdir -p "${{targets.subpkgdir}}/usr/lib"
+          find "${{targets.destdir}}/usr/lib" -name 'libjack*.so*' \
+            -exec mv {} "${{targets.subpkgdir}}/usr/lib/" \;
+          # JACK SPA plugin and pipewire module
+          for dir in pipewire-0.3 spa-0.2; do
+            if [ -d "${{targets.destdir}}/usr/lib/$dir/jack" ]; then
+              mkdir -p "${{targets.subpkgdir}}/usr/lib/$dir"
+              mv "${{targets.destdir}}/usr/lib/$dir/jack" \
+                 "${{targets.subpkgdir}}/usr/lib/$dir/"
+            fi
+          done
+          # jack.conf
+          if [ -f "${{targets.destdir}}/usr/share/pipewire/jack.conf" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/share/pipewire"
+            mv "${{targets.destdir}}/usr/share/pipewire/jack.conf" \
+               "${{targets.subpkgdir}}/usr/share/pipewire/"
+          fi
+
+  - name: ${{package.name}}-jack-dev
+    description: JACK development headers provided by PipeWire (replaces jack-dev)
+    dependencies:
+      runtime:
+        - pipewire-jack
+    pipeline:
+      - runs: |
+          # jack headers installed by pipewire-jack compat layer
+          if [ -d "${{targets.destdir}}/usr/include/jack" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/include"
+            mv "${{targets.destdir}}/usr/include/jack" \
+               "${{targets.subpkgdir}}/usr/include/"
+          fi
+          # jack.pc
+          if [ -f "${{targets.destdir}}/usr/lib/pkgconfig/jack.pc" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/lib/pkgconfig"
+            mv "${{targets.destdir}}/usr/lib/pkgconfig/jack.pc" \
+               "${{targets.subpkgdir}}/usr/lib/pkgconfig/"
+          fi
+
+  - name: gst-plugin-${{package.name}}
+    description: GStreamer plugin for PipeWire audio/video
+    dependencies:
+      runtime:
+        - gstreamer
+        - gst-plugins-base
+        - pipewire
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/lib/gstreamer-1.0"
+          find "${{targets.destdir}}/usr/lib/gstreamer-1.0" -name '*.so' \
+            -exec mv {} "${{targets.subpkgdir}}/usr/lib/gstreamer-1.0/" \; 2>/dev/null || true
+
+  - name: ${{package.name}}-zeroconf
+    description: Zeroconf/mDNS network audio discovery module
+    dependencies:
+      runtime:
+        - avahi
+        - pipewire
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/lib/pipewire-0.3"
+          find "${{targets.destdir}}/usr/lib/pipewire-0.3" \
+            -name '*zeroconf*' \
+            -exec mv {} "${{targets.subpkgdir}}/usr/lib/pipewire-0.3/" \; 2>/dev/null || true
+          # AVB (Audio Video Bridging) network SPA plugin
+          if [ -d "${{targets.destdir}}/usr/lib/spa-0.2/avb" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/lib/spa-0.2"
+            mv "${{targets.destdir}}/usr/lib/spa-0.2/avb" \
+               "${{targets.subpkgdir}}/usr/lib/spa-0.2/"
+          fi
+
+  - name: ${{package.name}}-spa-bluez
+    description: Bluetooth audio SPA plugin (A2DP, HFP/HSP via BlueZ)
+    dependencies:
+      runtime:
+        - bluez
+        - pipewire
+    pipeline:
+      - runs: |
+          if [ -d "${{targets.destdir}}/usr/lib/spa-0.2/bluez5" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/lib/spa-0.2"
+            mv "${{targets.destdir}}/usr/lib/spa-0.2/bluez5" \
+               "${{targets.subpkgdir}}/usr/lib/spa-0.2/"
+          fi
+
+  - name: ${{package.name}}-spa-vulkan
+    description: Vulkan compute SPA plugin
+    dependencies:
+      runtime:
+        - pipewire
+    pipeline:
+      - runs: |
+          if [ -d "${{targets.destdir}}/usr/lib/spa-0.2/vulkan" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/lib/spa-0.2"
+            mv "${{targets.destdir}}/usr/lib/spa-0.2/vulkan" \
+               "${{targets.subpkgdir}}/usr/lib/spa-0.2/"
+          fi
+
+  - name: ${{package.name}}-udev
+    description: udev rules for PipeWire device detection
+    pipeline:
+      - runs: |
+          if [ -d "${{targets.destdir}}/usr/lib/udev" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/lib"
+            mv "${{targets.destdir}}/usr/lib/udev" \
+               "${{targets.subpkgdir}}/usr/lib/"
+          fi
 
   - name: ${{package.name}}-pulse
     description: PulseAudio-compatible server daemon (drop-in replacement)
@@ -72,6 +242,14 @@ subpackages:
           fi
           find "${{targets.destdir}}/usr/lib" -name 'libasound_module*' \
             -exec mv {} "${{targets.subpkgdir}}/usr/lib/alsa-lib/" \;
+
+  - name: ${{package.name}}-dev
+    description: ${{package.name}} development libraries and headers
+    pipeline:
+      - uses: split/dev
+    test:
+      pipeline:
+        - uses: test/pkgconf
 
 test:
   pipeline:
