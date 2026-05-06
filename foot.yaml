@@ -1,7 +1,7 @@
 package:
   name: foot
   version: "1.26.1"
-  epoch: 1 # functional tests + alphabetised build env
+  epoch: 2 # add wayland-protocols-dev to build env
   description: Fast, lightweight and minimalistic Wayland terminal emulator
   copyright:
     - license: MIT
@@ -26,6 +26,7 @@ environment:
       - utf8proc-dev
       - wayland-dev
       - wayland-protocols
+      - wayland-protocols-dev
 pipeline:
   - uses: git-checkout
     with:
