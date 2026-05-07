@@ -2,8 +2,8 @@
 # repository: https://github.com/mojolicious/mojo
 package:
   name: perl-mojolicious
-  version: "9.43"
-  epoch: 1 # switch to git-checkout
+  version: "9.45"
+  epoch: 0
   description: Real-time web framework
   copyright:
     - license: Artistic-2.0
