@@ -1,0 +1,167 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: kitty
+  version: 0.46.2
+  epoch: 0
+  description: Modern, hackable, featureful, OpenGL based terminal emulator
+  copyright:
+    - license: GPL-3.0-only
+  dependencies:
+    runtime:
+      - ncurses
+      - wayland-libs-egl
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - ca-certificates-bundle
+      - curl
+      - dbus-dev
+      - fontconfig-dev
+      - freetype-dev
+      - go-1.26
+      - harfbuzz-dev
+      - lcms2-dev
+      - libpng-dev
+      - librsync-dev
+      # X11 backend dev libs required by kitty's build system even for Wayland-only installs;
+      # the glfw x11 backend is compiled unconditionally on Linux.
+      - libxcursor-dev
+      - libxi-dev
+      - libxinerama-dev
+      - libxkbcommon-dev
+      - libxrandr-dev
+      - mesa-dev
+      - ncurses
+      - openssl-dev
+      - py3-setuptools
+      - python3-dev
+      - wayland-dev
+      - wayland-protocols
+      - wayland-protocols-dev
+      - xxhash-dev
+      - zlib-dev
+
+pipeline:
+  # repository: https://github.com/kovidgoyal/kitty
+  - uses: git-checkout
+    with:
+      repository: https://github.com/kovidgoyal/kitty
+      tag: v${{package.version}}
+  - uses: patch
+    with:
+      patches: disable-docs.patch
+  - runs: |
+      set -eu
+      # setup.py embeds SymbolsNerdFontMono-Regular.ttf at build time; if the
+      # file already exists in fonts/ it skips the fontconfig lookup entirely.
+      # Pre-download the font so the build doesn't need system nerd-fonts.
+      mkdir -p fonts
+      curl -fsSL -o fonts/SymbolsNerdFontMono-Regular.ttf \
+        https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/patched-fonts/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf
+      echo "f0f624d9b474bea1662cf7e862d44aebe1ae1f6c7f9cb7a0ca5d0e5ac9561c60  fonts/SymbolsNerdFontMono-Regular.ttf" | sha256sum -c -
+      export LDFLAGS="${LDFLAGS:-} -Wl,-z,stack-size=2097152"
+      export CFLAGS="${CFLAGS:-} -DKITTY_NO_SIMD"
+      python3 setup.py linux-package \
+        --ignore-compiler-warnings \
+        --update-check-interval=0 \
+        --prefix="${{targets.destdir}}/usr"
+      find "${{targets.destdir}}" -name '*.opt-?.pyc' -delete
+  - runs: |
+      # setup.py linux-package does not install shell completions for bash/zsh/fish.
+      # Generate them using the built kitten binary (pure CLI, no display required).
+      KITTEN="${{targets.destdir}}/usr/bin/kitten"
+
+      mkdir -p "${{targets.destdir}}/usr/share/bash-completion/completions"
+      "$KITTEN" __complete__ setup bash \
+        > "${{targets.destdir}}/usr/share/bash-completion/completions/kitty" 2>/dev/null || true
+
+      mkdir -p "${{targets.destdir}}/usr/share/zsh/site-functions"
+      "$KITTEN" __complete__ setup zsh \
+        > "${{targets.destdir}}/usr/share/zsh/site-functions/_kitty" 2>/dev/null || true
+
+      mkdir -p "${{targets.destdir}}/usr/share/fish/vendor_completions.d"
+      "$KITTEN" __complete__ setup fish \
+        > "${{targets.destdir}}/usr/share/fish/vendor_completions.d/kitty.fish" 2>/dev/null || true
+  - uses: strip
+
+subpackages:
+  - name: "${{package.name}}-terminfo"
+    description: kitty terminal descriptions
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}"/usr/share
+          mv "${{targets.destdir}}"/usr/share/terminfo "${{targets.subpkgdir}}"/usr/share/
+
+  - name: "${{package.name}}-bash-completion"
+    description: bash completion for kitty
+    pipeline:
+      - runs: |
+          set -eu
+          if [ -d "${{targets.destdir}}/usr/share/bash-completion/completions" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/share/bash-completion"
+            mv "${{targets.destdir}}/usr/share/bash-completion/completions" \
+               "${{targets.subpkgdir}}/usr/share/bash-completion/completions"
+          fi
+    dependencies:
+      runtime:
+        - merged-usrsbin
+        - wolfi-baselayout
+
+  - name: "${{package.name}}-zsh-completion"
+    description: zsh completion for kitty
+    pipeline:
+      - runs: |
+          set -eu
+          if [ -d "${{targets.destdir}}/usr/share/zsh/site-functions" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/share/zsh"
+            mv "${{targets.destdir}}/usr/share/zsh/site-functions" \
+               "${{targets.subpkgdir}}/usr/share/zsh/site-functions"
+          fi
+    dependencies:
+      runtime:
+        - merged-usrsbin
+        - wolfi-baselayout
+
+  - name: "${{package.name}}-fish-completion"
+    description: fish completion for kitty
+    pipeline:
+      - runs: |
+          set -eu
+          if [ -d "${{targets.destdir}}/usr/share/fish/vendor_completions.d" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/share/fish"
+            mv "${{targets.destdir}}/usr/share/fish/vendor_completions.d" \
+               "${{targets.subpkgdir}}/usr/share/fish/vendor_completions.d"
+          fi
+    dependencies:
+      runtime:
+        - merged-usrsbin
+        - wolfi-baselayout
+
+  - name: "${{package.name}}-dbg"
+    pipeline:
+      - uses: split/debug
+
+test:
+  environment:
+    contents:
+      packages:
+        - kitty-terminfo
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          kitty
+          kitten
+    - uses: test/help-check
+      with:
+        bins: |
+          kitty
+          kitten
+    - runs: |
+        set -eu
+        # Terminfo is shipped by the -terminfo subpackage; assert it landed.
+        infocmp xterm-kitty >/dev/null
+        # Sanity: kitty should report its config path without a TTY.
+        kitty +runpy 'import kitty; print(kitty.__file__)'
