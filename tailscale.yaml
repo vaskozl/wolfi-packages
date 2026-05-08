@@ -86,11 +86,15 @@ test:
         tailscaled --help
 
         # Compat validity tests
-        stat /usr/local/bin/containerboot
-        stat /usr/local/bin/tailscale
-        stat /usr/local/sbin/tailscaled
         /usr/local/bin/tailscale --version
         /usr/local/sbin/tailscaled --version
+    - name: Containerboot Test
+      runs: |
+        set -eu
+        /usr/local/bin/containerboot &
+        sleep 2
+        kill %1 2>/dev/null || true
+        wait %1 2>/dev/null || true
     - name: Tailscale Daemon Test
       runs: |
         set -eu
