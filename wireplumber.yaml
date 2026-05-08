@@ -1,0 +1,105 @@
+package:
+  name: wireplumber
+  version: "0.5.14"
+  epoch: 0
+  description: Session/policy manager implementation for PipeWire
+  copyright:
+    - license: LGPL-2.1-or-later
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - doxygen
+      - glib-dev
+      - glib-gir
+      - gobject-introspection-dev
+      - lua5.4-dev
+      - meson
+      - pipewire-dev
+      - py3.13-lxml
+      - python3
+      - systemd-dev
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://gitlab.freedesktop.org/pipewire/wireplumber
+      tag: ${{package.version}}
+  - runs: |
+      meson setup \
+        -Db_lto=true \
+        -Dintrospection=enabled \
+        -Dsystem-lua=true \
+        -Dsystemd=enabled \
+        -Dsystemd-user-service=true \
+        -Dsystemd-user-unit-dir=/usr/lib/systemd/user \
+        -Dtests=false \
+        --prefix=/usr \
+        . output
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+
+subpackages:
+  - name: ${{package.name}}-libs
+    description: WirePlumber shared library
+    pipeline:
+      - runs: |
+          set -eu
+          mkdir -p "${{targets.subpkgdir}}/usr/lib"
+          mv "${{targets.destdir}}"/usr/lib/libwireplumber-*.so* \
+             "${{targets.subpkgdir}}/usr/lib/"
+    test:
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: ${{package.name}}-libs
+
+  - name: ${{package.name}}-dev
+    description: WirePlumber development headers and pkgconfig
+    pipeline:
+      - uses: split/dev
+    dependencies:
+      runtime:
+        - wireplumber-libs
+    test:
+      pipeline:
+        - runs: |
+            set -eu
+            stat /usr/include/wireplumber-0.5/wp/wp.h
+
+  - name: ${{package.name}}-doc
+    description: WirePlumber documentation
+    pipeline:
+      - uses: split/alldocs
+    test:
+      pipeline:
+        - uses: test/docs
+
+  - name: ${{package.name}}-zsh-completion
+    description: WirePlumber zsh completion
+    pipeline:
+      - runs: |
+          set -eu
+          if [ -d "${{targets.destdir}}/usr/share/zsh/site-functions" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/share/zsh"
+            mv "${{targets.destdir}}/usr/share/zsh/site-functions" \
+               "${{targets.subpkgdir}}/usr/share/zsh/site-functions"
+          fi
+    dependencies:
+      runtime:
+        - merged-usrsbin
+        - wolfi-baselayout
+
+test:
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: wireplumber
+    - uses: test/help-check
+      with:
+        bins: wireplumber
+    # wireplumber is a daemon and requires a live PipeWire socket to function;
+    # no headless functional invocation is possible. wpexec does accept --help:
+    - runs: wpexec --help
