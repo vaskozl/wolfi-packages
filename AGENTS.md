@@ -163,7 +163,7 @@ The job runs only on tag push (`if: $CI_COMMIT_TAG`). It clones `doudous/package
 
 ### Token setup (one-time)
 
-The job needs a `PACKAGES_TOKEN` masked CI variable with `write_repository` + `api` scopes on `doudous/packages`. The token's owner needs at least Developer access on `doudous/packages` for auto-merge to work.
+The job needs a `PACKAGES_TOKEN` masked CI variable with `write_repository` scope on `doudous/packages` — no `api` scope is needed because the MR is created via git push-options, not the REST API. The token's owner needs at least Developer access on `doudous/packages` for auto-merge to work.
 
 Easiest setup: a **group-level access token** on `doudous/`, exposed as a masked CI variable at the group level. Every `doudous/*` source repo inherits it; per-project setup is then zero. For source repos in other groups (e.g. `vasko/scanner`), set the same variable at the project level.
 
