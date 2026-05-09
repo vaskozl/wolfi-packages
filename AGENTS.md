@@ -136,6 +136,46 @@ Renovate will then use the `github-releases` datasource and only open a bump PR 
 
 **Important:** Also add the package to the `packageRules` disable list in `renovate.json5` (the entry with `"matchDatasources": ["github-tags"]`). This prevents the github-tags manager — which matches all GitHub URLs — from also opening a duplicate bump MR. The package name must match the `depName` captured from the `repository:` URL (e.g. `intel/compute-runtime`).
 
+## Internal source bumps
+
+Renovate polls upstream once a day, so external packages bump within ~12–24 h of an upstream tag. For packages whose source lives on `gitlab.sko.ai` (we own the repo), we use a **push-based** mechanism instead: the source repo's CI opens a bump MR here on tag push, which auto-merges on green and publishes the apk in single-digit minutes.
+
+**When to use:**
+- ✅ Source repo on `gitlab.sko.ai` (e.g. `doudous/minilb`, `vasko/scanner`).
+- ❌ Source on GitHub / codeberg / gitlab.freedesktop.org — stay on renovate.
+
+### Onboarding a source repo
+
+Add to the source repo's `.gitlab-ci.yml`:
+
+```yaml
+include:
+  - project: doudous/ci-templates
+    file: /bump-package.yaml
+
+bump-package:
+  extends: .bump-package
+  variables:
+    PKG: <yaml-stem>     # e.g. "minilb" for minilb.yaml in this repo
+```
+
+The job runs only on tag push (`if: $CI_COMMIT_TAG`). It clones `doudous/packages`, bumps `version:` to `${CI_COMMIT_TAG#v}`, resets `epoch: 0`, and pushes a `bump/<PKG>/<VERSION>` branch with `merge_when_pipeline_succeeds=true`. Existing packages CI runs the build; on green it auto-merges and publishes.
+
+### Token setup (one-time)
+
+The job needs a `PACKAGES_TOKEN` masked CI variable with `write_repository` + `api` scopes on `doudous/packages`. The token's owner needs at least Developer access on `doudous/packages` for auto-merge to work.
+
+Easiest setup: a **group-level access token** on `doudous/`, exposed as a masked CI variable at the group level. Every `doudous/*` source repo inherits it; per-project setup is then zero. For source repos in other groups (e.g. `vasko/scanner`), set the same variable at the project level.
+
+### What changes when you bump
+
+The bump MR's diff is exactly two lines on `<PKG>.yaml`:
+
+- `version:` → new tag (with leading `v` stripped); existing quoting preserved.
+- `epoch:` → `0`, with any trailing comment dropped (matches renovate's `postUpgradeTask`).
+
+Idempotent: re-running the same tag is a no-op when the file already matches.
+
 ## Architecture restrictions
 
 If a package only makes sense on one arch (e.g. Intel GPU drivers are x86_64-only), add:
