@@ -152,13 +152,11 @@ Add to the source repo's `.gitlab-ci.yml`:
 include:
   - project: doudous/ci-templates
     file: /bump-package.yaml
-    rules:
-      - if: $CI_COMMIT_TAG    # only fetch the template on tag pipelines
 
 bump-package:
   extends: .bump-package
   variables:
-    PKG: <yaml-stem>          # e.g. "minilb" for minilb.yaml in this repo
+    PKG: <yaml-stem>     # e.g. "minilb" for minilb.yaml in this repo
 ```
 
 The job runs only on tag push (`if: $CI_COMMIT_TAG`). It clones `doudous/packages`, bumps `version:` to `${CI_COMMIT_TAG#v}`, resets `epoch: 0`, and pushes a `bump/<PKG>/<VERSION>` branch with `merge_when_pipeline_succeeds=true`. Existing packages CI runs the build; on green it auto-merges and publishes.
