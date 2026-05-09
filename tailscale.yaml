@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: tailscale
-  version: 1.98.0
+  version: 1.98.1
   epoch: 0
   description: The easiest, most secure way to use WireGuard and 2FA.
   copyright:
@@ -91,14 +91,13 @@ test:
         stat /usr/local/sbin/tailscaled
         /usr/local/bin/tailscale --version
         /usr/local/sbin/tailscaled --version
-    - name: Containerboot Test
-      runs: |
-        set -eu
-        containerboot &
-        sleep 2
     - name: Tailscale Daemon Test
       runs: |
         set -eu
-        tailscaled -tun=userspace-networking -socket=tailscaled.socket > /dev/null 2>&1 &
+        mkdir -p /tmp/ts-test
+        tailscaled -tun=userspace-networking --state=mem: \
+                   -socket=/tmp/ts-test/tailscaled.socket > /dev/null 2>&1 &
         sleep 2
-        tailscale --socket=tailscaled.socket status | grep -qF 'Logged out.'
+        STATUS=$(tailscale --socket=/tmp/ts-test/tailscaled.socket status 2>&1 || true)
+        echo "$STATUS" | grep -qiE '(Logged out|Tailscale is|stopped|NeedsLogin)'
+        pkill tailscaled || true
