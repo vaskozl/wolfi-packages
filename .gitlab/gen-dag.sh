@@ -115,6 +115,17 @@ stages: [build]
       --pipeline-dirs=./pipelines
       --env-file=common.env
   retry: 1
+  # MR builds write packages to $CI_PROJECT_DIR/packages (OUT_DIR).
+  # Uploading that directory as an artifact lets dependent jobs (those with
+  # a `needs:` edge pointing here) download it and resolve locally-built
+  # packages when the published repo doesn't have the new version yet.
+  # On main builds OUT_DIR=/apks (NFS, outside the project dir), so nothing
+  # is uploaded — main jobs share packages via NFS instead.
+  artifacts:
+    paths:
+      - packages/
+    expire_in: 2h
+    when: always
   script:
     - >-
       melange build "$PKG" $MELANGE_FLAGS
