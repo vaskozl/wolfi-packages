@@ -7,14 +7,14 @@ package:
     - license: GPL-3.0-or-later
   dependencies:
     runtime:
-      - php-8.5-curl
-      - php-8.5-dom
-      - php-8.5-iconv
-      - php-8.5-openssl
-      - php-8.5-pdo
-      - php-8.5-simplexml
-      - php-8.5-xmlreader
-      - php-8.5-xmlwriter
+      - php-curl
+      - php-dom
+      - php-iconv
+      - php-openssl
+      - php-pdo
+      - php-simplexml
+      - php-xmlreader
+      - php-xmlwriter
   resources:
     cpu: "2"
     memory: 4Gi
@@ -80,12 +80,17 @@ subpackages:
     dependencies:
       runtime:
         - baikal
-        - php-8.5-pdo_mysql
+        - php-mysqlnd
+        - php-pdo_mysql
     pipeline:
       - runs: |
           mkdir -p ${{targets.subpkgdir}}/usr/share/doc/baikal
           echo "MySQL support for Baikal" > ${{targets.subpkgdir}}/usr/share/doc/baikal/README.mysql
     test:
+      environment:
+        contents:
+          packages:
+            - php-8.5
       pipeline:
         - runs: |
             set -eu
@@ -97,12 +102,16 @@ subpackages:
     dependencies:
       runtime:
         - baikal
-        - php-8.5-pdo_pgsql
+        - php-pdo_pgsql
     pipeline:
       - runs: |
           mkdir -p ${{targets.subpkgdir}}/usr/share/doc/baikal
           echo "PostgreSQL support for Baikal" > ${{targets.subpkgdir}}/usr/share/doc/baikal/README.pgsql
     test:
+      environment:
+        contents:
+          packages:
+            - php-8.5
       pipeline:
         - runs: |
             set -eu
@@ -114,12 +123,16 @@ subpackages:
     dependencies:
       runtime:
         - baikal
-        - php-8.5-pdo_sqlite
+        - php-pdo_sqlite
     pipeline:
       - runs: |
           mkdir -p ${{targets.subpkgdir}}/usr/share/doc/baikal
           echo "SQLite support for Baikal" > ${{targets.subpkgdir}}/usr/share/doc/baikal/README.sqlite
     test:
+      environment:
+        contents:
+          packages:
+            - php-8.5
       pipeline:
         - runs: |
             set -eu
@@ -131,13 +144,23 @@ test:
     contents:
       packages:
         - php-8.5
+        - php-8.5-curl
+        - php-8.5-dom
+        - php-8.5-iconv
+        - php-8.5-openssl
+        - php-8.5-pdo
+        - php-8.5-simplexml
+        - php-8.5-xmlreader
+        - php-8.5-xmlwriter
   pipeline:
     - name: Verify baikal installation
       runs: |
         set -eu
         test -d /usr/share/webapps/baikal
-        test -f /usr/share/webapps/baikal/html/admin/install.php
+        test -f /usr/share/webapps/baikal/html/admin/index.php
+        test -f /usr/share/webapps/baikal/html/admin/install/index.php
         # Syntax-check the entry points: catches missing dependencies / autoload breakage.
-        php -l /usr/share/webapps/baikal/html/admin/install.php
+        php -l /usr/share/webapps/baikal/html/admin/index.php
+        php -l /usr/share/webapps/baikal/html/admin/install/index.php
         php -l /usr/share/webapps/baikal/html/dav.php
         php -r 'require "/usr/share/webapps/baikal/vendor/autoload.php";'
