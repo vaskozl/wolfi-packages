@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: rest-server
+  version: 0.14.0
+  epoch: 0
+  description: A high performance HTTP server that implements restic's REST backend API
+  copyright:
+    - license: BSD-2-Clause
+environment:
+  contents:
+    packages:
+      - busybox
+      - ca-certificates-bundle
+      - go-1.26
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/restic/rest-server
+      tag: v${{package.version}}
+  - uses: go/build
+    with:
+      go-package: go-1.26
+      packages: ./cmd/rest-server
+      output: rest-server
+  - uses: strip
+test:
+  pipeline:
+    - uses: test/tw/ldd-check
+    - uses: test/ver-check
+      with:
+        bins: |
+          rest-server
+    - uses: test/help-check
+      with:
+        bins: |
+          rest-server
+    - name: Verify rest-server starts and stays running
+      runs: |
+        set -eu
+        data=$(mktemp -d)
+        rest-server --listen 127.0.0.1:18080 --path "$data" --no-auth &
+        pid=$!
+        sleep 1
+        # Still alive after startup means listen + path validation succeeded.
+        kill -0 "$pid"
+        kill "$pid"
+        wait "$pid" 2>/dev/null || true
