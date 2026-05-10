@@ -1,7 +1,7 @@
 package:
   name: baikal
   version: "0.11.1"
-  epoch: 1 # drop build-base; tighten tests
+  epoch: 2 # fix rsync flattening Core/ and html/ into pkg root
   description: Lightweight CalDAV/CardDAV server
   copyright:
     - license: GPL-3.0-or-later
@@ -46,8 +46,8 @@ pipeline:
 
       # Copy source files
       rsync -a --exclude='*.swp' \
-        Core/ \
-        html/ \
+        Core \
+        html \
         LICENSE \
         README.md \
         composer.json \
