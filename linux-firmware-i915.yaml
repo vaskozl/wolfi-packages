@@ -22,7 +22,7 @@ pipeline:
       repo="main"
       variant="linux-firmware-i915"
 
-      wget "https://dl-cdn.alpinelinux.org/alpine/${branch}/${repo}/${{build.arch}}/${variant}-${{package.full-version}}.apk"
+      wget "https://dl-cdn.alpinelinux.org/alpine/${branch}/${repo}/${{build.arch}}/${variant}-${{package.version}}-r0.apk"
 
       for f in *.apk; do
         tar -xzf "$f"
