@@ -111,6 +111,7 @@
       "matchManagers": ["custom.regex"],
       "matchDatasources": ["github-tags"],
       "matchPackageNames": [
+        "anthropics/claude-code",
         "intel/intel-graphics-compiler",
         "intel/compute-runtime"
       ],
