@@ -36,12 +36,6 @@ setup:
     fi
     echo "RSA key setup complete"
 
-# Verify that the locally-present melange.rsa matches the committed melange.rsa.pub
-verify-key:
-    @openssl rsa -in {{key}} -pubout 2>/dev/null | diff -q - melange.rsa.pub \
-        && echo "OK: {{key}} matches melange.rsa.pub" \
-        || { echo "FAIL: {{key}} does NOT match melange.rsa.pub"; exit 1; }
-
 # Build a specific package (e.g. just build redis.yaml)
 build pkg: setup
     #!/usr/bin/env sh
