@@ -96,6 +96,15 @@ stages: [build]
       export APK_CACHE_DIR=/apks/apks-cache
       if [ "$IS_MAIN" = "true" ]; then
         echo "${MELANGE_RSA}" > melange.rsa
+        # Ensure melange.rsa.pub matches MELANGE_RSA — regen if stale so the
+        # signing pair is always consistent (MELANGE_RSA is the source of truth).
+        openssl rsa -in melange.rsa -pubout -out melange.rsa.derived.pub 2>/dev/null
+        if ! diff -q melange.rsa.derived.pub melange.rsa.pub >/dev/null; then
+          echo "WARNING: MELANGE_RSA does not match committed melange.rsa.pub — regenerating." >&2
+          mv melange.rsa.derived.pub melange.rsa.pub
+        else
+          rm -f melange.rsa.derived.pub
+        fi
         export OUT_DIR=/apks
       else
         melange keygen melange.rsa
