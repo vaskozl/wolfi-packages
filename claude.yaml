@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 # Tracks anthropics/claude-code GitHub Releases; the GCS download URL uses the
 # same version string as the release tag.
-# renovate: datasource=github-releases depName=anthropics/claude-code
+# datasource: github-releases
+# repository: https://github.com/anthropics/claude-code
 package:
   name: claude
   version: 2.1.140

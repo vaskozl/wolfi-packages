@@ -9,33 +9,20 @@
   "commitMessageExtra": "to {{newVersion}}",
   "customManagers": [
     {
-      // Default GitHub tracker — matches any yaml with a '# repository: https://github.com/…'
-      // annotation. Uses github-tags (tag versions equal release versions for all these
-      // packages). No per-package annotation required for the common case.
+      // GitHub package tracker — fires on any yaml with a
+      // `# repository: https://github.com/owner/repo` annotation.
+      // Defaults to the github-tags datasource. To override to github-releases
+      // (e.g. for packages that repackage release binaries rather than source
+      // tags), add a `# datasource: github-releases` comment on the line
+      // immediately above `# repository:`.
       "customType": "regex",
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
       "matchStringsStrategy": "combination",
       "matchStrings": [
         "version:\\s*['\"]?(?<currentValue>(\\d+\\.)+\\d+)['\"]?",
-        "#\\s*repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)"
+        "(?:#\\s*datasource:\\s*(?<datasource>github-\\S+)\\s*\\n\\s*)?#\\s*repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)"
       ],
-      "datasourceTemplate": "github-tags",
-      "versioningTemplate": "loose",
-      "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
-    },
-    {
-      // Override to github-releases. Annotate the line above `version:` with:
-      //   # renovate: datasource=github-releases depName=owner/repo
-      // Use this when the package tracks GitHub Releases rather than tags
-      // (e.g. pre-built binaries distributed via releases, not source archives).
-      "customType": "regex",
-      "managerFilePatterns": ["/.+\\.ya?ml$/"],
-      "matchStringsStrategy": "combination",
-      "matchStrings": [
-        "version:\\s*['\"]?(?<currentValue>(\\d+\\.)+\\d+)['\"]?",
-        "#\\s*renovate:\\s*datasource=github-releases\\s+depName=(?<depName>\\S+)"
-      ],
-      "datasourceTemplate": "github-releases",
+      "datasourceTemplate": "{{#if datasource}}{{datasource}}{{else}}github-tags{{/if}}",
       "versioningTemplate": "loose",
       "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
     },
