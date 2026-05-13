@@ -14,7 +14,7 @@
       "matchStringsStrategy": "combination",
       "matchStrings": [
         "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
-        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)"
+        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)\\n(?!#\\s*datasource:\\s*github-releases)"
       ],
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "loose",
@@ -102,20 +102,6 @@
         "fileFilters": ["**/*.yaml", "**/*.yml"],
         "executionMode": "update",
       },
-    },
-    {
-      // Packages that repackage GitHub Release assets (not bare git tags) have
-      // "# datasource: github-releases" and are handled by the github-releases
-      // manager. Disable the github-tags manager for them to avoid duplicate MRs.
-      // Add new packages here if they also use "# datasource: github-releases".
-      "matchManagers": ["custom.regex"],
-      "matchDatasources": ["github-tags"],
-      "matchPackageNames": [
-        "anthropics/claude-code",
-        "intel/intel-graphics-compiler",
-        "intel/compute-runtime"
-      ],
-      "enabled": false
     },
     {
       // Trim apk version to major.minor so PRs fire only on new minors.
