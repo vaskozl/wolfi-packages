@@ -16,6 +16,7 @@ environment:
       - busybox
       - ca-certificates-bundle # HTTPS to fdc.nal.usda.gov
       - go-1.26 # matches upstream toolchain go1.26.3
+      - libcxx1-dev # arm64 libhighs.a was built with libc++; needed for std::__1::* symbols
       - nodejs
       - npm
       - python3 # USDA import_food_data.py
@@ -23,6 +24,13 @@ environment:
       - unzip
       - wget
       - zlib-dev # -lz for nextmv-io/go-highs static link
+  environment:
+    # The cgo directive in nextmv-io/go-highs/solver.go specifies `-lstdc++`
+    # for both linux-amd64 and linux-arm64, but the prebuilt linux-arm64
+    # libhighs.a was actually compiled against libc++ (its symbols live in
+    # std::__1::*). Appending `-lc++ -lc++abi` lets the linker resolve those
+    # alongside the libstdc++ symbols the amd64 lib needs.
+    CGO_LDFLAGS: -lc++ -lc++abi
 pipeline:
   - name: setup-auth
     runs: |
