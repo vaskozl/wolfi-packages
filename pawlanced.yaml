@@ -75,8 +75,12 @@ pipeline:
     runs: |
       set -eu
       # tools.go imports a-h/templ/cmd/templ; `go run` it directly so we
-      # don't need templ on PATH before go/build runs.
-      go run github.com/a-h/templ/cmd/templ generate
+      # don't need templ on PATH before go/build runs. Disable cgo here:
+      # the global CGO_LDFLAGS (set for the final rawfood link) would
+      # otherwise force `-lc++ -lc++abi` into templ's link line, pulling
+      # in a -lunwind that the image doesn't provide. Templ doesn't need
+      # cgo at all — it's a pure-Go code generator.
+      CGO_ENABLED=0 go run github.com/a-h/templ/cmd/templ generate
   - uses: go/build
     with:
       go-package: go-1.26
