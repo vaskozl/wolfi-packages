@@ -4,8 +4,8 @@
 # datasource: github-releases
 package:
   name: intel-compute-runtime
-  version: "26.14.37833.4"
-  epoch: 1 # switch test to ldd-check
+  version: "26.18.38308.1"
+  epoch: 0
   description: Intel Graphics Compute Runtime for OpenCL (NEO, repackaged upstream binaries)
   copyright:
     - license: MIT
