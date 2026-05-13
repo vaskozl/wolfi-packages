@@ -29,9 +29,13 @@ environment:
     # The cgo directive in nextmv-io/go-highs/solver.go specifies `-lstdc++`
     # for both linux-amd64 and linux-arm64, but the prebuilt linux-arm64
     # libhighs.a was actually compiled against libc++ (its symbols live in
-    # std::__1::*). Appending `-lc++ -lc++abi` lets the linker resolve those
+    # std::__1::*). Adding `-lc++ -lc++abi` lets the linker resolve those
     # alongside the libstdc++ symbols the amd64 lib needs.
-    CGO_LDFLAGS: -lc++ -lc++abi
+    # --push-state,--no-as-needed pins libc++ into DT_NEEDED even though
+    # it sits before libhighs.a on the link line — the Wolfi linker
+    # defaults to --as-needed and would otherwise drop libc++ before
+    # libhighs.a's std::__1::* references show up.
+    CGO_LDFLAGS: -Wl,--push-state,--no-as-needed -lc++ -lc++abi -Wl,--pop-state
 pipeline:
   - name: setup-auth
     runs: |
@@ -76,12 +80,8 @@ pipeline:
     runs: |
       set -eu
       # tools.go imports a-h/templ/cmd/templ; `go run` it directly so we
-      # don't need templ on PATH before go/build runs. Disable cgo here:
-      # the global CGO_LDFLAGS (set for the final rawfood link) would
-      # otherwise force `-lc++ -lc++abi` into templ's link line, pulling
-      # in a -lunwind that the image doesn't provide. Templ doesn't need
-      # cgo at all — it's a pure-Go code generator.
-      CGO_ENABLED=0 go run github.com/a-h/templ/cmd/templ generate
+      # don't need templ on PATH before go/build runs.
+      go run github.com/a-h/templ/cmd/templ generate
   - uses: go/build
     with:
       go-package: go-1.26
