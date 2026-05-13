@@ -17,6 +17,7 @@ environment:
       - ca-certificates-bundle # HTTPS to fdc.nal.usda.gov
       - go-1.26 # matches upstream toolchain go1.26.3
       - libcxx1-dev # arm64 libhighs.a was built with libc++; needed for std::__1::* symbols
+      - libunwind-dev # libc++.so on Wolfi pulls in _Unwind_* — provides -lunwind for the link
       - nodejs
       - npm
       - python3 # USDA import_food_data.py
