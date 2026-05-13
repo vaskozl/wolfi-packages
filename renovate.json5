@@ -9,18 +9,33 @@
   "commitMessageExtra": "to {{newVersion}}",
   "customManagers": [
     {
-      // Matches any yaml with 'repository: https://github.com/...' — covers both
-      // pipeline git-checkout steps and top-of-file comment annotations. All
-      // GitHub packages use github-tags; tag versions match release versions for
-      // every package here, so no per-package datasource annotation is needed.
+      // Default GitHub tracker — matches any yaml with a '# repository: https://github.com/…'
+      // annotation. Uses github-tags (tag versions equal release versions for all these
+      // packages). No per-package annotation required for the common case.
       "customType": "regex",
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
       "matchStringsStrategy": "combination",
       "matchStrings": [
-        "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
-        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)"
+        "version:\\s*['\"]?(?<currentValue>(\\d+\\.)+\\d+)['\"]?",
+        "#\\s*repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)"
       ],
       "datasourceTemplate": "github-tags",
+      "versioningTemplate": "loose",
+      "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
+    },
+    {
+      // Override to github-releases. Annotate the line above `version:` with:
+      //   # renovate: datasource=github-releases depName=owner/repo
+      // Use this when the package tracks GitHub Releases rather than tags
+      // (e.g. pre-built binaries distributed via releases, not source archives).
+      "customType": "regex",
+      "managerFilePatterns": ["/.+\\.ya?ml$/"],
+      "matchStringsStrategy": "combination",
+      "matchStrings": [
+        "version:\\s*['\"]?(?<currentValue>(\\d+\\.)+\\d+)['\"]?",
+        "#\\s*renovate:\\s*datasource=github-releases\\s+depName=(?<depName>\\S+)"
+      ],
+      "datasourceTemplate": "github-releases",
       "versioningTemplate": "loose",
       "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
     },
@@ -86,7 +101,7 @@
   "packageRules": [
     {
       // Reset epoch to 0 only on upstream version bumps.
-      "matchDatasources": ["github-tags","gitlab-tags","forgejo-tags","custom.alpine-base"],
+      "matchDatasources": ["github-tags","github-releases","gitlab-tags","forgejo-tags","custom.alpine-base"],
       "postUpgradeTasks": {
         "commands": [
           "sed -i -E 's/^([[:space:]]*epoch:)[[:space:]]+[0-9]+.*$/\\1 0/' '{{{packageFile}}}'",

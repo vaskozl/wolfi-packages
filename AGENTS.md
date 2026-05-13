@@ -124,17 +124,17 @@ Sections to check (in order): `main`, `community`, `testing`
 
 Renovate bumps `version:` when it sees a paired `repository: https://github.com/OWNER/REPO` (or codeberg/gitlab.freedesktop.org). `uses: git-checkout` provides it naturally; otherwise add a `# repository: ...` comment. Use `curl` in downloading URLs is required and don't pin `expected-sha256` - renovate can't update hashes.
 
-If a package **repackages upstream `.deb`/`.rpm` assets** (i.e. depends on a published GitHub Release, not just a git tag), add `# datasource: github-releases` immediately after the `# repository: ...` line:
+If a package tracks **GitHub Releases** rather than tags (e.g. pre-built binaries distributed via releases, not source archives), replace the `# repository:` comment with a `# renovate:` annotation that explicitly specifies datasource and depName:
 
 ```yaml
-# Repackages Intel's upstream .deb releases rather than building from source.
-# repository: https://github.com/intel/intel-graphics-compiler
-# datasource: github-releases
+# Tracks anthropics/claude-code GitHub Releases.
+# renovate: datasource=github-releases depName=anthropics/claude-code
+package:
+  name: claude
+  version: 2.1.140
 ```
 
-Renovate will then use the `github-releases` datasource and only open a bump PR when upstream publishes a full release with assets — not for bare git tags without a release.
-
-**Important:** Also add the package to the `packageRules` disable list in `renovate.json5` (the entry with `"matchDatasources": ["github-tags"]`). This prevents the github-tags manager — which matches all GitHub URLs — from also opening a duplicate bump MR. The package name must match the `depName` captured from the `repository:` URL (e.g. `intel/compute-runtime`).
+Renovate will then use the `github-releases` datasource and only open a bump PR when upstream publishes a full release. Using `# renovate:` instead of `# repository:` also prevents the default `github-tags` manager from firing a duplicate bump MR.
 
 ## Architecture restrictions
 
