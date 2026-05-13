@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Bump `expected-commit` (and reset/bump `version:`/`epoch:` per repo
+# rules) to ship a new upstream snapshot.
+# repository: https://gitlab.sko.ai/doudous/rawfood
+package:
+  name: pawlanced
+  version: 0.1.0
+  epoch: 0
+  description: Dog/cat nutrition calculator backed by USDA FoodData Central
+  copyright:
+    - license: PROPRIETARY
+environment:
+  contents:
+    packages:
+      - build-base # CGO for mattn/go-sqlite3
+      - busybox
+      - ca-certificates-bundle # HTTPS to fdc.nal.usda.gov
+      - go-1.26 # matches upstream toolchain go1.26.3
+      - nodejs
+      - npm
+      - python3 # USDA import_food_data.py
+      - sqlite # sqlite3 CLI for custom/*.sql
+      - unzip
+      - wget
+      - zlib-dev # -lz for nextmv-io/go-highs static link
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://gitlab.sko.ai/doudous/rawfood
+      branch: main
+      expected-commit: 1c435ef7392df151dc20eafd8cc5826b11851566
+  - name: build-foods-db
+    runs: |
+      set -eu
+      cd sql
+      wget 'https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_sr_legacy_food_csv_2018-04.zip'
+      unzip FoodData_Central_sr_legacy_food_csv_2018-04.zip
+      rm -f FoodData_Central_sr_legacy_food_csv_2018-04.zip
+      python3 import_food_data.py -d FoodData* -o db.sqlite3 --force
+      rm -rf FoodData*
+      # Match upstream Dockerfile semantics: tolerate per-file failures so a
+      # duplicate-PK row in one custom/*.sql doesn't sink the whole build.
+      # The upstream `RUN for i in custom/*sql; do sqlite3 db.sqlite3 < $i; done`
+      # has no set -e, so an individual failure is silently ignored there too.
+      for i in custom/*.sql; do sqlite3 db.sqlite3 < "$i" || true; done
+  - name: build-assets
+    runs: |
+      set -eu
+      npm install
+      npx tailwindcss -i static/main.css -o static/tailwind.css -m
+      cp node_modules/basecoat-css/dist/js/all.min.js static/basecoat.min.js
+  - name: generate-templ
+    runs: |
+      set -eu
+      # tools.go imports a-h/templ/cmd/templ; `go run` it directly so we
+      # don't need templ on PATH before go/build runs.
+      go run github.com/a-h/templ/cmd/templ generate
+  - uses: go/build
+    with:
+      go-package: go-1.26
+      install-dir: lib/pawlanced
+      output: rawfood
+      packages: ./cmd/rawfood
+  - runs: |
+      set -eu
+      install -d ${{targets.contextdir}}/usr/lib/pawlanced/sql
+      install -d ${{targets.contextdir}}/usr/lib/pawlanced/static
+      install -d ${{targets.contextdir}}/usr/bin
+
+      install -m 0644 sql/db.sqlite3 ${{targets.contextdir}}/usr/lib/pawlanced/sql/db.sqlite3
+      cp -a static/. ${{targets.contextdir}}/usr/lib/pawlanced/static/
+
+      # Wrapper cds into the install dir because the server resolves
+      # `static/` and the default `-d sql/db.sqlite3` relative to cwd.
+      cat > ${{targets.contextdir}}/usr/bin/pawlanced <<'WRAP'
+      #!/bin/sh
+      cd /usr/lib/pawlanced
+      exec ./rawfood "$@"
+      WRAP
+      chmod 0755 ${{targets.contextdir}}/usr/bin/pawlanced
+  - uses: strip
+test:
+  pipeline:
+    - name: Verify binary and assets installed
+      runs: |
+        set -eu
+        test -x /usr/bin/pawlanced
+        test -x /usr/lib/pawlanced/rawfood
+        test -f /usr/lib/pawlanced/sql/db.sqlite3
+        test -f /usr/lib/pawlanced/static/tailwind.css
+        test -f /usr/lib/pawlanced/static/basecoat.min.js
+    - name: Verify usage banner
+      runs: |
+        set -eu
+        # `flag` exits 2 on -h; only assert the flag is documented.
+        pawlanced -h 2>&1 | grep -F "sqlite database"
+    - name: Smoke-test server boots
+      runs: |
+        set -eu
+        # The melange test sandbox runs with --unshare-net and no iproute2,
+        # so outbound HTTP routing inside the sandbox doesn't work — we
+        # can bind a listener but can't reach it. Instead, just verify the
+        # process launches, opens the DB, and stays alive for 1 second
+        # — i.e. ListenAndServe didn't crash. Real HTTP coverage lives in
+        # the dogcalc deployment's readiness probe in home-infra.
+        pawlanced -l 127.0.0.1:13000 &
+        pid=$!
+        trap "kill $pid 2>/dev/null || true; wait $pid 2>/dev/null || true" EXIT
+        sleep 1
+        kill -0 "$pid"
