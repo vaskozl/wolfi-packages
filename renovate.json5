@@ -9,19 +9,18 @@
   "commitMessageExtra": "to {{newVersion}}",
   "customManagers": [
     {
-      // Single manager for all GitHub packages. Annotate with:
-      //   # repository: https://github.com/<owner>/<repo>
-      //   # datasource: github-tags    (for repos using git tags)
-      //   # datasource: github-releases (for repos distributing release assets)
-      // Both annotations are required — datasource is captured and forwarded.
+      // Matches any yaml with 'repository: https://github.com/...' — covers both
+      // pipeline git-checkout steps and top-of-file comment annotations. All
+      // GitHub packages use github-tags; tag versions match release versions for
+      // every package here, so no per-package datasource annotation is needed.
       "customType": "regex",
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
       "matchStringsStrategy": "combination",
       "matchStrings": [
         "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
-        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)\\n#\\s*datasource:\\s*(?<datasource>[^\\n]+)"
+        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)"
       ],
-      "datasourceTemplate": "{{datasource}}",
+      "datasourceTemplate": "github-tags",
       "versioningTemplate": "loose",
       "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
     },
@@ -87,7 +86,7 @@
   "packageRules": [
     {
       // Reset epoch to 0 only on upstream version bumps.
-      "matchDatasources": ["github-tags","gitlab-tags","forgejo-tags","github-releases","custom.alpine-base"],
+      "matchDatasources": ["github-tags","gitlab-tags","forgejo-tags","custom.alpine-base"],
       "postUpgradeTasks": {
         "commands": [
           "sed -i -E 's/^([[:space:]]*epoch:)[[:space:]]+[0-9]+.*$/\\1 0/' '{{{packageFile}}}'",
