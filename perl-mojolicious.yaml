@@ -1,5 +1,6 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/community/perl-mojolicious/APKBUILD
 # repository: https://github.com/mojolicious/mojo
+# datasource: github-tags
 package:
   name: perl-mojolicious
   version: "9.45"

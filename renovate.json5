@@ -9,26 +9,19 @@
   "commitMessageExtra": "to {{newVersion}}",
   "customManagers": [
     {
+      // Single manager for all GitHub packages. Annotate with:
+      //   # repository: https://github.com/<owner>/<repo>
+      //   # datasource: github-tags    (for repos using git tags)
+      //   # datasource: github-releases (for repos distributing release assets)
+      // Both annotations are required — datasource is captured and forwarded.
       "customType": "regex",
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
       "matchStringsStrategy": "combination",
       "matchStrings": [
         "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
-        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)\\n(?!#\\s*datasource:\\s*github-releases)"
+        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)\\n#\\s*datasource:\\s*(?<datasource>[^\\n]+)"
       ],
-      "datasourceTemplate": "github-tags",
-      "versioningTemplate": "loose",
-      "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
-    },
-    {
-      "customType": "regex",
-      "managerFilePatterns": ["/.+\\.ya?ml$/"],
-      "matchStringsStrategy": "combination",
-      "matchStrings": [
-        "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
-        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)\\n#\\s*datasource:\\s*github-releases"
-      ],
-      "datasourceTemplate": "github-releases",
+      "datasourceTemplate": "{{datasource}}",
       "versioningTemplate": "loose",
       "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
     },
