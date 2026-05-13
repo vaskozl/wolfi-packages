@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Tracks anthropics/claude-code GitHub Releases; the GCS download URL uses the
+# same version string as the release tag.
+# datasource: github-releases
+# repository: https://github.com/anthropics/claude-code
+package:
+  name: claude
+  version: 2.1.140
+  epoch: 0
+  description: Claude Code, an agentic coding tool made by Anthropic
+  copyright:
+    - license: PROPRIETARY
+  dependencies:
+    runtime:
+      - bash
+      - coreutils
+      - git
+      - openssh-client
+vars:
+  gcs-bucket: https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases
+environment:
+  contents:
+    packages:
+      - busybox
+      - ca-certificates-bundle
+      - curl
+pipeline:
+  - runs: |
+      set -eu
+      case "${{build.arch}}" in
+        x86_64)  url="${{vars.gcs-bucket}}/${{package.version}}/linux-x64/claude" ;;
+        aarch64) url="${{vars.gcs-bucket}}/${{package.version}}/linux-arm64/claude" ;;
+        *) echo "unsupported arch: ${{build.arch}}"; exit 1 ;;
+      esac
+      curl -sfL -o claude "$url"
+      install -Dm0755 claude "${{targets.destdir}}/usr/bin/claude"
+test:
+  pipeline:
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
+    - uses: test/ver-check
+      with:
+        bins: |
+          claude
+    - uses: test/help-check
+      with:
+        bins: |
+          claude

@@ -9,26 +9,20 @@
   "commitMessageExtra": "to {{newVersion}}",
   "customManagers": [
     {
+      // GitHub package tracker — fires on any yaml with a
+      // `# repository: https://github.com/owner/repo` annotation.
+      // Defaults to the github-tags datasource. To override to github-releases
+      // (e.g. for packages that repackage release binaries rather than source
+      // tags), add a `# datasource: github-releases` comment on the line
+      // immediately above `# repository:`.
       "customType": "regex",
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
       "matchStringsStrategy": "combination",
       "matchStrings": [
-        "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
-        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)"
+        "version:\\s*['\"]?(?<currentValue>(\\d+\\.)+\\d+)['\"]?",
+        "(?:#\\s*datasource:\\s*(?<datasource>github-\\S+)\\s*\\n\\s*)?#\\s*repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)"
       ],
-      "datasourceTemplate": "github-tags",
-      "versioningTemplate": "loose",
-      "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
-    },
-    {
-      "customType": "regex",
-      "managerFilePatterns": ["/.+\\.ya?ml$/"],
-      "matchStringsStrategy": "combination",
-      "matchStrings": [
-        "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
-        "repository:\\s*https:\\/\\/github\\.com\\/(?<depName>[^\\n]+)\\n#\\s*datasource:\\s*github-releases"
-      ],
-      "datasourceTemplate": "github-releases",
+      "datasourceTemplate": "{{#if datasource}}{{datasource}}{{else}}github-tags{{/if}}",
       "versioningTemplate": "loose",
       "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
     },
@@ -94,7 +88,7 @@
   "packageRules": [
     {
       // Reset epoch to 0 only on upstream version bumps.
-      "matchDatasources": ["github-tags","gitlab-tags","forgejo-tags","github-releases","custom.alpine-base"],
+      "matchDatasources": ["github-tags","github-releases","gitlab-tags","forgejo-tags","custom.alpine-base"],
       "postUpgradeTasks": {
         "commands": [
           "sed -i -E 's/^([[:space:]]*epoch:)[[:space:]]+[0-9]+.*$/\\1 0/' '{{{packageFile}}}'",
@@ -102,19 +96,6 @@
         "fileFilters": ["**/*.yaml", "**/*.yml"],
         "executionMode": "update",
       },
-    },
-    {
-      // Packages that repackage GitHub Release assets (not bare git tags) have
-      // "# datasource: github-releases" and are handled by the github-releases
-      // manager. Disable the github-tags manager for them to avoid duplicate MRs.
-      // Add new packages here if they also use "# datasource: github-releases".
-      "matchManagers": ["custom.regex"],
-      "matchDatasources": ["github-tags"],
-      "matchPackageNames": [
-        "intel/intel-graphics-compiler",
-        "intel/compute-runtime"
-      ],
-      "enabled": false
     },
     {
       // Trim apk version to major.minor so PRs fire only on new minors.
