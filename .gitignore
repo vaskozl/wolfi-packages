@@ -1,3 +1,4 @@
 packages/aarch64
 packages/x86_64
 melange.rsa
+ci.env

@@ -43,6 +43,15 @@ stages: [generate, build]
         export MELANGE_FLAGS="$MELANGE_FLAGS --ignore-signatures"
       fi
       mkdir -p "$OUT_DIR" "$CACHE_DIR" "$APK_CACHE_DIR"
+      # Make CI_JOB_TOKEN available inside the bubblewrap sandbox so
+      # packages whose source lives in internal-visibility GitLab repos
+      # can authenticate `git-checkout` via a credential helper (.netrc).
+      # The token is per-job, scoped by GitLab's CI/CD job-token allowlist,
+      # and never appears in committed files or `git-checkout`'s logged
+      # repository URL.
+      umask 077
+      printf 'export CI_JOB_TOKEN=%s\n' "${CI_JOB_TOKEN:-}" > ci.env
+      umask 022
   variables:
     MELANGE_FLAGS: >-
       --workspace-dir=$CI_PROJECT_DIR
@@ -52,6 +61,7 @@ stages: [generate, build]
       --keyring-append=melange.rsa.pub,https://apks.sko.ai/melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
       --pipeline-dirs=./pipelines
       --env-file=common.env
+      --env-file=ci.env
   retry: 1
   # MR builds write packages to $CI_PROJECT_DIR/packages (OUT_DIR).
   # Uploading that directory as an artifact lets dependent jobs (those with

@@ -24,6 +24,20 @@ environment:
       - wget
       - zlib-dev # -lz for nextmv-io/go-highs static link
 pipeline:
+  - name: setup-auth
+    runs: |
+      # rawfood is GitLab visibility=internal, so anonymous clones get 403.
+      # CI_JOB_TOKEN is injected into the sandbox via .gitlab-ci.yml's
+      # per-job ci.env (env-file → bwrap --setenv). Writing ~/.netrc lets
+      # git authenticate transparently; the token never appears in the
+      # repository URL that `git-checkout` logs to stdout.
+      set -eu
+      umask 077
+      cat > "${HOME}/.netrc" <<EOF
+      machine gitlab.sko.ai
+      login gitlab-ci-token
+      password ${CI_JOB_TOKEN}
+      EOF
   - uses: git-checkout
     with:
       repository: https://gitlab.sko.ai/doudous/rawfood
