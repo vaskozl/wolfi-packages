@@ -184,10 +184,11 @@ CI uses a generated child pipeline. `.gitlab/gen-dag.sh` introspects every `*.ya
 
 melange caches builds keyed by `(version, epoch)`. If you change content but bump neither, the apk index keeps the old build and your change is silently ignored.
 
-- **Bump `epoch:` by 1** when content changes but `version:` stays. CI's `.gitlab/epoch-check.sh` enforces this on MRs.
+- **Bump `epoch:` by 1** when content changes but `version:` stays.
 - **Reset `epoch: 0`** when bumping `version:`.
 - **Don't bump epoch** for comment-only / pure-formatting / docs-only changes.
 - Keep the trailing `# why` comment on the epoch line short and specific (`epoch: 3 # rebuild for openssl 3.5`).
+- After a version bump or content edit, run `just bump-epochs` — it resets epoch to 0 on version bumps, increments epoch on content edits, and bumps epoch on every reverse-dep so CI rebuilds them against the new apk. Renovate calls the same script on version-bump MRs; CI's `--check` enforces both rules on MRs.
 
 ## CVE Patches
 

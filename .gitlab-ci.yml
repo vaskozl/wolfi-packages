@@ -85,6 +85,10 @@ generate:
   stage: generate
   image: !reference [.build, image]
   script:
+    # Fail MRs that edit a yaml without bumping version/epoch, or bump a
+    # yaml without propagating epoch to its reverse-deps. On main this is
+    # a no-op (origin/main diffs against itself).
+    - BASE_REF=origin/main .gitlab/bump-epochs.pl --check
     - .gitlab/gen-dag.sh > generated-pipeline.yml
   artifacts:
     paths: [generated-pipeline.yml]

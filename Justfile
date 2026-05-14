@@ -147,6 +147,12 @@ lint *files:
       exit 1
     fi
 
+# After a version/epoch-bump commit: reset epoch where version changed
+# and propagate epoch bumps to reverse-deps so CI rebuilds them against
+# the new apks. Same script renovate runs in postUpgradeTasks.
+bump-epochs:
+    .gitlab/bump-epochs.pl
+
 # Clean build output
 clean:
     rm -rf {{out_dir}}
