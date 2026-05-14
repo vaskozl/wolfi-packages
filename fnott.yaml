@@ -1,0 +1,75 @@
+package:
+  name: fnott
+  version: "1.8.0"
+  epoch: 0
+  description: Keyboard driven and lightweight Wayland notification daemon
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - build-base
+      - dbus-dev
+      - fcft-dev
+      - libpng-dev
+      - meson
+      - pixman-dev
+      - scdoc
+      - tllist-dev
+      - wayland-dev
+      - wayland-protocols
+      - wayland-protocols-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://codeberg.org/dnkl/fnott
+      tag: ${{package.version}}
+  - runs: |
+      ln -s /usr/bin/scdoc /usr/local/bin/scdoc
+  - uses: meson/configure
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: "${{package.name}}-doc"
+    pipeline:
+      - uses: split/alldocs
+    description: fnott manpages
+    test:
+      pipeline:
+        - uses: test/docs
+  - name: "${{package.name}}-zsh-completion"
+    description: "fnott zsh completions"
+    pipeline:
+      - runs: |
+          mkdir -p ${{targets.subpkgdir}}/usr/share/zsh
+          mv ${{targets.destdir}}/usr/share/zsh/site-functions ${{targets.subpkgdir}}/usr/share/zsh/site-functions
+    dependencies:
+      runtime:
+        - merged-usrsbin
+        - wolfi-baselayout
+  - name: "${{package.name}}-fish-completion"
+    description: "fnott fish completions"
+    pipeline:
+      - runs: |
+          mkdir -p ${{targets.subpkgdir}}/usr/share/fish
+          mv ${{targets.destdir}}/usr/share/fish/vendor_completions.d ${{targets.subpkgdir}}/usr/share/fish/vendor_completions.d
+    dependencies:
+      runtime:
+        - merged-usrsbin
+        - wolfi-baselayout
+  - name: "${{package.name}}-dbg"
+    pipeline:
+      - uses: split/debug
+test:
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          fnott
+          fnottctl
+    - uses: test/help-check
+      with:
+        bins: |
+          fnott
+          fnottctl
