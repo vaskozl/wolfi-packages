@@ -54,12 +54,8 @@ subpackages:
     pipeline:
       - uses: split/dev
     test:
-      environment:
-        contents:
-          packages:
-            - pkgconf
       pipeline:
-        - runs: pkg-config --exists xdg-desktop-portal
+        - uses: test/pkgconf
 test:
   pipeline:
     - uses: test/tw/ldd-check
