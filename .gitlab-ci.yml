@@ -1,4 +1,6 @@
 workflow:
+  auto_cancel:
+    on_new_commit: interruptible
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == "main"
@@ -14,6 +16,7 @@ stages: [generate, build]
 # pulls the same image via !reference so the pin lives in exactly one place.
 .build:
   stage: build
+  interruptible: true
   image:
     name: ghcr.io/vaskozl/melange:0.50.6@sha256:5905117e7a1ac37fbfd504a57b100410b39dd5032b37aedc79d839d1edda3567
     entrypoint: [""]
@@ -83,6 +86,7 @@ stages: [generate, build]
 
 generate:
   stage: generate
+  interruptible: true
   image: !reference [.build, image]
   script:
     # Fail MRs that edit a yaml without bumping version/epoch, or bump a
@@ -100,6 +104,7 @@ generate:
 
 build:
   stage: build
+  interruptible: true
   needs: [generate]
   trigger:
     include:
