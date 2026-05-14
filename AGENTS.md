@@ -122,7 +122,7 @@ Sections to check (in order): `main`, `community`, `testing`
 
 ## Renovate
 
-Renovate bumps `version:` when it sees a paired `repository: https://github.com/OWNER/REPO` (or codeberg/gitlab.freedesktop.org). `uses: git-checkout` provides it naturally; otherwise add a `# repository: ...` comment. Use `curl` in downloading URLs is required and don't pin `expected-sha256` - renovate can't update hashes.
+Renovate bumps `version:` when it sees a paired `repository: https://github.com/OWNER/REPO` (or codeberg/gitlab.freedesktop.org). `uses: git-checkout` provides it naturally; otherwise add a `# repository: ...` comment. **Never add a `# repository:` comment when `git-checkout` already has a `repository:` field — it is redundant and should be omitted.** Use `curl` in downloading URLs is required and don't pin `expected-sha256` - renovate can't update hashes.
 
 GitHub packages default to the `github-tags` datasource. If a package tracks **GitHub Releases** rather than tags (e.g. pre-built binaries distributed via releases, not source archives), add a `# datasource: github-releases` comment on the line immediately above `# repository:`:
 
