@@ -1,4 +1,3 @@
-# repository: https://gitlab.gnome.org/GNOME/json-glib
 package:
   name: json-glib
   version: 1.10.8
