@@ -10,7 +10,6 @@ environment:
     packages:
       - build-base
       - glib-dev
-      - gobject-introspection-dev
       - meson
       - pkgconf
 pipeline:
