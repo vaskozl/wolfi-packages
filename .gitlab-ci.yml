@@ -100,6 +100,9 @@ generate:
     # Skip when this file is re-evaluated inside the child pipeline.
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
       when: never
+    # Main branch publishes packages to NFS -- don't cancel mid-build.
+    - if: $CI_COMMIT_BRANCH == "main"
+      interruptible: false
     - when: on_success
 
 build:
@@ -117,6 +120,7 @@ build:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
       when: never
     - if: $CI_COMMIT_BRANCH == "main"
+      interruptible: false
       variables:
         IS_MAIN: "true"
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
