@@ -1,0 +1,38 @@
+package:
+  name: xdg-dbus-proxy
+  version: 0.1.7
+  epoch: 0
+  description: D-Bus proxy for Flatpak sandbox isolation
+  copyright:
+    - license: LGPL-2.1-or-later
+# repository: https://github.com/flatpak/xdg-dbus-proxy
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - glib-dev
+      - meson
+      - pkgconf-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/flatpak/xdg-dbus-proxy
+      tag: ${{package.version}}
+  - uses: meson/configure
+    with:
+      opts: |
+        -Dman=disabled \
+        -Dtests=false
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+test:
+  pipeline:
+    - uses: test/tw/ldd-check
+    - uses: test/ver-check
+      with:
+        bins: xdg-dbus-proxy
+    - uses: test/help-check
+      with:
+        bins: xdg-dbus-proxy
