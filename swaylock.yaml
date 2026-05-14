@@ -1,0 +1,48 @@
+package:
+  name: swaylock
+  version: "1.8.5"
+  epoch: 0
+  description: Screen locker for Wayland
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - build-base
+      - cairo-dev
+      - gdk-pixbuf-dev
+      - libxkbcommon-dev
+      - linux-pam-dev
+      - meson
+      - pango-dev
+      - scdoc
+      - wayland-dev
+      - wayland-protocols
+      - wayland-protocols-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/swaywm/swaylock
+      tag: v${{package.version}}
+  - runs: |
+      ln -s /usr/bin/scdoc /usr/local/bin/scdoc
+  - uses: meson/configure
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: swaylock manpages
+  - name: ${{package.name}}-dbg
+    pipeline:
+      - uses: split/debug
+    description: swaylock debug symbols
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        swaylock --version
+        swaylock --help || true
+        test -f /etc/pam.d/swaylock
