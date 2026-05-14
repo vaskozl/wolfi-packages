@@ -5,7 +5,6 @@ package:
   description: D-Bus proxy for Flatpak sandbox isolation
   copyright:
     - license: LGPL-2.1-or-later
-# repository: https://github.com/flatpak/xdg-dbus-proxy
 environment:
   contents:
     packages:
