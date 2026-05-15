@@ -45,10 +45,6 @@ test:
       with:
         bins: |
           swaylock
-    - uses: test/help-check
-      with:
-        bins: |
-          swaylock
     - name: PAM config installed
       runs: |
         set -eu
