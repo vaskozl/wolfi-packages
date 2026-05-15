@@ -1,0 +1,45 @@
+package:
+  name: slurp
+  version: "1.5.0"
+  epoch: 0
+  description: Select a region in a Wayland compositor
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - build-base
+      - cairo-dev
+      - libxkbcommon-dev
+      - meson
+      - scdoc
+      - wayland-dev
+      - wayland-protocols
+      - wayland-protocols-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/emersion/slurp
+      tag: v${{package.version}}
+  - uses: meson/configure
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: slurp manpages
+    test:
+      pipeline:
+        - uses: test/docs
+  - name: ${{package.name}}-dbg
+    pipeline:
+      - uses: split/debug
+    description: slurp debug symbols
+test:
+  pipeline:
+    - uses: test/help-check
+      with:
+        bins: |
+          slurp
