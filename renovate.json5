@@ -126,6 +126,13 @@
       // matches melange's `version` field (epoch lives separately).
       "matchDatasources": ["custom.alpine-base"],
       "extractVersion": "^(?<version>\\d+(?:\\.\\d+)*)"
+    },
+    {
+      // Pin zig-0.14 to the 0.14.x stream; 0.15+ dropped APIs needed by waylock 1.6.0.
+      "matchDatasources": ["github-releases"],
+      "matchPackageNames": ["ziglang/zig"],
+      "matchFileNames": ["zig-0.14.yaml"],
+      "allowedVersions": "/^0\\.14\\./"
     }
   ]
 }

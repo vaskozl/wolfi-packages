@@ -1,6 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 # Tracks ziglang/zig GitHub Releases within the 0.14.x stream only.
-# renovate: datasource=github-releases depName=ziglang/zig versioning=loose extractVersion=^(?<version>0\.14\..+)$
+# datasource: github-releases
+# repository: https://github.com/ziglang/zig
 package:
   name: zig-0.14
   version: "0.14.1"
