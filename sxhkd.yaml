@@ -3,7 +3,7 @@
 package:
   name: sxhkd
   version: 0.6.3
-  epoch: 1 # drop ca-certificates-bundle, fix test style
+  epoch: 2 # use test/help-check
   description: Simple X hotkey daemon
   copyright:
     - license: BSD-2-Clause
@@ -36,7 +36,7 @@ subpackages:
     description: sxhkd manpages
 test:
   pipeline:
-    - name: Verify sxhkd installation
-      runs: |
-        set -eu
-        sxhkd --help
+    - uses: test/help-check
+      with:
+        bins: |
+          sxhkd

@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: brightnessctl
+  version: 0.5.1
+  epoch: 0
+  description: Program to read and control device brightness
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/Hummer12007/brightnessctl
+      tag: ${{package.version}}
+  - runs: |
+      make
+      make install DESTDIR="${{targets.destdir}}" PREFIX=/usr UDEVDIR=/usr/lib/udev/rules.d INSTALL_UDEV_RULES=1
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: brightnessctl manpages
+  - name: ${{package.name}}-dbg
+    pipeline:
+      - uses: split/debug
+    description: brightnessctl debug symbols
+test:
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          brightnessctl
+    - uses: test/help-check
+      with:
+        bins: |
+          brightnessctl
+    - name: udev rule installed
+      runs: |
+        set -eu
+        stat /usr/lib/udev/rules.d/90-brightnessctl.rules

@@ -3,7 +3,7 @@
 package:
   name: bspwm
   version: 0.9.12
-  epoch: 1 # build-env trim, real test
+  epoch: 2 # use common test pipelines
   description: A tiling window manager based on binary space partitioning
   copyright:
     - license: BSD-2-Clause
@@ -67,8 +67,13 @@ subpackages:
         - wolfi-baselayout
 test:
   pipeline:
-    - name: bspwm help and version
-      runs: |
-        set -eu
-        bspwm -h
-        bspwm -v
+    - uses: test/ver-check
+      with:
+        bins: |
+          bspwm
+        flag: "-v"
+    - uses: test/help-check
+      with:
+        bins: |
+          bspwm
+        flag: "-h"
