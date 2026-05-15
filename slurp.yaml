@@ -30,6 +30,9 @@ subpackages:
     pipeline:
       - uses: split/manpages
     description: slurp manpages
+    test:
+      pipeline:
+        - uses: test/docs
   - name: ${{package.name}}-dbg
     pipeline:
       - uses: split/debug
@@ -40,4 +43,3 @@ test:
       with:
         bins: |
           slurp
-        flag: "-h"
