@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Tracks ziglang/zig GitHub Releases within the 0.14.x stream only.
+# renovate: datasource=github-releases depName=ziglang/zig versioning=loose extractVersion=^(?<version>0\.14\..+)$
+package:
+  name: zig-0.14
+  version: "0.14.1"
+  epoch: 0
+  description: Zig 0.14.x toolchain (prebuilt upstream binary), parallel-installable alongside wolfi's zig
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - busybox
+      - ca-certificates-bundle
+      - curl
+pipeline:
+  - runs: |
+      set -eu
+      case "${{build.arch}}" in
+        x86_64)  url="https://ziglang.org/download/${{package.version}}/zig-x86_64-linux-${{package.version}}.tar.xz" ;;
+        aarch64) url="https://ziglang.org/download/${{package.version}}/zig-aarch64-linux-${{package.version}}.tar.xz" ;;
+        *) echo "unsupported arch: ${{build.arch}}"; exit 1 ;;
+      esac
+      curl -sfL -o zig.tar.xz "$url"
+      install -d "${{targets.destdir}}/usr/lib/zig-0.14"
+      install -d "${{targets.destdir}}/usr/bin"
+      # Tarball unpacks to zig-<arch>-linux-<ver>/; flatten into /usr/lib/zig-0.14/
+      tar -C "${{targets.destdir}}/usr/lib/zig-0.14" --strip-components=1 -xf zig.tar.xz
+      ln -s ../lib/zig-0.14/zig "${{targets.destdir}}/usr/bin/zig-0.14"
+# No strip: prebuilt static binary with custom layout; strip breaks self-hosted zig builds.
+
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        zig-0.14 version | grep -F '0.14.'
+        tmp=$(mktemp -d)
+        cat >"$tmp/hello.zig" <<'ZIG'
+        const std = @import("std");
+        pub fn main() void { std.debug.print("ok\n", .{}); }
+        ZIG
+        cd "$tmp" && zig-0.14 run hello.zig 2>&1 | grep -F ok
