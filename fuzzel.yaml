@@ -1,0 +1,60 @@
+package:
+  name: fuzzel
+  version: 1.14.1
+  epoch: 0
+  description: Wayland-native application launcher
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - build-base
+      - cairo-dev
+      - fcft-dev
+      - fontconfig-dev
+      - libpng-dev
+      - libxkbcommon-dev
+      - meson
+      - pixman-dev
+      - scdoc
+      - tllist-dev
+      - wayland-dev
+      - wayland-protocols
+      - wayland-protocols-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://codeberg.org/dnkl/fuzzel
+      tag: ${{package.version}}
+  - runs: |
+      ln -s /usr/bin/scdoc /usr/local/bin/scdoc
+  - uses: meson/configure
+    with:
+      opts: |
+        -Denable-cairo=enabled \
+        -Dpng-backend=libpng
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: "${{package.name}}-doc"
+    pipeline:
+      - uses: split/manpages
+    description: fuzzel manpages
+    test:
+      pipeline:
+        - uses: test/docs
+  - name: "${{package.name}}-dbg"
+    pipeline:
+      - uses: split/debug
+test:
+  pipeline:
+    - uses: test/tw/ldd-check
+    - uses: test/ver-check
+      with:
+        bins: |
+          fuzzel
+    - uses: test/help-check
+      with:
+        bins: |
+          fuzzel
