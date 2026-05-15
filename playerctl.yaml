@@ -1,0 +1,46 @@
+package:
+  name: playerctl
+  version: "2.4.1"
+  epoch: 0
+  description: MPRIS command-line controller and library for media players
+  copyright:
+    - license: LGPL-3.0-or-later
+environment:
+  contents:
+    packages:
+      - build-base
+      - glib-dev
+      - meson
+      - pkgconf
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/altdesktop/playerctl
+      tag: v${{package.version}}
+  - uses: meson/configure
+    with:
+      opts: |
+        -Dintrospection=false \
+        -Dgtk-doc=false
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-dev
+    pipeline:
+      - uses: split/dev
+    description: playerctl dev headers and libraries
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: playerctl manpages
+  - name: ${{package.name}}-dbg
+    pipeline:
+      - uses: split/debug
+    description: playerctl debug symbols
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        playerctl --version
+        playerctl --help || true
