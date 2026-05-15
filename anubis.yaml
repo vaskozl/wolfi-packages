@@ -3,7 +3,7 @@
 package:
   name: anubis
   version: 1.25.0
-  epoch: 1 # pin go-1.26, alphabetize build env
+  epoch: 2 # use test/ver-check
   description: Block AI scrapers using a sha256 proof-of-work challenge
   copyright:
     - license: MIT
@@ -35,5 +35,7 @@ pipeline:
       tags: limitedsupportability
 test:
   pipeline:
-    - name: Verify anubis installation, please improve the test as needed
-      runs: anubis --version || exit 1
+    - uses: test/ver-check
+      with:
+        bins: |
+          anubis

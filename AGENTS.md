@@ -34,7 +34,43 @@ apk del pinewall-config
 
 ## Package Test Example
 
-The `test:` section in `pinewall-config.yaml`:
+For a package that ships binaries, use `test/ver-check` and `test/help-check` instead of inline invocations:
+
+```yaml
+test:
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          mybinary
+    - uses: test/help-check
+      with:
+        bins: |
+          mybinary
+    - name: functional check
+      runs: |
+        set -eu
+        mybinary do-something
+```
+
+If the binary uses non-standard flags (e.g. `-v` for version, `-h` for help), pass them explicitly:
+
+```yaml
+    - uses: test/ver-check
+      with:
+        bins: |
+          mybinary
+        flag: "-v"
+    - uses: test/help-check
+      with:
+        bins: |
+          mybinary
+        flag: "-h"
+```
+
+Never call `-h` or `--help` directly in a `runs:` block when `test/help-check` applies -- it handles non-zero exit codes from help flags automatically.
+
+For config-only packages, the `test:` section in `pinewall-config.yaml`:
 
 ```yaml
 test:

@@ -31,11 +31,14 @@ subpackages:
     description: brightnessctl debug symbols
 test:
   pipeline:
-    - name: brightnessctl version and help
-      runs: |
-        set -eu
-        brightnessctl --version
-        brightnessctl --help || true
+    - uses: test/ver-check
+      with:
+        bins: |
+          brightnessctl
+    - uses: test/help-check
+      with:
+        bins: |
+          brightnessctl
     - name: udev rule installed
       runs: |
         set -eu

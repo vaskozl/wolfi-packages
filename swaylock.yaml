@@ -1,7 +1,7 @@
 package:
   name: swaylock
   version: "1.8.5"
-  epoch: 0
+  epoch: 1 # use common test pipelines
   description: Screen locker for Wayland
   copyright:
     - license: MIT
@@ -41,8 +41,15 @@ subpackages:
     description: swaylock debug symbols
 test:
   pipeline:
-    - runs: |
+    - uses: test/ver-check
+      with:
+        bins: |
+          swaylock
+    - uses: test/help-check
+      with:
+        bins: |
+          swaylock
+    - name: PAM config installed
+      runs: |
         set -eu
-        swaylock --version
-        swaylock --help || true
         test -f /etc/pam.d/swaylock
