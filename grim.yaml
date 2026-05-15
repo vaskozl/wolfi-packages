@@ -33,12 +33,16 @@ subpackages:
     pipeline:
       - uses: split/manpages
     description: grim manpages
+    test:
+      pipeline:
+        - uses: test/docs
   - name: ${{package.name}}-dbg
     pipeline:
       - uses: split/debug
     description: grim debug symbols
 test:
   pipeline:
-    - runs: |
-        set -eu
-        grim -h
+    - uses: test/help-check
+      with:
+        bins: |
+          grim
