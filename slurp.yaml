@@ -36,6 +36,8 @@ subpackages:
     description: slurp debug symbols
 test:
   pipeline:
-    - runs: |
-        set -eu
-        slurp -h 2>&1 | grep -q Usage
+    - uses: test/help-check
+      with:
+        bins: |
+          slurp
+        flag: "-h"
