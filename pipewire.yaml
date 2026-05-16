@@ -113,14 +113,20 @@ subpackages:
              "${{targets.subpkgdir}}/usr/bin/"
           mv "${{targets.destdir}}"/usr/share/pipewire/jack.conf \
              "${{targets.subpkgdir}}/usr/share/pipewire/"
+          if [ -d "${{targets.destdir}}"/usr/lib/spa-0.2/jack ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/lib/spa-0.2"
+            mv "${{targets.destdir}}"/usr/lib/spa-0.2/jack \
+               "${{targets.subpkgdir}}/usr/lib/spa-0.2/"
+          fi
     test:
       pipeline:
         - uses: test/ldd-check
           with:
             packages: ${{package.name}}-jack
-        - runs: |
-            set -eu
-            pw-jack --help
+        - uses: test/help-check
+          with:
+            bins: |
+              pw-jack
   - name: ${{package.name}}-pulse
     description: PulseAudio support for pipewire (includes systemd user unit)
     dependencies:
