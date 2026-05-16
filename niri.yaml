@@ -1,7 +1,7 @@
 package:
   name: niri
   version: "26.04"
-  epoch: 2 # use foot in default config
+  epoch: 2 # force reinstall so existing users receive patched config
   description: A scrollable-tiling Wayland compositor
   copyright:
     - license: GPL-3.0-only
@@ -109,3 +109,5 @@ test:
     - runs: |
         set -eu
         niri validate -c /usr/share/doc/niri/default-config.kdl
+        ! grep -q alacritty /usr/share/doc/niri/default-config.kdl
+        grep -q foot /usr/share/doc/niri/default-config.kdl
