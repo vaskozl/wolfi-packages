@@ -2,7 +2,7 @@
 package:
   name: brightnessctl
   version: 0.5.1
-  epoch: 0
+  epoch: 1 # republish: original build canceled mid-flight by auto_cancel
   description: Program to read and control device brightness
   copyright:
     - license: MIT
