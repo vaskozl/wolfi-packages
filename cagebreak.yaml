@@ -1,7 +1,7 @@
 package:
   name: cagebreak
   version: "3.2.0"
-  epoch: 5 # add wayland-protocols-dev for pkg-config resolution
+  epoch: 6 # rebuild for wlroots 0.20.0
   description: Wayland tiling compositor inspired by Ratpoison
   copyright:
     - license: MIT

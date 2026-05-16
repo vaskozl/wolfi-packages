@@ -100,7 +100,11 @@ $base-$arch:
     PKG: $base.yaml
     ARCH: $arch
   rules:
+    # Main branch publishes packages to NFS — don't let auto_cancel drop the
+    # build mid-flight when a later commit lands. Mirrors the override on the
+    # parent build: trigger in .gitlab-ci.yml.
     - if: \$IS_MAIN == "true"
+      interruptible: false
       changes:
         - $base.yaml
         - $base/**/*
