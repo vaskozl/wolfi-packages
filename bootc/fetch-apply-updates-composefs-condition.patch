@@ -1,0 +1,34 @@
+Drop ConditionPathExists=/run/ostree-booted from bootc systemd units.
+
+The marker is not created on composefs-booted systems, which causes the
+units to be skipped. Since these units are owned by bootc itself, just
+let them run unconditionally rather than gating on an ostree-specific
+runtime path that may shift again in the future.
+
+--- a/systemd/bootc-fetch-apply-updates.service
++++ b/systemd/bootc-fetch-apply-updates.service
+@@ -1,7 +1,6 @@
+ [Unit]
+ Description=Apply bootc updates
+ Documentation=man:bootc(8)
+-ConditionPathExists=/run/ostree-booted
+
+ [Service]
+ Type=oneshot
+--- a/systemd/bootc-fetch-apply-updates.timer
++++ b/systemd/bootc-fetch-apply-updates.timer
+@@ -1,7 +1,6 @@
+ [Unit]
+ Description=Apply bootc updates
+ Documentation=man:bootc(8)
+-ConditionPathExists=/run/ostree-booted
+
+ [Timer]
+ OnBootSec=1h
+--- a/systemd/bootc-status-updated.target
++++ b/systemd/bootc-status-updated.target
+@@ -2,4 +2,3 @@
+ Description=Target for bootc status changes
+ Documentation=man:bootc-status-updated.target(8)
+ StopWhenUnneeded=true
+-ConditionPathExists=/run/ostree-booted
