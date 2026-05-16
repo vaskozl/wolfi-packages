@@ -1,12 +1,13 @@
 package:
   name: foot
   version: "1.27.0"
-  epoch: 2 # add wayland-protocols-dev to build env
+  epoch: 4 # enable PGO via cage-headless
   description: Fast, lightweight and minimalistic Wayland terminal emulator
   copyright:
     - license: MIT
   dependencies:
     runtime:
+      - ncurses-terminfo
       - xkeyboard-config
 environment:
   contents:
@@ -20,6 +21,7 @@ environment:
       - meson
       - ncurses
       - pixman-dev
+      - python3
       - scdoc
       - tllist-dev
       - ttf-dejavu
@@ -27,6 +29,7 @@ environment:
       - wayland-dev
       - wayland-protocols
       - wayland-protocols-dev
+      - wlroots
 pipeline:
   - uses: git-checkout
     with:
@@ -34,17 +37,54 @@ pipeline:
       tag: ${{package.version}}
   - runs: |
       ln -s /usr/bin/scdoc /usr/local/bin/scdoc
-  - uses: meson/configure
-  - uses: meson/compile
-  - uses: meson/install
+  # Two-stage PGO build mirroring Alpine's APKBUILD. The wlroots headless
+  # backend fabricates a virtual seat in userspace (no DRM, no real input),
+  # so PGO profiling runs fine inside the wolfi/bubblewrap sandbox once we
+  # set WLR_BACKENDS=headless, WLR_RENDERER=pixman, and a writable
+  # XDG_RUNTIME_DIR. Upstream ships pgo/full-headless-cage.sh which sets
+  # those env vars itself and drives the instrumented binary through a
+  # representative corpus via cage. -Dterminfo-base-name=foot-extra renames
+  # the bundled terminfo so it doesn't collide with the foot/foot-direct
+  # entries already shipped by wolfi's ncurses-terminfo at
+  # /usr/share/terminfo/f/foot*.
+  - name: configure (PGO generate)
+    runs: |
+      export CC="${CC:-gcc}"
+      export CXX="${CXX:-g++}"
+      export CFLAGS="${CFLAGS} -O3"
+      export CXXFLAGS="${CXXFLAGS} -O3"
+      export CPPFLAGS="${CPPFLAGS} -O3"
+      meson setup \
+        --prefix=/usr \
+        --buildtype=plain \
+        -Db_pgo=generate \
+        -Db_lto=true \
+        -Dterminfo-base-name=foot-extra \
+        -Dutmp-backend=none \
+        . output
+      meson compile -C output
+  - name: PGO profile run (tests + cage-headless)
+    runs: |
+      # Run the test suite first so libtokenize/test binaries get profile
+      # data — otherwise the -Db_pgo=use rebuild fails with
+      # -Werror=missing-profile. Then drive the main binary under cage.
+      ninja -C output test
+      ./pgo/full-headless-cage.sh . output
+  - name: configure (PGO use) and rebuild
+    runs: |
+      meson configure -Db_pgo=use output
+      meson compile -C output
+  - name: install
+    runs: |
+      DESTDIR="${{targets.destdir}}" meson install --no-rebuild -C output
   - uses: strip
 subpackages:
-  - name: "${{package.name}}-terminfo"
-    description: "foot terminal descriptions"
+  - name: "${{package.name}}-extra-terminfo"
+    description: "foot terminal descriptions (foot-extra, foot-extra-direct)"
     pipeline:
       - runs: |
-          mkdir -p "${{targets.subpkgdir}}"/usr/share
-          mv "${{targets.destdir}}"/usr/share/terminfo "${{targets.subpkgdir}}"/usr/share
+          mkdir -p "${{targets.subpkgdir}}"/usr/share/terminfo
+          mv "${{targets.destdir}}"/usr/share/terminfo/f "${{targets.subpkgdir}}"/usr/share/terminfo/
   - name: "${{package.name}}-themes"
     description: "foot terminal themes"
     pipeline:
