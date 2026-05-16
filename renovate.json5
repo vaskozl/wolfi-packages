@@ -53,19 +53,6 @@
       "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
     },
     {
-      "customType": "regex",
-      "managerFilePatterns": ["/.+\\.ya?ml$/"],
-      "matchStringsStrategy": "combination",
-      "matchStrings": [
-        "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
-        "repository:\\s*https:\\/\\/gitlab\\.gnome\\.org\\/(?<depName>.*)"
-      ],
-      "registryUrlTemplate": "https://gitlab.gnome.org",
-      "datasourceTemplate": "gitlab-tags",
-      "versioningTemplate": "loose",
-      "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
-    },
-    {
       // Bump pinned `go-1.X` toolchain references via the wolfi apk index.
       "customType": "regex",
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
