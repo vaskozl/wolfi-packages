@@ -1,11 +1,10 @@
 package:
   name: wireplumber
   version: "0.5.14"
-  epoch: 0
+  epoch: 1 # rebuild for pipewire 1.6.4
   description: Session/policy manager implementation for PipeWire
   copyright:
     - license: LGPL-2.1-or-later
-
 environment:
   contents:
     packages:
@@ -20,7 +19,6 @@ environment:
       - py3.13-lxml
       - python3
       - systemd-dev
-
 pipeline:
   - uses: git-checkout
     with:
@@ -40,7 +38,6 @@ pipeline:
   - uses: meson/compile
   - uses: meson/install
   - uses: strip
-
 subpackages:
   - name: ${{package.name}}-libs
     description: WirePlumber shared library
@@ -55,7 +52,6 @@ subpackages:
         - uses: test/ldd-check
           with:
             packages: ${{package.name}}-libs
-
   - name: ${{package.name}}-dev
     description: WirePlumber development headers and pkgconfig
     pipeline:
@@ -68,7 +64,6 @@ subpackages:
         - runs: |
             set -eu
             stat /usr/include/wireplumber-0.5/wp/wp.h
-
   - name: ${{package.name}}-doc
     description: WirePlumber documentation
     pipeline:
@@ -76,7 +71,6 @@ subpackages:
     test:
       pipeline:
         - uses: test/docs
-
   - name: ${{package.name}}-zsh-completion
     description: WirePlumber zsh completion
     pipeline:
@@ -91,7 +85,6 @@ subpackages:
       runtime:
         - merged-usrsbin
         - wolfi-baselayout
-
 test:
   pipeline:
     - uses: test/ver-check

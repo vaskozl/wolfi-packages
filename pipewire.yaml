@@ -1,11 +1,10 @@
 package:
   name: pipewire
   version: 1.6.4
-  epoch: 0
+  epoch: 1 # split pipewire-pulse subpackage
   description: Multimedia processing graphs
   copyright:
     - license: MIT
-
 environment:
   contents:
     packages:
@@ -29,7 +28,6 @@ environment:
       - readline-dev
       - sbc-dev
       - systemd-dev
-
 pipeline:
   - uses: git-checkout
     with:
@@ -77,7 +75,6 @@ pipeline:
   - uses: meson/compile
   - uses: meson/install
   - uses: strip
-
 subpackages:
   - name: ${{package.name}}-dev
     description: ${{package.name}} development libraries and headers
@@ -86,7 +83,45 @@ subpackages:
     test:
       pipeline:
         - uses: test/pkgconf
-
+  - name: ${{package.name}}-pulse
+    description: PulseAudio replacement using PipeWire
+    dependencies:
+      runtime:
+        - wireplumber
+    pipeline:
+      - runs: |
+          set -eu
+          cd "${{targets.destdir}}"
+          mkdir -p "${{targets.subpkgdir}}/usr/bin"
+          mv usr/bin/pipewire-pulse "${{targets.subpkgdir}}/usr/bin/"
+          mkdir -p "${{targets.subpkgdir}}/usr/lib/pipewire-0.3"
+          mv usr/lib/pipewire-0.3/libpipewire-module-protocol-pulse.so \
+             usr/lib/pipewire-0.3/libpipewire-module-pulse-tunnel.so \
+             "${{targets.subpkgdir}}/usr/lib/pipewire-0.3/"
+          mkdir -p "${{targets.subpkgdir}}/usr/share/pipewire"
+          mv usr/share/pipewire/pipewire-pulse.conf \
+             usr/share/pipewire/pipewire-pulse.conf.avail \
+             "${{targets.subpkgdir}}/usr/share/pipewire/"
+          mkdir -p "${{targets.subpkgdir}}/usr/share/glib-2.0/schemas"
+          mv usr/share/glib-2.0/schemas/org.freedesktop.pulseaudio.gschema.xml \
+             "${{targets.subpkgdir}}/usr/share/glib-2.0/schemas/"
+          if [ -e usr/lib/systemd/user/pipewire-pulse.service ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/lib/systemd/user"
+            mv usr/lib/systemd/user/pipewire-pulse.service \
+               "${{targets.subpkgdir}}/usr/lib/systemd/user/"
+          fi
+          if [ -e usr/lib/systemd/user/pipewire-pulse.socket ]; then
+            mv usr/lib/systemd/user/pipewire-pulse.socket \
+               "${{targets.subpkgdir}}/usr/lib/systemd/user/"
+          fi
+    test:
+      pipeline:
+        - uses: test/ver-check
+          with:
+            bins: pipewire-pulse
+        - uses: test/help-check
+          with:
+            bins: pipewire-pulse
 test:
   pipeline:
     - uses: test/ldd-check
