@@ -1,7 +1,7 @@
 package:
   name: pipewire
   version: 1.6.4
-  epoch: 0
+  epoch: 1
   description: Multimedia processing graphs
   copyright:
     - license: MIT
@@ -79,6 +79,37 @@ subpackages:
     test:
       pipeline:
         - uses: test/pkgconf
+
+  - name: ${{package.name}}-pulse
+    description: PulseAudio replacement (pipewire-pulse) for pipewire
+    dependencies:
+      runtime:
+        - wireplumber
+        - pulseaudio-utils
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}"/usr/bin \
+                   "${{targets.subpkgdir}}"/usr/lib/pipewire-0.3 \
+                   "${{targets.subpkgdir}}"/usr/share/pipewire
+          mv "${{targets.destdir}}"/usr/bin/pipewire-pulse \
+             "${{targets.subpkgdir}}"/usr/bin/
+          mv "${{targets.destdir}}"/usr/lib/pipewire-0.3/libpipewire-module-protocol-pulse.so \
+             "${{targets.subpkgdir}}"/usr/lib/pipewire-0.3/
+          mv "${{targets.destdir}}"/usr/lib/pipewire-0.3/libpipewire-module-pulse-tunnel.so \
+             "${{targets.subpkgdir}}"/usr/lib/pipewire-0.3/
+          mv "${{targets.destdir}}"/usr/lib/pipewire-0.3/libpipewire-module-filter-chain.so \
+             "${{targets.subpkgdir}}"/usr/lib/pipewire-0.3/
+          mv "${{targets.destdir}}"/usr/share/pipewire/pipewire-pulse.conf \
+             "${{targets.subpkgdir}}"/usr/share/pipewire/
+          if [ -d "${{targets.destdir}}"/usr/share/pipewire/pipewire-pulse.conf.avail ]; then
+            mv "${{targets.destdir}}"/usr/share/pipewire/pipewire-pulse.conf.avail \
+               "${{targets.subpkgdir}}"/usr/share/pipewire/
+          fi
+    test:
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: ${{package.name}}-pulse
 
 test:
   pipeline:
