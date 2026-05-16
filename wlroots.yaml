@@ -1,7 +1,7 @@
 package:
   name: wlroots
   version: "0.20.0"
-  epoch: 3 # republish -static subpackage (build dropped, see #115)
+  epoch: 3 # republish -static subpackage (build dropped by auto_cancel)
   description: Modular Wayland compositor library
   copyright:
     - license: MIT
