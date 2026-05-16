@@ -1,6 +1,6 @@
 package:
   name: foot
-  version: "1.26.1"
+  version: "1.27.0"
   epoch: 2 # add wayland-protocols-dev to build env
   description: Fast, lightweight and minimalistic Wayland terminal emulator
   copyright:
