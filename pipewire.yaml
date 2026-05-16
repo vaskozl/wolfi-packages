@@ -1,11 +1,10 @@
 package:
   name: pipewire
   version: 1.6.4
-  epoch: 0
+  epoch: 1 # split into subpackages
   description: Multimedia processing graphs
   copyright:
     - license: MIT
-
 environment:
   contents:
     packages:
@@ -29,7 +28,8 @@ environment:
       - readline-dev
       - sbc-dev
       - systemd-dev
-
+      - vulkan-headers-dev
+      - vulkan-loader-dev
 pipeline:
   - uses: git-checkout
     with:
@@ -70,15 +70,247 @@ pipeline:
         -Dsession-managers=[] \
         -Dsnap=disabled \
         -Dsystemd-system-service=disabled \
+        -Dsystemd-user-service=enabled \
         -Dsystemd-user-unit-dir=/usr/lib/systemd/user \
         -Dtests=disabled \
         -Dudevrulesdir=/usr/lib/udev/rules.d \
-        -Dvulkan=disabled
+        -Dvulkan=enabled
   - uses: meson/compile
   - uses: meson/install
   - uses: strip
-
 subpackages:
+  # Order matters: "stealing" splits run top-to-bottom; place
+  # leaf subpackages before the catch-all -dev and -libs at the end.
+  - name: ${{package.name}}-jack-dev
+    description: JACK development files (provided by pipewire)
+    pipeline:
+      - runs: |
+          set -eu
+          mkdir -p "${{targets.subpkgdir}}/usr/lib/pkgconfig" \
+                   "${{targets.subpkgdir}}/usr/include"
+          mv "${{targets.destdir}}"/usr/lib/libjack*.so \
+             "${{targets.subpkgdir}}/usr/lib/"
+          mv "${{targets.destdir}}"/usr/include/jack \
+             "${{targets.subpkgdir}}/usr/include/"
+          mv "${{targets.destdir}}"/usr/lib/pkgconfig/jack.pc \
+             "${{targets.subpkgdir}}/usr/lib/pkgconfig/"
+          mv "${{targets.destdir}}"/usr/lib/pkgconfig/jackserver.pc \
+             "${{targets.subpkgdir}}/usr/lib/pkgconfig/"
+    test:
+      pipeline:
+        - uses: test/pkgconf
+  - name: ${{package.name}}-jack
+    description: JACK support for pipewire (libjack wrapper over pipewire)
+    pipeline:
+      - runs: |
+          set -eu
+          mkdir -p "${{targets.subpkgdir}}/usr/lib" \
+                   "${{targets.subpkgdir}}/usr/bin" \
+                   "${{targets.subpkgdir}}/usr/share/pipewire"
+          mv "${{targets.destdir}}"/usr/lib/libjack*.so.* \
+             "${{targets.subpkgdir}}/usr/lib/"
+          mv "${{targets.destdir}}"/usr/bin/pw-jack \
+             "${{targets.subpkgdir}}/usr/bin/"
+          mv "${{targets.destdir}}"/usr/share/pipewire/jack.conf \
+             "${{targets.subpkgdir}}/usr/share/pipewire/"
+    test:
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: ${{package.name}}-jack
+        - runs: |
+            set -eu
+            pw-jack --help
+  - name: ${{package.name}}-pulse
+    description: PulseAudio support for pipewire (includes systemd user unit)
+    dependencies:
+      runtime:
+        - pipewire
+        - pulseaudio-utils
+    pipeline:
+      - runs: |
+          set -eu
+          mkdir -p "${{targets.subpkgdir}}/usr/bin" \
+                   "${{targets.subpkgdir}}/usr/lib/pipewire-0.3" \
+                   "${{targets.subpkgdir}}/usr/lib/systemd/user" \
+                   "${{targets.subpkgdir}}/usr/share/pipewire"
+          mv "${{targets.destdir}}"/usr/bin/pipewire-pulse \
+             "${{targets.subpkgdir}}/usr/bin/"
+          mv "${{targets.destdir}}"/usr/lib/pipewire-0.3/libpipewire-module-protocol-pulse.so \
+             "${{targets.subpkgdir}}/usr/lib/pipewire-0.3/"
+          mv "${{targets.destdir}}"/usr/lib/pipewire-0.3/libpipewire-module-pulse-tunnel.so \
+             "${{targets.subpkgdir}}/usr/lib/pipewire-0.3/"
+          mv "${{targets.destdir}}"/usr/lib/pipewire-0.3/libpipewire-module-filter-chain.so \
+             "${{targets.subpkgdir}}/usr/lib/pipewire-0.3/"
+          mv "${{targets.destdir}}"/usr/share/pipewire/pipewire-pulse.conf* \
+             "${{targets.subpkgdir}}/usr/share/pipewire/"
+          mv "${{targets.destdir}}"/usr/lib/systemd/user/pipewire-pulse.service \
+             "${{targets.subpkgdir}}/usr/lib/systemd/user/"
+          mv "${{targets.destdir}}"/usr/lib/systemd/user/pipewire-pulse.socket \
+             "${{targets.subpkgdir}}/usr/lib/systemd/user/"
+          mkdir -p "${{targets.subpkgdir}}/usr/share/glib-2.0/schemas"
+          mv "${{targets.destdir}}"/usr/share/glib-2.0/schemas/org.freedesktop.pulseaudio.gschema.xml \
+             "${{targets.subpkgdir}}/usr/share/glib-2.0/schemas/"
+    test:
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: ${{package.name}}-pulse
+        - runs: |
+            set -eu
+            test -L /usr/bin/pipewire-pulse
+            stat /usr/share/pipewire/pipewire-pulse.conf
+            stat /usr/lib/systemd/user/pipewire-pulse.service
+  - name: ${{package.name}}-alsa
+    description: ALSA support for pipewire
+    pipeline:
+      - runs: |
+          set -eu
+          mkdir -p "${{targets.subpkgdir}}/usr/lib" \
+                   "${{targets.subpkgdir}}/usr/share/alsa" \
+                   "${{targets.subpkgdir}}/etc/alsa/conf.d"
+          mv "${{targets.destdir}}"/usr/lib/alsa-lib \
+             "${{targets.subpkgdir}}/usr/lib/"
+          mv "${{targets.destdir}}"/usr/share/alsa/alsa.conf.d \
+             "${{targets.subpkgdir}}/usr/share/alsa/"
+          for i in "${{targets.subpkgdir}}"/usr/share/alsa/alsa.conf.d/*.conf; do
+            ln -sf "${i#${{targets.subpkgdir}}}" \
+              "${{targets.subpkgdir}}/etc/alsa/conf.d/$(basename "$i")"
+          done
+    test:
+      pipeline:
+        - runs: |
+            set -eu
+            stat /usr/share/alsa/alsa.conf.d/50-pipewire.conf
+            stat /etc/alsa/conf.d/50-pipewire.conf
+  - name: gst-plugin-pipewire
+    description: GStreamer plugin for PipeWire
+    dependencies:
+      runtime:
+        - gst-plugins-base
+    pipeline:
+      - runs: |
+          set -eu
+          mkdir -p "${{targets.subpkgdir}}/usr/lib"
+          mv "${{targets.destdir}}"/usr/lib/gstreamer-1.0 \
+             "${{targets.subpkgdir}}/usr/lib/"
+    test:
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: gst-plugin-pipewire
+  - name: ${{package.name}}-zeroconf
+    description: Zeroconf (mDNS) discovery and RAOP modules for pipewire
+    pipeline:
+      - runs: |
+          set -eu
+          mkdir -p "${{targets.subpkgdir}}/usr/lib/pipewire-0.3"
+          mv "${{targets.destdir}}"/usr/lib/pipewire-0.3/libpipewire-module-zeroconf-discover.so \
+             "${{targets.subpkgdir}}/usr/lib/pipewire-0.3/"
+          mv "${{targets.destdir}}"/usr/lib/pipewire-0.3/libpipewire-module-raop-*.so \
+             "${{targets.subpkgdir}}/usr/lib/pipewire-0.3/"
+    test:
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: ${{package.name}}-zeroconf
+  - name: ${{package.name}}-spa-bluez
+    description: PipeWire BlueZ5 SPA plugin (Bluetooth)
+    pipeline:
+      - runs: |
+          set -eu
+          mkdir -p "${{targets.subpkgdir}}/usr/lib/spa-0.2" \
+                   "${{targets.subpkgdir}}/usr/share/spa-0.2"
+          mv "${{targets.destdir}}"/usr/lib/spa-0.2/bluez5 \
+             "${{targets.subpkgdir}}/usr/lib/spa-0.2/"
+          mv "${{targets.destdir}}"/usr/share/spa-0.2/bluez5 \
+             "${{targets.subpkgdir}}/usr/share/spa-0.2/"
+    test:
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: ${{package.name}}-spa-bluez
+  - name: ${{package.name}}-spa-vulkan
+    description: PipeWire Vulkan SPA plugin
+    pipeline:
+      - runs: |
+          set -eu
+          mkdir -p "${{targets.subpkgdir}}/usr/lib/spa-0.2"
+          mv "${{targets.destdir}}"/usr/lib/spa-0.2/vulkan \
+             "${{targets.subpkgdir}}/usr/lib/spa-0.2/"
+    test:
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: ${{package.name}}-spa-vulkan
+  - name: ${{package.name}}-tools
+    description: PipeWire tools (pw-*)
+    pipeline:
+      - runs: |
+          set -eu
+          mkdir -p "${{targets.subpkgdir}}/usr/bin" \
+                   "${{targets.subpkgdir}}/usr/lib"
+          mv "${{targets.destdir}}"/usr/bin/pw-* \
+             "${{targets.subpkgdir}}/usr/bin/"
+          mv "${{targets.destdir}}"/usr/lib/libpw-v4l2.so \
+             "${{targets.subpkgdir}}/usr/lib/"
+    test:
+      pipeline:
+        - uses: test/ver-check
+          with:
+            bins: |
+              pw-cli
+              pw-cat
+              pw-dump
+        - uses: test/help-check
+          with:
+            bins: |
+              pw-cli
+              pw-cat
+              pw-dump
+  - name: ${{package.name}}-spa-tools
+    description: PipeWire SPA tools (spa-*)
+    pipeline:
+      - runs: |
+          set -eu
+          mkdir -p "${{targets.subpkgdir}}/usr/bin"
+          mv "${{targets.destdir}}"/usr/bin/spa-* \
+             "${{targets.subpkgdir}}/usr/bin/"
+    test:
+      pipeline:
+        - uses: test/help-check
+          with:
+            bins: |
+              spa-json-dump
+  - name: ${{package.name}}-udev
+    description: PipeWire udev rules
+    pipeline:
+      - runs: |
+          set -eu
+          mkdir -p "${{targets.subpkgdir}}/usr/lib/udev"
+          mv "${{targets.destdir}}"/usr/lib/udev/rules.d \
+             "${{targets.subpkgdir}}/usr/lib/udev/"
+    test:
+      pipeline:
+        - runs: |
+            set -eu
+            ls /usr/lib/udev/rules.d/ | grep -F pipewire
+  # pipewire-x11 (module-x11-bell) is skipped: requires libcanberra,
+  # which is not in wolfi-os.
+  - name: ${{package.name}}-systemd
+    description: PipeWire systemd user units
+    pipeline:
+      - runs: |
+          set -eu
+          mkdir -p "${{targets.subpkgdir}}/usr/lib/systemd/user"
+          mv "${{targets.destdir}}"/usr/lib/systemd/user/* \
+             "${{targets.subpkgdir}}/usr/lib/systemd/user/"
+    test:
+      pipeline:
+        - runs: |
+            set -eu
+            stat /usr/lib/systemd/user/pipewire.service
+            stat /usr/lib/systemd/user/pipewire.socket
   - name: ${{package.name}}-dev
     description: ${{package.name}} development libraries and headers
     pipeline:
@@ -86,7 +318,30 @@ subpackages:
     test:
       pipeline:
         - uses: test/pkgconf
-
+  # Catch-all: libs + spa plugins + client config. Must be last.
+  - name: ${{package.name}}-libs
+    description: PipeWire libraries, SPA plugins and client configuration
+    pipeline:
+      - runs: |
+          set -eu
+          mkdir -p "${{targets.subpkgdir}}/usr/lib" \
+                   "${{targets.subpkgdir}}/usr/share/pipewire"
+          mv "${{targets.destdir}}"/usr/lib/libpipewire-*.so.* \
+             "${{targets.subpkgdir}}/usr/lib/"
+          mv "${{targets.destdir}}"/usr/lib/libspa-*.so* \
+             "${{targets.subpkgdir}}/usr/lib/" 2>/dev/null || true
+          mv "${{targets.destdir}}"/usr/lib/pipewire-0.3 \
+             "${{targets.subpkgdir}}/usr/lib/"
+          mv "${{targets.destdir}}"/usr/lib/spa-0.2 \
+             "${{targets.subpkgdir}}/usr/lib/"
+          for f in "${{targets.destdir}}"/usr/share/pipewire/client*.conf*; do
+            [ -e "$f" ] && mv "$f" "${{targets.subpkgdir}}/usr/share/pipewire/"
+          done
+    test:
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: ${{package.name}}-libs
 test:
   pipeline:
     - uses: test/ldd-check

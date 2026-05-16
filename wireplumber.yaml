@@ -1,7 +1,7 @@
 package:
   name: wireplumber
   version: "0.5.14"
-  epoch: 0
+  epoch: 1 # rebuild for pipewire 1.6.4
   description: Session/policy manager implementation for PipeWire
   copyright:
     - license: LGPL-2.1-or-later
