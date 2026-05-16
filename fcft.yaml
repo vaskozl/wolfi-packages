@@ -1,7 +1,7 @@
 package:
   name: fcft
   version: "3.3.3"
-  epoch: 1 # add tests, alphabetize env
+  epoch: 2 # enable nanosvg/lto to match alpine
   description: Simple library for font loading and glyph rasterization using FontConfig, FreeType and pixman
   copyright:
     - license: MIT
@@ -25,6 +25,11 @@ pipeline:
   - runs: |
       ln -s /usr/bin/scdoc /usr/local/bin/scdoc
   - uses: meson/configure
+    with:
+      opts: |
+        -Db_lto=true \
+        -Dsvg-backend=nanosvg \
+        -Dtest-text-shaping=true
   - uses: meson/compile
   - uses: meson/install
   - uses: strip
