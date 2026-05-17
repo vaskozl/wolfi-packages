@@ -276,8 +276,6 @@ The bar: every package's `test:` section must exercise the actual functionality,
     echo "$out" | grep -qi usage
 ```
 
-See `swayidle.yaml` in git history (commit `679ed62`) for the canonical example.
-
 ### Anti-patterns to fix on sight
 
 | Bad | Better |
