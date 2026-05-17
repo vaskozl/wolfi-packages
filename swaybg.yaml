@@ -42,6 +42,10 @@ subpackages:
     description: swaybg debug symbols
 test:
   pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          swaybg
     - uses: test/help-check
       with:
         bins: |

@@ -39,10 +39,14 @@ subpackages:
       - uses: split/debug
     description: swayidle debug symbols
 test:
-  environment: {}
   pipeline:
+    # swayidle has no version flag, and `-h` exits with status 1 (upstream
+    # main.c falls through to the getopt error case after printing usage).
+    # Neither test/ver-check nor test/help-check (which both require exit 0)
+    # can run against this binary, so we assert the usage line directly.
     - name: help output present
       runs: |
+        set -u
         out=$(swayidle -h 2>&1 || true)
         echo "$out"
         echo "$out" | grep -qi usage
