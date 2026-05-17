@@ -8,9 +8,10 @@ package:
   dependencies:
     runtime:
       - glib-gir
-      - py3.13-docopt
-      - py3.13-gobject3
-      - py3.13-pyyaml
+      - py3-docopt
+      - py3-gobject3
+      - py3-pyyaml
+      - python3
 environment:
   contents:
     packages:
@@ -20,11 +21,11 @@ environment:
       - gettext
       - libxslt
       - make
-      - py3.13-gpep517
-      - py3.13-installer
-      - py3.13-setuptools
-      - py3.13-wheel
-      - python-3.13
+      - py3-gpep517
+      - py3-installer
+      - py3-setuptools
+      - py3-wheel
+      - python3
 pipeline:
   - uses: git-checkout
     with:
@@ -33,7 +34,7 @@ pipeline:
   - name: build wheel
     runs: |
       set -eu
-      python3.13 -m gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+      python3 -m gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
   - name: build manpage
     runs: |
       set -eu
@@ -41,7 +42,7 @@ pipeline:
   - name: install
     runs: |
       set -eu
-      python3.13 -m installer -d "${{targets.destdir}}" .dist/*.whl
+      python3 -m installer -d "${{targets.destdir}}" .dist/*.whl
       install -Dm644 doc/udiskie.8 -t "${{targets.destdir}}/usr/share/man/man8/"
   - uses: strip
 subpackages:
