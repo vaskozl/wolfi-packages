@@ -1,0 +1,52 @@
+package:
+  name: swayidle
+  version: "1.9.0"
+  epoch: 0
+  description: Idle management daemon for Wayland
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - build-base
+      - meson
+      - scdoc
+      - systemd-dev
+      - wayland-dev
+      - wayland-protocols
+      - wayland-protocols-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/swaywm/swayidle
+      tag: v${{package.version}}
+  - runs: |
+      ln -s /usr/bin/scdoc /usr/local/bin/scdoc
+  - uses: meson/configure
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: swayidle manpages
+    test:
+      pipeline:
+        - uses: test/docs
+  - name: ${{package.name}}-dbg
+    pipeline:
+      - uses: split/debug
+    description: swayidle debug symbols
+test:
+  pipeline:
+    # swayidle has no version flag, and `-h` exits with status 1 (upstream
+    # main.c falls through to the getopt error case after printing usage).
+    # Neither test/ver-check nor test/help-check (which both require exit 0)
+    # can run against this binary, so we assert the usage line directly.
+    - name: help output present
+      runs: |
+        set -u
+        out=$(swayidle -h 2>&1 || true)
+        echo "$out"
+        echo "$out" | grep -qi usage
