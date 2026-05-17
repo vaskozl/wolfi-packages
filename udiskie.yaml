@@ -1,0 +1,84 @@
+package:
+  name: udiskie
+  version: "2.6.2"
+  epoch: 0
+  description: udisks2 frontend that allows managing removable media from userspace
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime:
+      - glib-gir
+      - py3-docopt
+      - py3-gobject3
+      - py3-pyyaml
+      - python3
+environment:
+  contents:
+    packages:
+      - asciidoc
+      - busybox
+      - docbook-xml
+      - gettext
+      - libxslt
+      - make
+      - py3-gpep517
+      - py3-installer
+      - py3-setuptools
+      - py3-wheel
+      - python3
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/coldfix/udiskie
+      tag: v${{package.version}}
+  - name: build wheel
+    runs: |
+      set -eu
+      python3 -m gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+  - name: build manpage
+    runs: |
+      set -eu
+      make -C doc
+  - name: install
+    runs: |
+      set -eu
+      python3 -m installer -d "${{targets.destdir}}" .dist/*.whl
+      install -Dm644 doc/udiskie.8 -t "${{targets.destdir}}/usr/share/man/man8/"
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-doc
+    description: udiskie manpages and documentation
+    pipeline:
+      - uses: split/manpages
+    test:
+      pipeline:
+        - uses: test/docs
+  - name: ${{package.name}}-bash-completion
+    description: Bash completion for udiskie
+    pipeline:
+      - runs: |
+          set -eu
+          if [ -d "${{targets.destdir}}/usr/share/bash-completion" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/share"
+            mv "${{targets.destdir}}/usr/share/bash-completion" \
+               "${{targets.subpkgdir}}/usr/share/"
+          fi
+  - name: ${{package.name}}-zsh-completion
+    description: Zsh completion for udiskie
+    pipeline:
+      - runs: |
+          set -eu
+          if [ -d "${{targets.destdir}}/usr/share/zsh/site-functions" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/share/zsh"
+            mv "${{targets.destdir}}/usr/share/zsh/site-functions" \
+               "${{targets.subpkgdir}}/usr/share/zsh/"
+          fi
+test:
+  pipeline:
+    - uses: test/help-check
+      with:
+        bins: |
+          udiskie
+          udiskie-mount
+          udiskie-umount
+          udiskie-info
