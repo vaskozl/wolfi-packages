@@ -68,7 +68,7 @@ If the binary uses non-standard flags (e.g. `-v` for version, `-h` for help), pa
         flag: "-h"
 ```
 
-Never call `-h` or `--help` directly in a `runs:` block when `test/help-check` applies -- it handles non-zero exit codes from help flags automatically.
+Never call `-h` or `--help` directly in a `runs:` block when `test/help-check` applies -- the shared pipeline checks that the binary's help flag exits 0. If the binary's help flag exits non-zero, see the note on non-zero exits below.
 
 For config-only packages, the `test:` section in `pinewall-config.yaml`:
 
@@ -265,6 +265,18 @@ The bar: every package's `test:` section must exercise the actual functionality,
 | Perl module | `test/perl-module-check` + a functional assertion |
 | systemd services / sockets | `test/verify-service` |
 | Anything else | inline `runs:` exercising the real entry point |
+
+**Non-zero-exiting help flags**: Some binaries print usage but exit non-zero (e.g. `swayidle -h` exits 1). `test/help-check` requires exit 0 and will fail for these. Do not use `test/help-check` for such binaries; instead either skip help testing or capture output and grep for a stable keyword:
+
+```yaml
+- name: help output present
+  runs: |
+    set -u
+    out=$(swayidle -h 2>&1 || true)
+    echo "$out" | grep -qi usage
+```
+
+See `swayidle.yaml` in git history (commit `679ed62`) for the canonical example.
 
 ### Anti-patterns to fix on sight
 
