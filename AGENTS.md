@@ -68,7 +68,7 @@ If the binary uses non-standard flags (e.g. `-v` for version, `-h` for help), pa
         flag: "-h"
 ```
 
-Never call `-h` or `--help` directly in a `runs:` block when `test/help-check` applies -- it handles non-zero exit codes from help flags automatically.
+Never call `-h` or `--help` directly in a `runs:` block when `test/help-check` applies -- it asserts exit 0. If the binary exits non-zero on help, skip `test/help-check` and grep the output instead: `out=$(bin -h 2>&1 || true); echo "$out" | grep -qi usage`
 
 For config-only packages, the `test:` section in `pinewall-config.yaml`:
 
