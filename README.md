@@ -2,7 +2,7 @@
 
 Custom [`melange`](https://github.com/chainguard-dev/melange) recipes for packages that aren't in Wolfi yet.
 
-`melange` is the `.deb`/`.rpm` model applied to Wolfi: controlled build sandbox, declared dependencies, a defined set of files in the output APK. Everything here is either something Wolfi doesn't ship (niri, bootc, linux-lts, ostree, composefs, dracut) or something that is Wolfi-compatible config packaged as an APK (nori-user, pinewall-config) to avoid ad-hoc `RUN useradd` and friends.
+`melange` is the `.deb`/`.rpm` model applied to Wolfi: controlled build sandbox, declared dependencies, a defined set of files in the output APK. Everything here is either something Wolfi doesn't ship (niri, bootc, linux-lts, ostree, composefs, dracut, asahi-scripts) or something that is Wolfi-compatible config packaged as an APK (nori-user, pinewall-config) to avoid ad-hoc `RUN useradd` and friends.
 
 Renovate keeps `version:` pins fresh automatically — it needs a paired `repository:` comment or `git-checkout` step to know what to watch.
 
