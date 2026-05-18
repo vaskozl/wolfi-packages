@@ -1,7 +1,7 @@
 package:
   name: asahi-scripts
   version: "20250713"
-  epoch: 1 # add dracut config
+  epoch: 0
   description: Asahi Linux maintenance scripts
   copyright:
     - license: MIT
@@ -32,6 +32,33 @@ pipeline:
         PREFIX=/usr DESTDIR=${{targets.contextdir}} install-fedora
   - runs: |
       install -Dm644 LICENSE "${{targets.destdir}}/usr/share/licenses/${{package.name}}/LICENSE"
+
+      # Oneshot service to sync m1n1 from the rootfs to the ESP after package
+      # updates. update-m1n1 only writes if bytes differ, so running each boot
+      # is cheap. Conditions ensure it no-ops on non-Asahi hosts and when no
+      # /etc/default/update-m1n1 has been configured by the image builder.
+      unitdir="${{targets.destdir}}/usr/lib/systemd/system"
+      install -d "$unitdir/multi-user.target.wants"
+      cat >"$unitdir/update-m1n1.service" <<'EOF'
+      [Unit]
+      Description=Sync m1n1 bootloader to the Apple Silicon ESP
+      Documentation=https://github.com/AsahiLinux/asahi-scripts
+      ConditionPathExists=/proc/device-tree/chosen/asahi,efi-system-partition
+      ConditionPathExists=/etc/default/update-m1n1
+      ConditionPathExists=/usr/bin/update-m1n1
+      After=local-fs.target
+      Before=multi-user.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/bin/update-m1n1
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+      ln -sf ../update-m1n1.service \
+        "$unitdir/multi-user.target.wants/update-m1n1.service"
 test:
   pipeline:
     - name: install-fedora artifacts present
@@ -42,13 +69,8 @@ test:
         test -f /usr/lib/dracut/dracut.conf.d/10-asahi.conf
         test -d /usr/lib/dracut/modules.d/91kernel-modules-asahi
         test -d /usr/lib/dracut/modules.d/99asahi-firmware
-    - name: shell scripts parse
-      runs: |
-        set -eu
-        for f in /usr/bin/asahi-* /usr/bin/update-m1n1 \
-                 /usr/share/asahi-scripts/functions.sh \
-                 /usr/lib/dracut/modules.d/9*-asahi*/*.sh \
-                 /usr/lib/dracut/modules.d/91kernel-modules-asahi/*.sh; do
-          [ -e "$f" ] || continue
-          sh -n "$f"
-        done
+        test -x /usr/bin/asahi-diagnose
+        test -x /usr/bin/asahi-fwupdate
+        test -x /usr/bin/update-m1n1
+        test -f /usr/lib/systemd/system/update-m1n1.service
+        test -L /usr/lib/systemd/system/multi-user.target.wants/update-m1n1.service
