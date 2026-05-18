@@ -1,7 +1,6 @@
 package:
   # Renovate: date-stamped tags don't match the `(\d+\.)+\d+` extractVersion
   # regex, so bumps are manual. Upstream cuts no GitHub releases, only tags.
-  # repository: https://github.com/AsahiLinux/asahi-scripts
   name: asahi-scripts
   version: "20250713"
   epoch: 0
