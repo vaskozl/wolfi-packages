@@ -3,7 +3,7 @@ package:
   name: linux-asahi-initramfs
   # datasource: alpine-base packageName: linux-asahi
   version: 7.0.8_p1
-  epoch: 1 # include asahi-scripts for dracut config
+  epoch: 0
   description: The Linux Asahi kernel initramfs
   target-architecture:
     - aarch64
