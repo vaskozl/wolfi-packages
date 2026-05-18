@@ -1,0 +1,47 @@
+package:
+  # Renovate: date-stamped tags don't match the `(\d+\.)+\d+` extractVersion
+  # regex, so bumps are manual. Upstream cuts no GitHub releases, only tags.
+  # repository: https://github.com/AsahiLinux/asahi-scripts
+  name: asahi-scripts
+  version: "20250713"
+  epoch: 0
+  description: Asahi Linux maintenance scripts
+  copyright:
+    - license: MIT
+  target-architecture:
+    - aarch64
+  dependencies:
+    runtime:
+      - busybox
+environment:
+  contents:
+    packages:
+      - busybox
+      - make
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/AsahiLinux/asahi-scripts
+      tag: ${{package.version}}
+      expected-commit: 800400dcf9612edd10f00d306a39a499313cefe3
+  - runs: |
+      make PREFIX=/usr DESTDIR="${{targets.destdir}}" install
+      install -Dm644 LICENSE "${{targets.destdir}}/usr/share/licenses/${{package.name}}/LICENSE"
+test:
+  pipeline:
+    - name: scripts present and executable
+      runs: |
+        set -eu
+        test -x /usr/bin/asahi-diagnose
+        test -x /usr/bin/asahi-fwupdate
+        test -x /usr/bin/update-m1n1
+        test -f /usr/share/asahi-scripts/functions.sh
+        test -d /usr/lib/firmware/vendor
+        test -f /usr/share/licenses/asahi-scripts/LICENSE
+    - name: sh syntax check
+      runs: |
+        set -eu
+        sh -n /usr/bin/asahi-diagnose
+        sh -n /usr/bin/asahi-fwupdate
+        sh -n /usr/bin/update-m1n1
+        sh -n /usr/share/asahi-scripts/functions.sh
