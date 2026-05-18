@@ -20,10 +20,10 @@ environment:
   contents:
     packages:
       - busybox
-      - py${{vars.python-version}}-build
-      - py${{vars.python-version}}-installer
-      - py${{vars.python-version}}-setuptools
-      - py${{vars.python-version}}-wheel
+      - py3-supported-build
+      - py3-supported-installer
+      - py3-supported-setuptools
+      - py3-supported-wheel
       - python-${{vars.python-version}}
 pipeline:
   - uses: git-checkout
@@ -39,10 +39,18 @@ pipeline:
       set -eu
       python${{vars.python-version}} -m installer --destdir="${{targets.destdir}}" dist/*.whl
       install -Dm644 LICENSE "${{targets.destdir}}/usr/share/licenses/${{package.name}}/LICENSE"
-  - uses: strip
 test:
   pipeline:
     - uses: test/help-check
       with:
         bins: |
           asahi-fwextract
+    - name: entry point import
+      runs: |
+        set -eu
+        python${{vars.python-version}} -c "from asahi_firmware.update import main; assert callable(main)"
+    - name: usage on missing args
+      runs: |
+        set -eu
+        out=$(asahi-fwextract 2>&1 || true)
+        echo "$out" | grep -qi "usage"
