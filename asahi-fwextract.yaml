@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: asahi-fwextract
+  version: "0.7.9"
+  epoch: 0
+  description: Asahi Linux firmware extractor
+  copyright:
+    - license: MIT
+  target-architecture:
+    - aarch64
+  dependencies:
+    runtime:
+      - asahi-scripts
+      - lzfse
+      - py${{vars.python-version}}-setuptools
+      - python-${{vars.python-version}}-base
+vars:
+  python-version: "3.13"
+environment:
+  contents:
+    packages:
+      - busybox
+      - py${{vars.python-version}}-build
+      - py${{vars.python-version}}-installer
+      - py${{vars.python-version}}-setuptools
+      - py${{vars.python-version}}-wheel
+      - python-${{vars.python-version}}
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/AsahiLinux/asahi-installer
+      tag: v${{package.version}}
+  - name: build wheel
+    runs: |
+      set -eu
+      python${{vars.python-version}} -m build --wheel --no-isolation
+  - name: install
+    runs: |
+      set -eu
+      python${{vars.python-version}} -m installer --destdir="${{targets.destdir}}" dist/*.whl
+      install -Dm644 LICENSE "${{targets.destdir}}/usr/share/licenses/${{package.name}}/LICENSE"
+  - uses: strip
+test:
+  pipeline:
+    - uses: test/help-check
+      with:
+        bins: |
+          asahi-fwextract
