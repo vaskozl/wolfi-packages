@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: linux-asahi-initramfs
+  # datasource: alpine-base packageName: linux-asahi
+  version: 7.0.8_p1
+  epoch: 0
+  description: The Linux Asahi kernel initramfs
+  target-architecture:
+    - aarch64
+  copyright:
+    - license: GPL-2.0
+  dependencies:
+    runtime:
+      - linux-asahi=${{package.full-version}}
+      - zstd
+environment:
+  contents:
+    packages:
+      - attr
+      - bash
+      - binutils-dev
+      - bootc
+      - busybox
+      - build-base
+      - dracut
+      - findutils
+      - kmod
+      - linux-asahi=${{package.full-version}}
+      - posix-libc-utils
+      - wolfi-baselayout
+      - zstd
+      # For modules
+      - blkid
+      - btrfs-progs
+      - cryptsetup
+      - device-mapper
+      - losetup
+      - lvm2
+      - mount
+      - openssl
+      - systemd
+      - umount
+      - util-linux
+      - util-linux-login
+pipeline:
+  - runs: |
+      set -eu
+      # Alpine's kernelrelease for linux-asahi is "${_kver}-${_rel}-asahi"
+      # where _kver=${pkgver%_p*} and _rel=${pkgver#*_p}. e.g. 7.0.8_p1 -> 7.0.8-1-asahi.
+      _pkgver="${{package.version}}"
+      _kver="${_pkgver%_p*}"
+      _rel="${_pkgver#*_p}"
+      _kernver="${_kver}-${_rel}-asahi"
+
+      mkdir -p /var/tmp "${{targets.destdir}}/usr/lib/modules/${_kernver}"
+      ls -al /lib/modules
+      depmod "${_kernver}"
+      dracut --force --verbose --kernel-cmdline "SYSTEMD_SULOGIN_FORCE=1" \
+        "${{targets.destdir}}/usr/lib/modules/${_kernver}/initramfs.img"
+  - runs: |
+      set -eu
+      _pkgver="${{package.version}}"
+      _kver="${_pkgver%_p*}"
+      _rel="${_pkgver#*_p}"
+      _kernver="${_kver}-${_rel}-asahi"
+      ls -la "${{targets.destdir}}/usr/lib/modules/${_kernver}/"
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        _pkgver="${{package.version}}"
+        _kver="${_pkgver%_p*}"
+        _rel="${_pkgver#*_p}"
+        ver="${_kver}-${_rel}-asahi"
+        test -s "/usr/lib/modules/$ver/initramfs.img"
