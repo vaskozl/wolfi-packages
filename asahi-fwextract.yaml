@@ -12,7 +12,6 @@ package:
     runtime:
       - asahi-scripts
       - lzfse
-      - py${{vars.python-version}}-setuptools
       - python-${{vars.python-version}}-base
 vars:
   python-version: "3.13"
