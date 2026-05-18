@@ -1,6 +1,4 @@
 package:
-  # Renovate: date-stamped tags don't match the `(\d+\.)+\d+` extractVersion
-  # regex, so bumps are manual. Upstream cuts no GitHub releases, only tags.
   name: asahi-scripts
   version: "20250713"
   epoch: 0
@@ -23,8 +21,15 @@ pipeline:
       repository: https://github.com/AsahiLinux/asahi-scripts
       tag: ${{package.version}}
       expected-commit: 800400dcf9612edd10f00d306a39a499313cefe3
+  - uses: autoconf/make
+    with:
+      opts: |
+        PREFIX=/usr
+  - uses: autoconf/make-install
+    with:
+      opts: |
+        PREFIX=/usr
   - runs: |
-      make PREFIX=/usr DESTDIR="${{targets.destdir}}" install
       install -Dm644 LICENSE "${{targets.destdir}}/usr/share/licenses/${{package.name}}/LICENSE"
 test:
   pipeline:
