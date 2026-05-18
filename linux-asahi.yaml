@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: linux-asahi
+  # datasource: alpine-base packageName: linux-asahi
+  version: 7.0.8_p1
+  epoch: 0
+  description: Repackaged Alpine linux-asahi kernel for Apple Silicon
+  target-architecture:
+    - aarch64
+  copyright:
+    - license: GPL-2.0
+  dependencies:
+    runtime:
+      - kmod
+      - gzip
+    provides:
+      - linux:${{package.version}}-${{package.epoch}}-asahi
+environment:
+  contents:
+    packages:
+      - wolfi-base
+      - apk-tools
+      - busybox
+      - wget
+      - gzip
+pipeline:
+  # Fetch Alpine linux-asahi package (testing repo, aarch64 only)
+  - runs: |
+      set -eux
+      mkdir alpinepkg
+      cd alpinepkg
+      branch="edge"
+      repo="testing"
+      variant="linux-asahi"
+
+      wget "https://dl-cdn.alpinelinux.org/alpine/${branch}/${repo}/${{build.arch}}/${variant}-${{package.full-version}}.apk"
+
+      # Extract fetched APK
+      for f in *.apk; do
+        tar -xzf "$f"
+      done
+  - runs: |
+      out="${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-asahi"
+
+      # Copy module tree
+      find "alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-asahi" -type f \
+        | while read -r f; do
+            rel="${f#alpinepkg/lib/modules/${{package.version}}-${{package.epoch}}-asahi/}"
+            install -Dm0644 "$f" "$out/$rel"
+          done
+
+      # Kernel artifacts
+      install -Dm0644 "alpinepkg/boot/vmlinuz-asahi" \
+        "$out/vmlinuz"
+      install -Dm0644 "alpinepkg/boot/config-${{package.version}}-${{package.epoch}}-asahi" \
+        "$out/config"
+      install -Dm0644 "alpinepkg/boot/System.map-${{package.version}}-${{package.epoch}}-asahi" \
+        "$out/System.map"
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        ver="${{package.version}}-${{package.epoch}}-asahi"
+        test -f "/usr/lib/modules/$ver/vmlinuz"
+        test -f "/usr/lib/modules/$ver/config"
+        test -f "/usr/lib/modules/$ver/System.map"
+        test -s "/usr/lib/modules/$ver/vmlinuz"
