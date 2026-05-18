@@ -1,0 +1,45 @@
+package:
+  name: lzfse
+  version: "1.0"
+  epoch: 0
+  description: Reference C implementation of the LZFSE compressor
+  copyright:
+    - license: BSD-3-Clause
+environment:
+  contents:
+    packages:
+      - build-base
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/lzfse/lzfse
+      tag: lzfse-${{package.version}}
+  - uses: cmake/configure
+    with:
+      opts: |
+        -DBUILD_SHARED_LIBS=ON \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+  - uses: cmake/build
+  - uses: cmake/install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-dev
+    pipeline:
+      - uses: split/dev
+    description: ${{package.name}} dev
+    dependencies:
+      runtime:
+        - lzfse
+test:
+  pipeline:
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
+    - runs: |
+        set -eu
+        out=$(lzfse -h 2>&1 || true)
+        echo "$out" | grep -qi 'lzfse'
+        printf 'hello asahi world' > /tmp/in.bin
+        lzfse -encode -i /tmp/in.bin -o /tmp/out.lzfse
+        lzfse -decode -i /tmp/out.lzfse -o /tmp/out.bin
+        cmp /tmp/in.bin /tmp/out.bin
