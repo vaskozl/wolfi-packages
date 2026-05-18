@@ -12,6 +12,7 @@ environment:
     packages:
       - bash
       - build-base
+      - busybox
       - imagemagick
       - llvm
 pipeline:
