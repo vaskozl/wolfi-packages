@@ -10,7 +10,6 @@ package:
     - aarch64
   dependencies:
     runtime:
-      - asahi-scripts
       - lzfse
       - python-${{vars.python-version}}-base
 vars:
