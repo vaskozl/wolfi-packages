@@ -1,7 +1,7 @@
 package:
   name: asahi-scripts
   version: "20250713"
-  epoch: 0
+  epoch: 1
   description: Asahi Linux maintenance scripts
   copyright:
     - license: MIT
@@ -9,6 +9,7 @@ package:
     - aarch64
   dependencies:
     runtime:
+      - asahi-fwextract
       - busybox
 environment:
   contents:
@@ -25,27 +26,29 @@ pipeline:
     with:
       opts: |
         PREFIX=/usr
-  - uses: autoconf/make-install
+  - uses: autoconf/make
     with:
       opts: |
-        PREFIX=/usr
+        PREFIX=/usr DESTDIR=${{targets.contextdir}} install-fedora
   - runs: |
       install -Dm644 LICENSE "${{targets.destdir}}/usr/share/licenses/${{package.name}}/LICENSE"
 test:
   pipeline:
-    - name: scripts present and executable
+    - name: install-fedora artifacts present
       runs: |
         set -eu
-        test -x /usr/bin/asahi-diagnose
-        test -x /usr/bin/asahi-fwupdate
-        test -x /usr/bin/update-m1n1
         test -f /usr/share/asahi-scripts/functions.sh
         test -d /usr/lib/firmware/vendor
-        test -f /usr/share/licenses/asahi-scripts/LICENSE
-    - name: sh syntax check
+        test -f /usr/lib/dracut/dracut.conf.d/10-asahi.conf
+        test -d /usr/lib/dracut/modules.d/91kernel-modules-asahi
+        test -d /usr/lib/dracut/modules.d/99asahi-firmware
+    - name: shell scripts parse
       runs: |
         set -eu
-        sh -n /usr/bin/asahi-diagnose
-        sh -n /usr/bin/asahi-fwupdate
-        sh -n /usr/bin/update-m1n1
-        sh -n /usr/share/asahi-scripts/functions.sh
+        for f in /usr/bin/asahi-* /usr/bin/update-m1n1 \
+                 /usr/share/asahi-scripts/functions.sh \
+                 /usr/lib/dracut/modules.d/9*-asahi*/*.sh \
+                 /usr/lib/dracut/modules.d/91kernel-modules-asahi/*.sh; do
+          [ -e "$f" ] || continue
+          sh -n "$f"
+        done

@@ -3,7 +3,7 @@ package:
   name: linux-asahi-initramfs
   # datasource: alpine-base packageName: linux-asahi
   version: 7.0.8_p1
-  epoch: 0
+  epoch: 1
   description: The Linux Asahi kernel initramfs
   target-architecture:
     - aarch64
@@ -16,15 +16,18 @@ package:
 environment:
   contents:
     packages:
+      - asahi-scripts
       - attr
       - bash
       - binutils-dev
       - bootc
       - busybox
       - build-base
+      - cpio
       - dracut
       - findutils
       - kmod
+      - libgcrypt
       - linux-asahi=${{package.full-version}}
       - posix-libc-utils
       - wolfi-baselayout
