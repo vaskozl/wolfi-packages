@@ -32,16 +32,10 @@ pipeline:
         PREFIX=/usr DESTDIR=${{targets.contextdir}} install-fedora
   - runs: |
       install -Dm644 LICENSE "${{targets.destdir}}/usr/share/licenses/${{package.name}}/LICENSE"
-
-      # Oneshot service to sync m1n1 from the rootfs to the ESP after package
-      # updates. update-m1n1 only writes if bytes differ, so running each boot
-      # is cheap. Vendor firmware extraction is handled by asahi-fwupdate; the
-      # installer already places firmware.cpio on the ESP, so no service for it.
-      install -Dm644 ./update-m1n1.service \
-        "${{targets.destdir}}/usr/lib/systemd/system/update-m1n1.service"
-      install -d "${{targets.destdir}}/usr/lib/systemd/system/multi-user.target.wants"
-      ln -sf ../update-m1n1.service \
-        "${{targets.destdir}}/usr/lib/systemd/system/multi-user.target.wants/update-m1n1.service"
+      # /etc/default/update-m1n1 — paths matching our m1n1, u-boot-asahi,
+      # and linux-asahi packaging. update-m1n1.service sources this on each
+      # kernel/m1n1 update to rebuild ESP:/m1n1/boot.bin.
+      install -Dm644 update-m1n1.defaults "${{targets.destdir}}/etc/default/update-m1n1"
 test:
   pipeline:
     - name: install-fedora artifacts present
@@ -55,5 +49,7 @@ test:
         test -x /usr/bin/asahi-diagnose
         test -x /usr/bin/asahi-fwupdate
         test -x /usr/bin/update-m1n1
-        test -f /usr/lib/systemd/system/update-m1n1.service
-        test -L /usr/lib/systemd/system/multi-user.target.wants/update-m1n1.service
+        test -s /etc/default/update-m1n1
+        grep -q '^M1N1=' /etc/default/update-m1n1
+        grep -q '^U_BOOT=' /etc/default/update-m1n1
+        grep -q '^DTBS=' /etc/default/update-m1n1

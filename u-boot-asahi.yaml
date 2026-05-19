@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: u-boot-asahi
+  # datasource: alpine-community packageName: u-boot-asahi
+  version: 2026.04_p1
+  epoch: 0
+  description: Repackaged Alpine u-boot bootloader for Apple Silicon Macs
+  target-architecture:
+    - aarch64
+  copyright:
+    - license: GPL-2.0-or-later
+  dependencies:
+    runtime:
+      - m1n1
+environment:
+  contents:
+    packages:
+      - wolfi-base
+      - apk-tools
+      - busybox
+      - wget
+pipeline:
+  - runs: |
+      set -eux
+      mkdir alpinepkg
+      cd alpinepkg
+      branch="edge"
+      repo="community"
+      variant="u-boot-asahi"
+      wget "https://dl-cdn.alpinelinux.org/alpine/${branch}/${repo}/${{build.arch}}/${variant}-${{package.full-version}}-r0.apk"
+      for f in *.apk; do
+        tar -xzf "$f"
+      done
+  - runs: |
+      set -eu
+      # Only ship the binary. Alpine's update-u-boot-asahi is functionally
+      # equivalent to asahi-scripts' update-m1n1 (which we use, via the
+      # systemd unit + /etc/default/update-m1n1 from asahi-scripts) so we
+      # skip it to avoid two scripts doing the same thing.
+      install -Dm0644 alpinepkg/usr/share/u-boot-asahi/u-boot-nodtb.bin \
+        "${{targets.destdir}}/usr/share/u-boot-asahi/u-boot-nodtb.bin"
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        test -s /usr/share/u-boot-asahi/u-boot-nodtb.bin
