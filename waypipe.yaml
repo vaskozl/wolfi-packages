@@ -1,0 +1,75 @@
+package:
+  name: waypipe
+  version: "0.11.0"
+  epoch: 0
+  description: Proxy for Wayland clients
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - build-base
+      - cargo-auditable
+      - clang-21
+      - ffmpeg-dev
+      - libclang-cpp-21
+      - lz4-dev
+      - mesa-dev
+      - mesa-gbm
+      - meson
+      - rust
+      - rust-bindgen
+      - scdoc
+      - shaderc
+      - vulkan-headers-dev
+      - vulkan-loader-dev
+      - wayland-dev
+      - wayland-protocols
+      - wayland-protocols-dev
+      - zstd-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://gitlab.freedesktop.org/mstoeckl/waypipe
+      tag: v${{package.version}}
+  - runs: |
+      # waypipe's meson.build reads the scdoc= pkg-config variable to locate the
+      # scdoc binary; Wolfi's scdoc.pc points it at /usr/local/bin/scdoc while
+      # the binary is actually at /usr/bin/scdoc. Rewrite the .pc to match.
+      sed -i 's|^prefix=/usr/local|prefix=/usr|' /usr/share/pkgconfig/scdoc.pc
+  - runs: |
+      # waypipe's compile_wrapper.sh invokes `cargo build --frozen`, which
+      # implies --offline; pre-fetch the registry so the offline build works.
+      cargo fetch --locked
+  - uses: meson/configure
+    with:
+      opts: -Dwerror=false -Db_ndebug=true
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: waypipe manpages
+    test:
+      pipeline:
+        - uses: test/docs
+  - name: ${{package.name}}-dbg
+    pipeline:
+      - uses: split/debug
+    description: waypipe debug symbols
+test:
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          waypipe
+    - uses: test/help-check
+      with:
+        bins: |
+          waypipe
+    - runs: |
+        set -eu
+        waypipe --version | grep -F -e "${{package.version}}"
+        waypipe --help | grep -qi 'wayland'
