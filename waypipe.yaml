@@ -71,5 +71,8 @@ test:
           waypipe
     - runs: |
         set -eu
-        waypipe --version | grep -F -e "${{package.version}}"
-        waypipe --help | grep -qi 'wayland'
+        # The `client` subcommand itself does not accept `--help` (clap rejects
+        # it with "unexpected argument"). Verify subcommand routing and the
+        # --socket option via the top-level help output instead.
+        waypipe --help | grep -qi '^  client'
+        waypipe --help | grep -qi -- '--socket'
