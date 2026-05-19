@@ -27,7 +27,7 @@ pipeline:
       branch="edge"
       repo="community"
       variant="u-boot-asahi"
-      wget "https://dl-cdn.alpinelinux.org/alpine/${branch}/${repo}/${{build.arch}}/${variant}-${{package.full-version}}-r0.apk"
+      wget "https://dl-cdn.alpinelinux.org/alpine/${branch}/${repo}/${{build.arch}}/${variant}-${{package.full-version}}.apk"
       for f in *.apk; do
         tar -xzf "$f"
       done
