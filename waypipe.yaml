@@ -10,9 +10,9 @@ environment:
     packages:
       - build-base
       - cargo-auditable
-      - clang-21
+      - clang
       - ffmpeg-dev
-      - libclang-cpp-21
+      - libclang-cpp
       - lz4-dev
       - mesa-dev
       - mesa-gbm
@@ -33,10 +33,7 @@ pipeline:
       repository: https://gitlab.freedesktop.org/mstoeckl/waypipe
       tag: v${{package.version}}
   - runs: |
-      # waypipe's meson.build reads the scdoc= pkg-config variable to locate the
-      # scdoc binary; Wolfi's scdoc.pc points it at /usr/local/bin/scdoc while
-      # the binary is actually at /usr/bin/scdoc. Rewrite the .pc to match.
-      sed -i 's|^prefix=/usr/local|prefix=/usr|' /usr/share/pkgconfig/scdoc.pc
+      ln -s /usr/bin/scdoc /usr/local/bin/scdoc
   - runs: |
       # waypipe's compile_wrapper.sh invokes `cargo build --frozen`, which
       # implies --offline; pre-fetch the registry so the offline build works.
