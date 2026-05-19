@@ -65,20 +65,10 @@ pipeline:
       install -Dm0644 "alpinepkg/boot/System.map-${_kernver}" \
         "$out/System.map"
 
-      # Apple SoC device trees — consumed by update-m1n1 (concatenated into
-      # m1n1/boot.bin on the ESP). Alpine installs them under /boot, but in
-      # bootc/composefs deployments /boot is managed by bootc and arbitrary
-      # files baked there don't survive into the deployment. Park them under
-      # /usr/share/linux-asahi/dtbs/ so the composefs layer preserves them.
-      dtbs_src="alpinepkg/boot/dtbs-asahi"
-      if [ -d "$dtbs_src" ]; then
-        dtbs_out="${{targets.destdir}}/usr/share/linux-asahi/dtbs"
-        find "$dtbs_src" -type f \
-          | while read -r f; do
-              rel="${f#$dtbs_src/}"
-              install -Dm0644 "$f" "$dtbs_out/$rel"
-            done
-      fi
+      # Park dtbs under /usr so the composefs layer preserves them; /boot
+      # is bootc-managed and won't carry arbitrary package contents through.
+      mkdir -p "${{targets.destdir}}/usr/share/linux-asahi"
+      cp -a alpinepkg/boot/dtbs-asahi "${{targets.destdir}}/usr/share/linux-asahi/dtbs"
 test:
   pipeline:
     - runs: |
