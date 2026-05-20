@@ -68,7 +68,7 @@ If the binary uses non-standard flags (e.g. `-v` for version, `-h` for help), pa
         flag: "-h"
 ```
 
-Never call `-h` or `--help` directly in a `runs:` block when `test/help-check` applies -- it asserts exit 0. If the binary exits non-zero on help, skip `test/help-check` and grep the output instead: `out=$(bin -h 2>&1 || true); echo "$out" | grep -qi usage`
+Never call `-h` or `--help` directly in a `runs:` block — use `test/help-check` (its `auto` flag mode tries `--help`, `-h`, `help` in turn and only checks exit code). Avoid the `out=$(bin -h 2>&1 || true); echo "$out" | grep -qi usage` workaround: it asserts on help-text wording (which churns between releases) and bypasses the shared helper. If `test/help-check` genuinely can't drive a binary, prefer a real functional invocation over a help-text grep.
 
 For config-only packages, the `test:` section in `pinewall-config.yaml`:
 
@@ -158,7 +158,9 @@ Sections to check (in order): `main`, `community`, `testing`
 
 ## Renovate
 
-Renovate bumps `version:` when it sees a paired `repository: https://github.com/OWNER/REPO` (or codeberg/gitlab.freedesktop.org). `uses: git-checkout` provides it naturally; otherwise add a `# repository: ...` comment. **Never add a `# repository:` comment when `git-checkout` already has a `repository:` field — it is redundant and should be omitted.** Use `curl` in downloading URLs is required and don't pin `expected-sha256` - renovate can't update hashes.
+Renovate bumps `version:` when it sees a paired `repository: https://github.com/OWNER/REPO` (or codeberg/gitlab.freedesktop.org/git.kernel.org). `uses: git-checkout` provides it naturally; otherwise add a `# repository: ...` comment. **Never add a `# repository:` comment when `git-checkout` already has a `repository:` field — it is redundant and should be omitted.**
+
+**Prefer `uses: git-checkout` over `curl` tarball fetches.** If upstream publishes a tagged git repo (github, codeberg, freedesktop, kernel.org, ...), use `git-checkout`: it pins the SHA via the tag, gives renovate a `repository:` to track natively, and avoids dragging `curl` + `ca-certificates-bundle` into the build env. Reach for `curl` only when the git checkout is not self-contained (e.g. the release tarball bundles vendored sources or sibling repos that the bare git tree omits) or when upstream ships no corresponding tag (binary-only releases). Never pin `expected-sha256` on a tarball URL — renovate can't update hashes.
 
 GitHub packages default to the `github-tags` datasource. If a package tracks **GitHub Releases** rather than tags (e.g. pre-built binaries distributed via releases, not source archives), add a `# datasource: github-releases` comment on the line immediately above `# repository:`:
 
@@ -207,6 +209,10 @@ CI uses a generated child pipeline. `.gitlab/gen-dag.sh` introspects every `*.ya
 - For version updates: `<package-name>/<version> package update`
 - Use imperative mood ("Add feature" not "Added feature")
 - Describe what changed and why, not how
+
+## MR and Issue Comments
+
+Keep comments short and neat. One or two sentences per change, no headers, no checklists, no test transcripts. State what changed and link the commit -- skip the prose summary, the diff and commit message already carry the detail.
 
 ## Code Style
 

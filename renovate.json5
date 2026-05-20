@@ -53,6 +53,21 @@
       "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
     },
     {
+      // Track `# repository: https://git.kernel.org/...` annotations via
+      // the git-tags datasource (no API; renovate clones to list tags).
+      "customType": "regex",
+      "managerFilePatterns": ["/.+\\.ya?ml$/"],
+      "matchStringsStrategy": "combination",
+      "matchStrings": [
+        "version:\\s*['\"]?(?<currentValue>\\d+(?:\\.\\d+)*)['\"]?",
+        "#\\s*repository:\\s*(?<packageName>https:\\/\\/git\\.kernel\\.org\\/\\S+)"
+      ],
+      "depNameTemplate": "{{packageName}}",
+      "datasourceTemplate": "git-tags",
+      "versioningTemplate": "loose",
+      "extractVersionTemplate": "^v?(?<version>\\d+(?:\\.\\d+)*)$"
+    },
+    {
       // Bump pinned `go-1.X` toolchain references via the wolfi apk index.
       "customType": "regex",
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
@@ -92,7 +107,7 @@
       // the new apk. BASE_REF=HEAD because renovate hasn't committed yet
       // — bump-epochs diffs working tree vs HEAD to find renovate's edits.
       // Resulting yaml changes are picked up via fileFilters: **/*.yaml.
-      "matchDatasources": ["github-tags","github-releases","gitlab-tags","forgejo-tags","custom.alpine-base"],
+      "matchDatasources": ["github-tags","github-releases","gitlab-tags","forgejo-tags","git-tags","custom.alpine-base"],
       "postUpgradeTasks": {
         "commands": [
           "BASE_REF=HEAD .gitlab/bump-epochs.pl",

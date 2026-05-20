@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# iwd's git tree expects a sibling clone of `ell` at ../ell/ matched to each
+# release; the upstream tarball bundles that snapshot, so we fetch the tarball.
+# repository: https://git.kernel.org/pub/scm/network/wireless/iwd.git
+package:
+  name: iwd
+  version: "3.12"
+  epoch: 0
+  description: Internet Wireless Daemon -- modern wpa_supplicant alternative
+  copyright:
+    - license: LGPL-2.1-or-later
+  dependencies:
+    runtime:
+      - dbus
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - curl
+      - dbus-dev
+      - linux-headers
+      - readline-dev
+pipeline:
+  - runs: |
+      set -eu
+      curl -fsSL -o iwd.tar.gz \
+        https://mirrors.edge.kernel.org/pub/linux/network/wireless/iwd-${{package.version}}.tar.gz
+      tar xzf iwd.tar.gz --strip-components=1
+      rm iwd.tar.gz
+  - uses: autoconf/configure
+    with:
+      opts: |
+        --enable-wired \
+        --enable-tools \
+        --with-systemd-unitdir=/usr/lib/systemd/system \
+        --with-systemd-networkdir=/usr/lib/systemd/network \
+        --with-systemd-modloaddir=/usr/lib/modules-load.d
+  - uses: autoconf/make
+  - uses: autoconf/make-install
+  - runs: |
+      set -eu
+      install -m750 -d "${{targets.destdir}}"/var/lib/iwd
+      install -Dm644 doc/main.conf "${{targets.destdir}}"/etc/iwd/main.conf
+  - uses: strip
+subpackages:
+  - name: iwd-doc
+    description: iwd manpages
+    pipeline:
+      - uses: split/manpages
+    test:
+      pipeline:
+        - uses: test/docs
+  - name: iwd-ead
+    description: Ethernet Authentication Daemon
+    pipeline:
+      - runs: |
+          set -eu
+          install -d "${{targets.subpkgdir}}"/usr/libexec
+          install -d "${{targets.subpkgdir}}"/usr/share/dbus-1/system.d
+          install -d "${{targets.subpkgdir}}"/usr/lib/systemd/system
+          mv "${{targets.destdir}}"/usr/libexec/ead \
+             "${{targets.subpkgdir}}"/usr/libexec/
+          mv "${{targets.destdir}}"/usr/share/dbus-1/system.d/ead-dbus.conf \
+             "${{targets.subpkgdir}}"/usr/share/dbus-1/system.d/
+          if [ -f "${{targets.destdir}}"/usr/lib/systemd/system/ead.service ]; then
+            mv "${{targets.destdir}}"/usr/lib/systemd/system/ead.service \
+               "${{targets.subpkgdir}}"/usr/lib/systemd/system/
+          fi
+          if [ -f "${{targets.destdir}}"/usr/share/dbus-1/system-services/net.connman.ead.service ]; then
+            install -d "${{targets.subpkgdir}}"/usr/share/dbus-1/system-services
+            mv "${{targets.destdir}}"/usr/share/dbus-1/system-services/net.connman.ead.service \
+               "${{targets.subpkgdir}}"/usr/share/dbus-1/system-services/
+          fi
+    test:
+      pipeline:
+        - uses: test/help-check
+          with:
+            bins: |
+              /usr/libexec/ead
+        - name: ead shipped files
+          runs: |
+            set -eu
+            stat /usr/share/dbus-1/system.d/ead-dbus.conf
+test:
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          iwmon
+    - uses: test/help-check
+      with:
+        bins: |
+          /usr/libexec/iwd
+          iwctl
+          iwmon
+    - name: iwd shipped files
+      runs: |
+        set -eu
+        stat /etc/iwd/main.conf
+        stat /usr/share/dbus-1/system.d/iwd-dbus.conf
+        stat /usr/lib/systemd/system/iwd.service
