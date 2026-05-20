@@ -89,13 +89,13 @@
     {
       // On an upstream version bump: reset the bumped yaml's epoch to 0
       // and bump epoch on every reverse-dep so CI rebuilds them against
-      // the new apk. BASE_REF=HEAD because renovate hasn't committed yet
-      // — bump-epochs diffs working tree vs HEAD to find renovate's edits.
+      // the new apk. --base-ref HEAD because renovate hasn't committed yet
+      // -- bump-epochs diffs working tree vs HEAD to find renovate's edits.
       // Resulting yaml changes are picked up via fileFilters: **/*.yaml.
       "matchDatasources": ["github-tags","github-releases","gitlab-tags","forgejo-tags","custom.alpine-base"],
       "postUpgradeTasks": {
         "commands": [
-          "BASE_REF=HEAD .gitlab/bump-epochs.pl",
+          ".gitlab/bump-epochs.pl --base-ref HEAD",
         ],
         "fileFilters": ["**/*.yaml", "**/*.yml"],
         "executionMode": "update",
