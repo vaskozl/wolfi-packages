@@ -13,9 +13,9 @@ environment:
       - glib-gir
       - gobject-introspection-dev
       - libxml2-dev
-      - zstd-dev
       - meson
       - pkgconf-dev
+      - zstd-dev
 pipeline:
   - uses: git-checkout
     with:
