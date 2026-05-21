@@ -72,7 +72,15 @@ test:
     - uses: test/help-check
       with:
         bins: appstreamcli
-    - name: validate a minimal metainfo file
+    - name: validate rejects invalid metainfo
+      runs: |
+        set -eu
+        echo "<<<not xml>>>" > /tmp/bad.xml
+        if appstreamcli validate --no-net /tmp/bad.xml >/dev/null 2>&1; then
+          echo "FAIL: validate accepted invalid XML"
+          exit 1
+        fi
+    - name: validate parses a minimal metainfo
       runs: |
         set -eu
         cat > /tmp/test.metainfo.xml <<'XML'
@@ -85,5 +93,5 @@ test:
           <project_license>MIT</project_license>
         </component>
         XML
-        appstreamcli validate --no-net /tmp/test.metainfo.xml || true
-        appstreamcli validate --no-net --pedantic /tmp/test.metainfo.xml || true
+        out=$(appstreamcli validate --no-net /tmp/test.metainfo.xml 2>&1 || true)
+        echo "$out" | grep -q "org.example.Hello"
