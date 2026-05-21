@@ -1,0 +1,60 @@
+package:
+  name: json-glib
+  version: "1.10.8"
+  epoch: 0
+  description: GLib-based library for JSON parsing/generation
+  copyright:
+    - license: LGPL-2.1-or-later
+environment:
+  contents:
+    packages:
+      - build-base
+      - glib-dev
+      - glib-gir
+      - gobject-introspection-dev
+      - meson
+      - pkgconf-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://gitlab.gnome.org/GNOME/json-glib
+      tag: ${{package.version}}
+  - runs: |
+      meson setup \
+        -Db_lto=true \
+        -Dtests=false \
+        -Ddocumentation=disabled \
+        -Dintrospection=enabled \
+        --prefix=/usr \
+        . output
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-dev
+    description: ${{package.name}} development headers and pkgconfig
+    pipeline:
+      - uses: split/dev
+    dependencies:
+      runtime:
+        - json-glib
+    test:
+      pipeline:
+        - runs: |
+            set -eu
+            stat /usr/lib/pkgconfig/json-glib-1.0.pc
+            stat /usr/include/json-glib-1.0/json-glib/json-glib.h
+test:
+  pipeline:
+    - uses: test/tw/ldd-check
+    - uses: test/help-check
+      with:
+        bins: |
+          json-glib-validate
+          json-glib-format
+    - name: validate and format roundtrip
+      runs: |
+        set -eu
+        printf '{"a":1,"b":[1,2,3]}' > /tmp/in.json
+        json-glib-validate /tmp/in.json
+        json-glib-format /tmp/in.json | grep -F '"a"'
