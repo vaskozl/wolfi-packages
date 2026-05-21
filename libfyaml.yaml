@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: libfyaml
+  version: 0.9.6
+  epoch: 0
+  description: Fully featured YAML parser and emitter library
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - autoconf
+      - automake
+      - build-base
+      - libtool
+      - pkgconf-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/pantoniou/libfyaml
+      tag: v${{package.version}}
+  - runs: |
+      touch build-aux/tap-driver.sh
+      autoreconf -fvi
+  - uses: autoconf/configure
+  - uses: autoconf/make
+  - uses: autoconf/make-install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-dev
+    pipeline:
+      - uses: split/dev
+    description: ${{package.name}} dev
+    dependencies:
+      runtime:
+        - libfyaml
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: ${{package.name}} manpages
+test:
+  pipeline:
+    - uses: test/tw/ldd-check
+    - uses: test/ver-check
+      with:
+        bins: fy-tool
+    - uses: test/help-check
+      with:
+        bins: fy-tool
+    - name: round-trip YAML
+      runs: |
+        set -eu
+        printf 'key: value\nlist:\n  - a\n  - b\n' > /tmp/in.yaml
+        fy-tool --dump /tmp/in.yaml > /tmp/out.yaml
+        grep 'key: value' /tmp/out.yaml
+        grep -- '- a' /tmp/out.yaml
