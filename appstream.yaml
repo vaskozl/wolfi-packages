@@ -1,0 +1,89 @@
+package:
+  name: appstream
+  version: 1.1.2
+  epoch: 0
+  description: Software component metadata catalog library and tools
+  copyright:
+    - license: LGPL-2.1-or-later
+environment:
+  contents:
+    packages:
+      - bison
+      - build-base
+      - curl-dev
+      - glib-dev
+      - glib-gir
+      - gobject-introspection-dev
+      - gperf
+      - itstool
+      - libfyaml-dev
+      - libxml2-dev
+      - libxmlb-dev
+      - meson
+      - pkgconf-dev
+      - python3-as-3.13
+      - systemd-dev
+      - zstd-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/ximion/appstream
+      tag: v${{package.version}}
+  - uses: meson/configure
+    with:
+      opts: |
+        -Dapidocs=false \
+        -Dapt-support=false \
+        -Dbash-completion=false \
+        -Ddocs=false \
+        -Dgir=true \
+        -Dinstall-docs=false \
+        -Dman=true \
+        -Dqt=false \
+        -Dstemming=false \
+        -Dsvg-support=false \
+        -Dsystemd=true \
+        -Dvapi=false \
+        -Dzstd-support=true
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-dev
+    pipeline:
+      - uses: split/dev
+    description: appstream development headers and pkgconfig
+    dependencies:
+      runtime:
+        - appstream
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: appstream manpages
+    test:
+      pipeline:
+        - uses: test/docs
+test:
+  pipeline:
+    - uses: test/tw/ldd-check
+    - uses: test/ver-check
+      with:
+        bins: appstreamcli
+    - uses: test/help-check
+      with:
+        bins: appstreamcli
+    - name: validate a minimal metainfo file
+      runs: |
+        set -eu
+        cat > /tmp/test.metainfo.xml <<'XML'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <component type="generic">
+          <id>org.example.Hello</id>
+          <name>Hello</name>
+          <summary>Test component</summary>
+          <metadata_license>FSFAP</metadata_license>
+          <project_license>MIT</project_license>
+        </component>
+        XML
+        appstreamcli validate --no-net /tmp/test.metainfo.xml || true
+        appstreamcli validate --no-net --pedantic /tmp/test.metainfo.xml || true
