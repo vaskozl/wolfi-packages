@@ -1,0 +1,68 @@
+package:
+  name: libxmlb
+  version: "0.3.27"
+  epoch: 0
+  description: A library to help create and query binary XML blobs
+  copyright:
+    - license: LGPL-2.1-or-later
+environment:
+  contents:
+    packages:
+      - build-base
+      - glib-dev
+      - glib-gir
+      - gobject-introspection-dev
+      - libxml2-dev
+      - meson
+      - pkgconf-dev
+      - zstd-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/hughsie/libxmlb
+      tag: ${{package.version}}
+  - uses: meson/configure
+    with:
+      opts: |
+        -Dgtkdoc=false \
+        -Dintrospection=true \
+        -Dstemmer=false \
+        -Dtests=false
+  - uses: meson/compile
+  - uses: meson/install
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-dev
+    pipeline:
+      - uses: split/dev
+    description: libxmlb development headers and pkgconfig
+    dependencies:
+      runtime:
+        - libxmlb
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: libxmlb manpages
+    test:
+      pipeline:
+        - uses: test/docs
+test:
+  pipeline:
+    - uses: test/tw/ldd-check
+    # xb-tool has no --version flag (GOptionContext options are verbose/force/wait/profile/tokenize only).
+    - uses: test/help-check
+      with:
+        bins: xb-tool
+    - name: compile and dump a silo
+      runs: |
+        set -eu
+        cat > /tmp/test.xml <<XML
+        <components>
+          <component type="generic">
+            <id>org.example.Hello</id>
+            <name>Hello</name>
+          </component>
+        </components>
+        XML
+        xb-tool compile /tmp/test.xmlb /tmp/test.xml
+        xb-tool dump /tmp/test.xmlb | grep -F 'org.example.Hello'
