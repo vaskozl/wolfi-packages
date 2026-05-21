@@ -28,16 +28,19 @@ pipeline:
   - uses: strip
 subpackages:
   - name: ${{package.name}}-dev
+    description: ${{package.name}} dev
     pipeline:
       - uses: split/dev
-    description: ${{package.name}} dev
     dependencies:
       runtime:
         - libfyaml
   - name: ${{package.name}}-doc
+    description: ${{package.name}} manpages
     pipeline:
       - uses: split/manpages
-    description: ${{package.name}} manpages
+    test:
+      pipeline:
+        - uses: test/docs
 test:
   pipeline:
     - uses: test/tw/ldd-check
@@ -52,5 +55,5 @@ test:
         set -eu
         printf 'key: value\nlist:\n  - a\n  - b\n' > /tmp/in.yaml
         fy-tool --dump /tmp/in.yaml > /tmp/out.yaml
-        grep 'key: value' /tmp/out.yaml
-        grep -- '- a' /tmp/out.yaml
+        grep -F 'key: value' /tmp/out.yaml
+        grep -F -- '- a' /tmp/out.yaml
