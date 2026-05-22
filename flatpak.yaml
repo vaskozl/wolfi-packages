@@ -2,7 +2,7 @@
 package:
   name: flatpak
   version: 1.16.6
-  epoch: 0
+  epoch: 1 # drop unused socat from build env
   description: Application deployment framework for desktop apps
   copyright:
     - license: LGPL-2.1-or-later
@@ -39,7 +39,6 @@ environment:
       - polkit-dev
       - py3.13-pyparsing
       - python3
-      - socat
       - wayland-protocols
       - xdg-dbus-proxy
       - yaml-dev
