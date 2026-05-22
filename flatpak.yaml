@@ -1,0 +1,175 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: flatpak
+  version: 1.16.6
+  epoch: 0
+  description: Application deployment framework for desktop apps
+  copyright:
+    - license: LGPL-2.1-or-later
+  dependencies:
+    runtime:
+      - bubblewrap
+      - fuse3
+      - xdg-dbus-proxy
+environment:
+  contents:
+    packages:
+      - appstream-dev
+      - bash
+      - bison
+      - build-base
+      - bubblewrap
+      - curl-dev
+      - fuse3
+      - fuse3-dev
+      - gdk-pixbuf-dev
+      - glib-dev
+      - glib-gir
+      - gobject-introspection-dev
+      - gpgme-dev
+      - json-glib-dev
+      - libarchive-dev
+      - libcap-dev
+      - libseccomp-dev
+      - libxau-dev
+      - libxml2-dev
+      - meson
+      - ostree-dev
+      - pkgconf-dev
+      - polkit-dev
+      - py3.13-pyparsing
+      - python3
+      - socat
+      - wayland-protocols
+      - xdg-dbus-proxy
+      - yaml-dev
+      - zstd-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/flatpak/flatpak
+      tag: ${{package.version}}
+  - uses: meson/configure
+    with:
+      opts: |
+        -Dsystem_bubblewrap=bwrap \
+        -Dsystem_dbus_proxy=xdg-dbus-proxy \
+        -Ddbus_config_dir=/usr/share/dbus-1/system.d \
+        -Dgdm_env_file=false \
+        -Dgir=enabled \
+        -Dman=disabled \
+        -Dtests=false \
+        -Dseccomp=enabled \
+        -Dxauth=enabled \
+        -Dsystem_helper=enabled \
+        -Dselinux_module=disabled \
+        -Dmalcontent=disabled
+  - uses: meson/compile
+  - uses: meson/install
+  - name: create flatpak repo layout
+    runs: |
+      set -eu
+      install -dm755 "${{targets.destdir}}/var/lib/flatpak"
+      ostree --repo="${{targets.destdir}}/var/lib/flatpak/repo" init --mode=bare-user-only
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-dev
+    description: flatpak development headers and pkgconfig
+    pipeline:
+      - uses: split/dev
+    dependencies:
+      runtime:
+        - flatpak-libs
+    test:
+      pipeline:
+        - uses: test/tw/ldd-check
+  - name: ${{package.name}}-libs
+    description: libflatpak shared library
+    pipeline:
+      - runs: |
+          set -eu
+          mkdir -p "${{targets.subpkgdir}}/usr/lib"
+          mv "${{targets.destdir}}"/usr/lib/libflatpak.so.* \
+             "${{targets.subpkgdir}}/usr/lib/"
+    test:
+      pipeline:
+        - uses: test/tw/ldd-check
+  - name: ${{package.name}}-bash-completion
+    description: bash completion for flatpak
+    pipeline:
+      - runs: |
+          set -eu
+          if [ -d "${{targets.destdir}}/usr/share/bash-completion/completions" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/share/bash-completion"
+            mv "${{targets.destdir}}/usr/share/bash-completion/completions" \
+               "${{targets.subpkgdir}}/usr/share/bash-completion/completions"
+          fi
+  - name: ${{package.name}}-zsh-completion
+    description: zsh completion for flatpak
+    pipeline:
+      - runs: |
+          set -eu
+          if [ -d "${{targets.destdir}}/usr/share/zsh/site-functions" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/share/zsh"
+            mv "${{targets.destdir}}/usr/share/zsh/site-functions" \
+               "${{targets.subpkgdir}}/usr/share/zsh/site-functions"
+          fi
+  - name: ${{package.name}}-fish-completion
+    description: fish completion for flatpak
+    pipeline:
+      - runs: |
+          set -eu
+          if [ -d "${{targets.destdir}}/usr/share/fish" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/share"
+            mv "${{targets.destdir}}/usr/share/fish" \
+               "${{targets.subpkgdir}}/usr/share/fish"
+          fi
+  - name: ${{package.name}}-polkit
+    description: flatpak polkit configuration
+    pipeline:
+      - runs: |
+          set -eu
+          if [ -d "${{targets.destdir}}/usr/share/polkit-1" ]; then
+            mkdir -p "${{targets.subpkgdir}}/usr/share"
+            mv "${{targets.destdir}}/usr/share/polkit-1" \
+               "${{targets.subpkgdir}}/usr/share/polkit-1"
+          fi
+  - name: ${{package.name}}-systemd
+    description: flatpak systemd units, sysusers and tmpfiles
+    dependencies:
+      runtime:
+        - flatpak
+    pipeline:
+      - runs: |
+          set -eu
+          for d in usr/lib/sysusers.d usr/lib/tmpfiles.d usr/lib/systemd; do
+            if [ -d "${{targets.destdir}}/$d" ]; then
+              mkdir -p "${{targets.subpkgdir}}/$(dirname "$d")"
+              mv "${{targets.destdir}}/$d" "${{targets.subpkgdir}}/$d"
+            fi
+          done
+    test:
+      pipeline:
+        - uses: test/verify-service
+test:
+  environment:
+    contents:
+      packages:
+        - bubblewrap
+        - dbus
+        - xdg-dbus-proxy
+  pipeline:
+    - uses: test/tw/ldd-check
+    - uses: test/ver-check
+      with:
+        bins: flatpak
+    - uses: test/help-check
+      with:
+        bins: flatpak
+    - name: basic flatpak commands
+      runs: |
+        set -eu
+        flatpak --version
+        flatpak --supported-arches | grep -E '^(aarch64|x86_64)$'
+        flatpak remotes
+        flatpak list
