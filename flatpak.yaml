@@ -136,6 +136,9 @@ subpackages:
           fi
   - name: ${{package.name}}-systemd
     description: flatpak systemd units, sysusers and tmpfiles
+    dependencies:
+      runtime:
+        - flatpak
     pipeline:
       - runs: |
           set -eu
