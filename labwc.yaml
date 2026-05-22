@@ -1,0 +1,72 @@
+package:
+  name: labwc
+  version: "0.9.7"
+  epoch: 0
+  description: A wlroots-based stacking Wayland compositor in the style of Openbox
+  copyright:
+    - license: GPL-2.0-only
+  dependencies:
+    runtime:
+      - wlroots=0.19.2-r0
+environment:
+  contents:
+    packages:
+      - build-base
+      - cairo-dev
+      - glib-dev
+      - libdrm-dev
+      - libinput-dev
+      - libpng-dev
+      - libxkbcommon-dev
+      - libxml2-dev
+      - meson
+      - pango-dev
+      - pixman-dev
+      - samurai
+      - scdoc
+      - wayland-dev
+      - wayland-protocols
+      - wayland-protocols-dev
+      - wlroots=0.19.2-r0
+      - wlroots-dev=0.19.2-r0
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/labwc/labwc
+      tag: ${{package.version}}
+  - runs: |
+      meson setup \
+        --prefix=/usr \
+        -Dman-pages=enabled \
+        -Dxwayland=disabled \
+        -Dsvg=disabled \
+        -Dicon=disabled \
+        -Dnls=disabled \
+        . output
+  - uses: meson/compile
+  - uses: meson/install
+  - runs: |
+      install -Dm0644 rc.xml "${{targets.destdir}}/etc/xdg/labwc/rc.xml"
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: labwc manpages
+test:
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          labwc
+        flag: "--version"
+    - uses: test/help-check
+      with:
+        bins: |
+          labwc
+        flag: "--help"
+    - name: config files installed
+      runs: |
+        set -eu
+        test -f /etc/xdg/labwc/rc.xml
+        test -f /usr/share/wayland-sessions/labwc.desktop
