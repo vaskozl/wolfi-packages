@@ -1,9 +1,15 @@
-Drop ConditionPathExists=/run/ostree-booted from bootc systemd units.
+Drop ConditionPathExists=/run/ostree-booted from bootc systemd units and
+remove --apply from bootc-fetch-apply-updates.service so upgrades are
+staged but never auto-reboot the host.
 
-The marker is not created on composefs-booted systems, which causes the
-units to be skipped. Since these units are owned by bootc itself, just
-let them run unconditionally rather than gating on an ostree-specific
-runtime path that may shift again in the future.
+The ConditionPathExists marker is not created on composefs-booted systems,
+which causes the units to be skipped. Since these units are owned by bootc
+itself, just let them run unconditionally rather than gating on an
+ostree-specific runtime path that may shift again in the future.
+
+The --apply flag triggers an automatic reboot after staging a new image.
+For our nodes this is too aggressive; reboot timing should be controlled
+by the operator, not the per-hour fetch timer.
 
 --- a/systemd/bootc-fetch-apply-updates.service
 +++ b/systemd/bootc-fetch-apply-updates.service
@@ -15,6 +21,11 @@ runtime path that may shift again in the future.
 
  [Service]
  Type=oneshot
+@@ -6,3 +5,3 @@
+ [Service]
+ Type=oneshot
+-ExecStart=/usr/bin/bootc upgrade --apply --quiet
++ExecStart=/usr/bin/bootc upgrade --quiet
 --- a/systemd/bootc-fetch-apply-updates.timer
 +++ b/systemd/bootc-fetch-apply-updates.timer
 @@ -1,7 +1,6 @@
