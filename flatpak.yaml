@@ -141,10 +141,13 @@ subpackages:
           set -eu
           for d in usr/lib/sysusers.d usr/lib/tmpfiles.d usr/lib/systemd; do
             if [ -d "${{targets.destdir}}/$d" ]; then
-              mkdir -p "${{targets.subpkgdir}}/$(dirname $d)"
+              mkdir -p "${{targets.subpkgdir}}/$(dirname "$d")"
               mv "${{targets.destdir}}/$d" "${{targets.subpkgdir}}/$d"
             fi
           done
+    test:
+      pipeline:
+        - uses: test/verify-service
 test:
   environment:
     contents:
