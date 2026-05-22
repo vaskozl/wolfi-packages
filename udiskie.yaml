@@ -1,7 +1,7 @@
 package:
   name: udiskie
   version: "2.6.2"
-  epoch: 0
+  epoch: 1 # ship user service
   description: udisks2 frontend that allows managing removable media from userspace
   copyright:
     - license: MIT
@@ -44,6 +44,8 @@ pipeline:
       set -eu
       python3 -m installer -d "${{targets.destdir}}" .dist/*.whl
       install -Dm644 doc/udiskie.8 -t "${{targets.destdir}}/usr/share/man/man8/"
+      install -Dm644 example/udiskie.service \
+        "${{targets.destdir}}/usr/lib/systemd/user/udiskie.service"
   - uses: strip
 subpackages:
   - name: ${{package.name}}-doc
@@ -82,3 +84,6 @@ test:
           udiskie-mount
           udiskie-umount
           udiskie-info
+    - runs: |
+        set -eu
+        stat /usr/lib/systemd/user/udiskie.service
