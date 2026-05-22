@@ -7,8 +7,6 @@ package:
     - license: GPL-2.0-only
   dependencies:
     runtime:
-      # labwc 0.9.7 needs wlroots-0.19 (>=0.19.0,<0.20). Pin to the 0.19.2-r0
-      # build that remains in apks.sko.ai alongside the current wlroots 0.20.x.
       - wlroots=0.19.2-r0
 environment:
   contents:
@@ -48,10 +46,7 @@ pipeline:
   - uses: meson/compile
   - uses: meson/install
   - runs: |
-      install -Dm0644 rc.xml      "${{targets.destdir}}/etc/xdg/labwc/rc.xml"
-      install -Dm0644 menu.xml    "${{targets.destdir}}/etc/xdg/labwc/menu.xml"
-      install -Dm0755 autostart   "${{targets.destdir}}/etc/xdg/labwc/autostart"
-      install -Dm0644 environment "${{targets.destdir}}/etc/xdg/labwc/environment"
+      install -Dm0644 rc.xml "${{targets.destdir}}/etc/xdg/labwc/rc.xml"
   - uses: strip
 subpackages:
   - name: ${{package.name}}-doc
@@ -74,7 +69,4 @@ test:
       runs: |
         set -eu
         test -f /etc/xdg/labwc/rc.xml
-        test -f /etc/xdg/labwc/menu.xml
-        test -x /etc/xdg/labwc/autostart
-        test -f /etc/xdg/labwc/environment
         test -f /usr/share/wayland-sessions/labwc.desktop
