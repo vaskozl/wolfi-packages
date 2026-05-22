@@ -1,7 +1,7 @@
 package:
   name: mako
   version: "1.11.0"
-  epoch: 0
+  epoch: 1 # ship user service
   description: A lightweight notification daemon for Wayland
   copyright:
     - license: MIT
@@ -34,6 +34,9 @@ pipeline:
         -Dicons=enabled
   - uses: meson/compile
   - uses: meson/install
+  - runs: |
+      install -Dm644 contrib/systemd/mako.service \
+        "${{targets.destdir}}/usr/lib/systemd/user/mako.service"
   - uses: strip
 subpackages:
   - name: ${{package.name}}-doc
@@ -55,3 +58,6 @@ test:
         bins: |
           mako
           makoctl
+    - runs: |
+        set -eu
+        stat /usr/lib/systemd/user/mako.service
