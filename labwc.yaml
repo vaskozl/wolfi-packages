@@ -1,13 +1,15 @@
 package:
   name: labwc
-  version: "0.10.0_pre20260518"
+  version: "0.9.7"
   epoch: 0
   description: A wlroots-based stacking Wayland compositor in the style of Openbox
   copyright:
     - license: GPL-2.0-only
   dependencies:
     runtime:
-      - wlroots
+      # labwc 0.9.7 needs wlroots-0.19 (>=0.19.0,<0.20). Pin to the 0.19.2-r0
+      # build that remains in apks.sko.ai alongside the current wlroots 0.20.x.
+      - wlroots=0.19.2-r0
 environment:
   contents:
     packages:
@@ -19,7 +21,6 @@ environment:
       - libpng-dev
       - libxkbcommon-dev
       - libxml2-dev
-      - librsvg-dev
       - meson
       - pango-dev
       - pixman-dev
@@ -28,22 +29,20 @@ environment:
       - wayland-dev
       - wayland-protocols
       - wayland-protocols-dev
-      - wlroots
-      - wlroots-dev
+      - wlroots=0.19.2-r0
+      - wlroots-dev=0.19.2-r0
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/labwc/labwc
-      branch: master
-      expected-commit: d5eb227c773c90528b0e99d10f1e4a0267c5e6ea
+      tag: ${{package.version}}
   - runs: |
       meson setup \
         --prefix=/usr \
         -Dman-pages=enabled \
         -Dxwayland=disabled \
+        -Dsvg=disabled \
         -Dicon=disabled \
-        -Dlabnag=disabled \
-        -Dsystemd-session=disabled \
         -Dnls=disabled \
         . output
   - uses: meson/compile
