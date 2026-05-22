@@ -1,0 +1,8 @@
+#!/bin/sh
+# labwc autostart -- runs once when the compositor starts.
+
+# Notification daemon
+command -v mako >/dev/null 2>&1 && mako &
+
+# Wallpaper (solid colour fallback; users can override)
+command -v swaybg >/dev/null 2>&1 && swaybg -c '#222222' &

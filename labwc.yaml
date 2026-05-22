@@ -1,0 +1,81 @@
+package:
+  name: labwc
+  version: "0.10.0_pre20260518"
+  epoch: 0
+  description: A wlroots-based stacking Wayland compositor in the style of Openbox
+  copyright:
+    - license: GPL-2.0-only
+  dependencies:
+    runtime:
+      - wlroots
+environment:
+  contents:
+    packages:
+      - build-base
+      - cairo-dev
+      - glib-dev
+      - libdrm-dev
+      - libinput-dev
+      - libpng-dev
+      - libxkbcommon-dev
+      - libxml2-dev
+      - librsvg-dev
+      - meson
+      - pango-dev
+      - pixman-dev
+      - samurai
+      - scdoc
+      - wayland-dev
+      - wayland-protocols
+      - wayland-protocols-dev
+      - wlroots
+      - wlroots-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/labwc/labwc
+      branch: master
+      expected-commit: d5eb227c773c90528b0e99d10f1e4a0267c5e6ea
+  - runs: |
+      meson setup \
+        --prefix=/usr \
+        -Dman-pages=enabled \
+        -Dxwayland=disabled \
+        -Dicon=disabled \
+        -Dlabnag=disabled \
+        -Dsystemd-session=disabled \
+        -Dnls=disabled \
+        . output
+  - uses: meson/compile
+  - uses: meson/install
+  - runs: |
+      install -Dm0644 rc.xml      "${{targets.destdir}}/etc/xdg/labwc/rc.xml"
+      install -Dm0644 menu.xml    "${{targets.destdir}}/etc/xdg/labwc/menu.xml"
+      install -Dm0755 autostart   "${{targets.destdir}}/etc/xdg/labwc/autostart"
+      install -Dm0644 environment "${{targets.destdir}}/etc/xdg/labwc/environment"
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: labwc manpages
+test:
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          labwc
+        flag: "--version"
+    - uses: test/help-check
+      with:
+        bins: |
+          labwc
+        flag: "--help"
+    - name: config files installed
+      runs: |
+        set -eu
+        test -f /etc/xdg/labwc/rc.xml
+        test -f /etc/xdg/labwc/menu.xml
+        test -x /etc/xdg/labwc/autostart
+        test -f /etc/xdg/labwc/environment
+        test -f /usr/share/wayland-sessions/labwc.desktop
