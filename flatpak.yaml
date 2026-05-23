@@ -2,7 +2,7 @@
 package:
   name: flatpak
   version: 1.16.6
-  epoch: 1 # drop unused socat from build env
+  epoch: 2
   description: Application deployment framework for desktop apps
   copyright:
     - license: LGPL-2.1-or-later
@@ -10,6 +10,7 @@ package:
     runtime:
       - bubblewrap
       - fuse3
+      - gpg
       - xdg-dbus-proxy
 environment:
   contents:
