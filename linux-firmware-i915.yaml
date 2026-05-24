@@ -2,7 +2,7 @@
 package:
   name: linux-firmware-i915
   # datasource: alpine-base packageName: linux-firmware-i915
-  version: 20260410
+  version: 20260519
   epoch: 0
   description: Repackaged Alpine Intel i915 GPU firmware blobs (GuC/HuC/DMC)
   copyright:
