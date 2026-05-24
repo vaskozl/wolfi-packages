@@ -159,29 +159,10 @@ subpackages:
     pipeline:
       - runs: |
           set -eu
-          install -Dm644 /dev/stdin "${{targets.subpkgdir}}/usr/lib/systemd/system/flatpak-update.service" <<'UNIT'
-          [Unit]
-          Description=Update Flatpaks and prune unused runtimes
-          Wants=network-online.target
-          After=network-online.target
-
-          [Service]
-          Type=oneshot
-          ExecStart=/usr/bin/flatpak update --system --noninteractive --assumeyes
-          ExecStart=/usr/bin/flatpak uninstall --system --unused --noninteractive --assumeyes
-          UNIT
-          install -Dm644 /dev/stdin "${{targets.subpkgdir}}/usr/lib/systemd/system/flatpak-update.timer" <<'UNIT'
-          [Unit]
-          Description=Daily Flatpak update + cleanup
-
-          [Timer]
-          OnCalendar=daily
-          Persistent=true
-          RandomizedDelaySec=30m
-
-          [Install]
-          WantedBy=timers.target
-          UNIT
+          install -Dm644 ./flatpak-update.service \
+            "${{targets.subpkgdir}}/usr/lib/systemd/system/flatpak-update.service"
+          install -Dm644 ./flatpak-update.timer \
+            "${{targets.subpkgdir}}/usr/lib/systemd/system/flatpak-update.timer"
     test:
       pipeline:
         - uses: test/verify-service
