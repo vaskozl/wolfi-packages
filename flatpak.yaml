@@ -2,7 +2,7 @@
 package:
   name: flatpak
   version: 1.16.6
-  epoch: 2
+  epoch: 3
   description: Application deployment framework for desktop apps
   copyright:
     - license: LGPL-2.1-or-later
@@ -151,6 +151,27 @@ subpackages:
     test:
       pipeline:
         - uses: test/verify-service
+  - name: ${{package.name}}-update-timer
+    description: systemd timer that updates flatpaks daily and prunes unused runtimes
+    dependencies:
+      runtime:
+        - flatpak
+    pipeline:
+      - runs: |
+          set -eu
+          install -Dm644 ./flatpak-update.service \
+            "${{targets.subpkgdir}}/usr/lib/systemd/system/flatpak-update.service"
+          install -Dm644 ./flatpak-update.timer \
+            "${{targets.subpkgdir}}/usr/lib/systemd/system/flatpak-update.timer"
+    test:
+      pipeline:
+        - uses: test/verify-service
+        - runs: |
+            set -eu
+            stat /usr/lib/systemd/system/flatpak-update.service
+            stat /usr/lib/systemd/system/flatpak-update.timer
+            grep -F 'ExecStart=/usr/bin/flatpak update' /usr/lib/systemd/system/flatpak-update.service
+            grep -F 'OnCalendar=daily' /usr/lib/systemd/system/flatpak-update.timer
 test:
   environment:
     contents:
