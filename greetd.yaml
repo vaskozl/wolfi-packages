@@ -50,9 +50,28 @@ subpackages:
              "${{targets.subpkgdir}}/usr/bin/fakegreet"
     test:
       pipeline:
-        - runs: |
+        - name: fakegreet executes and serves the greetd IPC socket
+          runs: |
             set -eu
-            test -x /usr/bin/fakegreet
+            # No greeter argument: fakegreet runs its own arg check and exits
+            # non-zero. Isolated in its own dir as it binds greetd.sock first.
+            d=$(mktemp -d)
+            if (cd "$d" && fakegreet) >/dev/null 2>&1; then
+              echo "FAIL: fakegreet with no argument should exit non-zero" >&2
+              exit 1
+            fi
+            # With a greeter command it binds and serves $PWD/greetd.sock.
+            cd "$(mktemp -d)"
+            fakegreet 'sleep 30' &
+            pid=$!
+            for _ in $(seq 50); do
+              [ -S greetd.sock ] && break
+              sleep 0.1
+            done
+            kill -0 "$pid"
+            test -S greetd.sock
+            kill "$pid"
+            wait "$pid" 2>/dev/null || true
 test:
   pipeline:
     - uses: test/help-check
