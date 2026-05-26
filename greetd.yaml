@@ -2,7 +2,7 @@
 package:
   name: greetd
   version: "0.10.3"
-  epoch: 0
+  epoch: 1 # add per-compositor default-session config subpackages
   description: Minimal and flexible login manager daemon
   copyright:
     - license: GPL-3.0-only
@@ -72,6 +72,63 @@ subpackages:
             test -S greetd.sock
             kill "$pid"
             wait "$pid" 2>/dev/null || true
+  - name: niri-greetd-default
+    description: greetd config booting niri via tuigreet on VT1
+    dependencies:
+      runtime:
+        - greetd
+        - tuigreet
+        - niri
+      provides:
+        - greetd-config
+    pipeline:
+      - runs: |
+          install -Dm644 ./config.niri.toml "${{targets.subpkgdir}}/etc/greetd/config.toml"
+    test:
+      pipeline:
+        - name: ships greetd config launching niri-session
+          runs: |
+            set -eu
+            stat /etc/greetd/config.toml
+            grep -F 'tuigreet --cmd niri-session' /etc/greetd/config.toml
+  - name: labwc-greetd-default
+    description: greetd config booting labwc via tuigreet on VT1
+    dependencies:
+      runtime:
+        - greetd
+        - tuigreet
+        - labwc
+      provides:
+        - greetd-config
+    pipeline:
+      - runs: |
+          install -Dm644 ./config.labwc.toml "${{targets.subpkgdir}}/etc/greetd/config.toml"
+    test:
+      pipeline:
+        - name: ships greetd config launching labwc
+          runs: |
+            set -eu
+            stat /etc/greetd/config.toml
+            grep -F 'tuigreet --cmd labwc' /etc/greetd/config.toml
+  - name: cagebreak-greetd-default
+    description: greetd config booting cagebreak via tuigreet on VT1
+    dependencies:
+      runtime:
+        - greetd
+        - tuigreet
+        - cagebreak
+      provides:
+        - greetd-config
+    pipeline:
+      - runs: |
+          install -Dm644 ./config.cagebreak.toml "${{targets.subpkgdir}}/etc/greetd/config.toml"
+    test:
+      pipeline:
+        - name: ships greetd config launching cagebreak
+          runs: |
+            set -eu
+            stat /etc/greetd/config.toml
+            grep -F 'tuigreet --cmd cagebreak' /etc/greetd/config.toml
 test:
   pipeline:
     - uses: test/help-check
