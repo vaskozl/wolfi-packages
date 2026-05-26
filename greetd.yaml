@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: greetd
+  version: "0.10.3"
+  epoch: 0
+  description: Minimal and flexible login manager daemon
+  copyright:
+    - license: GPL-3.0-only
+environment:
+  contents:
+    packages:
+      - build-base
+      - cargo-auditable
+      - linux-pam-dev
+      - rust
+      - scdoc
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://git.sr.ht/~kennylevinsen/greetd
+      tag: ${{package.version}}
+  - runs: |
+      cargo auditable build --release --jobs $(nproc)
+  - runs: |
+      make -C man SCDOC=scdoc PREFIX=/usr DESTDIR="${{targets.destdir}}" all install
+  - runs: |
+      install -Dm755 target/release/greetd "${{targets.destdir}}/usr/bin/greetd"
+      install -Dm755 target/release/agreety "${{targets.destdir}}/usr/bin/agreety"
+      install -Dm755 target/release/fakegreet "${{targets.destdir}}/usr/bin/fakegreet"
+      install -Dm644 config.toml "${{targets.destdir}}/etc/greetd/config.toml"
+      install -Dm644 greetd.service "${{targets.destdir}}/usr/lib/systemd/system/greetd.service"
+      install -Dm644 ./greetd.pam "${{targets.destdir}}/etc/pam.d/greetd"
+      install -Dm644 ./greetd-sysusers.conf "${{targets.destdir}}/usr/lib/sysusers.d/greetd.conf"
+      install -Dm644 ./greetd-tmpfiles.conf "${{targets.destdir}}/usr/lib/tmpfiles.d/greetd.conf"
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-doc
+    description: greetd manpages
+    pipeline:
+      - uses: split/manpages
+    test:
+      pipeline:
+        - uses: test/docs
+  - name: ${{package.name}}-fakegreet
+    description: greetd greeter-development test utility
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/bin"
+          mv "${{targets.destdir}}/usr/bin/fakegreet" \
+             "${{targets.subpkgdir}}/usr/bin/fakegreet"
+    test:
+      pipeline:
+        - name: fakegreet executes and serves the greetd IPC socket
+          runs: |
+            set -eu
+            # No greeter argument: fakegreet runs its own arg check and exits
+            # non-zero. Isolated in its own dir as it binds greetd.sock first.
+            d=$(mktemp -d)
+            if (cd "$d" && fakegreet) >/dev/null 2>&1; then
+              echo "FAIL: fakegreet with no argument should exit non-zero" >&2
+              exit 1
+            fi
+            # With a greeter command it binds and serves $PWD/greetd.sock.
+            cd "$(mktemp -d)"
+            fakegreet 'sleep 30' &
+            pid=$!
+            for _ in $(seq 50); do
+              [ -S greetd.sock ] && break
+              sleep 0.1
+            done
+            kill -0 "$pid"
+            test -S greetd.sock
+            kill "$pid"
+            wait "$pid" 2>/dev/null || true
+test:
+  pipeline:
+    - uses: test/help-check
+      with:
+        bins: |
+          greetd
+          agreety
+    - name: config, PAM and sysusers installed
+      runs: |
+        set -eu
+        stat /etc/greetd/config.toml
+        stat /etc/pam.d/greetd
+        stat /usr/lib/systemd/system/greetd.service
+        grep -F display-manager.service /usr/lib/systemd/system/greetd.service
+        grep -F greeter /usr/lib/sysusers.d/greetd.conf

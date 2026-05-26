@@ -1,0 +1,9 @@
+#%PAM-1.0
+# greetd authenticates the greeter and then the chosen user session.
+# Modelled on Wolfi's /etc/pam.d/login; base-session pulls in
+# pam_systemd.so so logind registers the session and grants seat/device
+# access.
+auth      include   base-auth
+account   include   base-account
+password  include   base-password
+session   include   base-session
