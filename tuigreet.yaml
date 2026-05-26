@@ -1,0 +1,34 @@
+package:
+  name: tuigreet
+  version: "0.9.1"
+  epoch: 0
+  description: Graphical console greeter for greetd
+  copyright:
+    - license: GPL-3.0-only
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - cargo-auditable
+      - rust
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/apognu/tuigreet
+      tag: ${{package.version}}
+  - runs: |
+      cargo auditable build --release --jobs $(nproc)
+  - runs: |
+      install -Dm755 target/release/tuigreet "${{targets.destdir}}/usr/bin/tuigreet"
+  - uses: strip
+test:
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          tuigreet
+    - uses: test/help-check
+      with:
+        bins: |
+          tuigreet
