@@ -5,7 +5,7 @@
 # repository: https://github.com/anthropics/claude-code
 package:
   name: claude
-  version: 2.1.150
+  version: 2.1.152
   epoch: 0
   description: Claude Code, an agentic coding tool made by Anthropic
   copyright:
