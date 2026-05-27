@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: linux-firmware
+  version: "20260519"
+  epoch: 0
+  description: Firmware files for Linux
+  copyright:
+    - license: custom
+environment:
+  contents:
+    packages:
+      - busybox
+      - coreutils
+      - findutils
+      - make
+      - parallel
+      - python3
+      - rdfind
+      - zstd
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://gitlab.com/kernel-firmware/linux-firmware
+      tag: ${{package.version}}
+  - runs: |
+      set -eux
+      export ZSTD_NBTHREADS=4 ZSTD_CLEVEL=19
+      make DESTDIR="${{targets.destdir}}" FIRMWAREDIR=/usr/lib/firmware install-zst
+      # De-duplicate (explicit since 20241017): replaces dup blobs with symlinks.
+      make DESTDIR="${{targets.destdir}}" FIRMWAREDIR=/usr/lib/firmware dedup
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        test -d /usr/lib/firmware
+        # Spot-check the GPU families this previously shipped split packages for:
+        # AMD Navi 32 (RX 7900 GRE) and Intel Gen12 (Tiger/Alder Lake) microcode.
+        ls /usr/lib/firmware/amdgpu/gc_11_0_3_*.bin.zst >/dev/null
+        ls /usr/lib/firmware/i915/tgl_guc_*.bin.zst >/dev/null
+        ls /usr/lib/firmware/i915/adlp_guc_*.bin.zst >/dev/null
