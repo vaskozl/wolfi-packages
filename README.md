@@ -12,11 +12,7 @@ Renovate keeps `version:` pins fresh automatically — it needs a paired `reposi
 just build niri.yaml
 ```
 
-Built APKs land in `packages/aarch64/` or `packages/x86_64/`. Inside the Claude Code sandbox or any other unprivileged container, wrap with `unshare -r`:
-
-```sh
-unshare -r just build niri.yaml
-```
+Built APKs land in `packages/aarch64/` or `packages/x86_64/`. The recipes auto-wrap `melange` in `unshare -r` when available, so builds work unchanged inside the Claude Code sandbox or any other unprivileged container.
 
 Run `just` with no args to list all recipes.
 
