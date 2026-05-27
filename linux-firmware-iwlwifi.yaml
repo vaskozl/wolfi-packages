@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: linux-firmware-iwlwifi
+  # datasource: alpine-base packageName: linux-firmware-intel
+  version: 20260519
+  epoch: 0
+  description: Repackaged Alpine Intel iwlwifi WiFi firmware blobs
+  copyright:
+    - license: GPL-2.0-or-later
+environment:
+  contents:
+    packages:
+      - busybox
+      - wget
+      - wolfi-base
+pipeline:
+  - runs: |
+      set -eux
+      mkdir alpinepkg
+      cd alpinepkg
+      branch="edge"
+      repo="main"
+      variant="linux-firmware-intel"
+
+      wget "https://dl-cdn.alpinelinux.org/alpine/${branch}/${repo}/${{build.arch}}/${variant}-${{package.version}}-r0.apk"
+
+      for f in *.apk; do
+        tar -xzf "$f"
+      done
+  - runs: |
+      set -eux
+      out="${{targets.destdir}}"
+      install -d "$out/usr/lib/firmware/intel"
+      cp -a alpinepkg/lib/firmware/intel/iwlwifi "$out/usr/lib/firmware/intel/"
+      # legacy top-level symlinks into intel/iwlwifi/, kept for older kernels
+      cp -a alpinepkg/lib/firmware/iwlwifi-* "$out/usr/lib/firmware/"
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        test -d /usr/lib/firmware/intel/iwlwifi
+        # Common AX2xx (cc-a0) microcode must be present
+        ls /usr/lib/firmware/intel/iwlwifi/iwlwifi-cc-a0-*.ucode.zst >/dev/null
+        # Legacy top-level symlinks resolve to real blobs
+        for f in /usr/lib/firmware/iwlwifi-cc-a0-*.ucode.zst; do test -e "$f"; done
