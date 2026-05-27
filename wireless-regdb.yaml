@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Pulls the upstream source release from kernel.org and ships the
+# maintainer-signed regulatory.db + regulatory.db.p7s it contains. The .p7s is
+# a detached signature the kernel verifies against a built-in public key, so
+# the db must be shipped exactly as signed and cannot be regenerated locally.
+# Version tracking stays on alpine-base: upstream tags are master-YYYY-MM-DD
+# while releases use the dotted YYYY.MM.DD used here, which Alpine mirrors.
+# datasource: alpine-base packageName: wireless-regdb
+package:
+  name: wireless-regdb
+  version: 2025.10.07
+  epoch: 0
+  description: Central Regulatory Domain Database
+  copyright:
+    - license: ISC
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - uses: fetch
+    with:
+      uri: https://www.kernel.org/pub/software/network/wireless-regdb/wireless-regdb-${{package.version}}.tar.xz
+      expected-sha256: d4c872a44154604c869f5851f7d21d818d492835d370af7f58de8847973801c3
+  - runs: |
+      set -eu
+      install -Dm644 -t "${{targets.destdir}}"/usr/lib/firmware \
+        regulatory.db \
+        regulatory.db.p7s
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        test -s /usr/lib/firmware/regulatory.db
+        test -s /usr/lib/firmware/regulatory.db.p7s
+        # regulatory.db begins with the "RGDB" magic; proves real db content,
+        # not a truncated/empty file.
+        head -c4 /usr/lib/firmware/regulatory.db | grep -qF RGDB
