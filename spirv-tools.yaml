@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: spirv-tools
+  version: "2026.2"
+  epoch: 0
+  description: API and commands for processing SPIR-V modules
+  copyright:
+    - license: Apache-2.0
+  target-architecture:
+    - x86_64
+environment:
+  contents:
+    packages:
+      - build-base
+      - cmake
+      - python-3.13
+      - samurai
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/KhronosGroup/SPIRV-Tools
+      tag: v${{package.version}}
+  - uses: git-checkout
+    with:
+      repository: https://github.com/KhronosGroup/SPIRV-Headers
+      # Must match spirv_headers_revision in SPIRV-Tools' DEPS for this tag.
+      expected-commit: ad9184e76a66b1001c29db9b0a3e87f646c64de0
+      destination: external/spirv-headers
+  - runs: |
+      set -eu
+      cmake -B build -G Ninja \
+        -DCMAKE_BUILD_TYPE=MinSizeRel \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DBUILD_SHARED_LIBS=ON \
+        -DSPIRV_TOOLS_BUILD_STATIC=OFF \
+        -DSPIRV_WERROR=OFF \
+        -DSPIRV_SKIP_TESTS=ON \
+        -DSPIRV-Headers_SOURCE_DIR="$PWD/external/spirv-headers"
+      cmake --build build
+      DESTDIR="${{targets.destdir}}" cmake --install build
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-dev
+    description: ${{package.name}} development files
+    pipeline:
+      - uses: split/dev
+    dependencies:
+      runtime:
+        - ${{package.name}}
+    test:
+      pipeline:
+        - uses: test/pkgconf
+        - name: SPIRV-Tools satisfies the Mesa version floor
+          runs: |
+            set -eu
+            pkgconf --atleast-version=2024.1 SPIRV-Tools
+test:
+  pipeline:
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
+    - uses: test/ver-check
+      with:
+        bins: |
+          spirv-as
+          spirv-val
+          spirv-opt
+    - name: assemble and validate a trivial module
+      runs: |
+        set -eu
+        printf 'OpCapability Shader\nOpMemoryModel Logical GLSL450\n' | spirv-as - -o /tmp/t.spv
+        spirv-val /tmp/t.spv
