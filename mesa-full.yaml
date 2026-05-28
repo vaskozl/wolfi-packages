@@ -1,0 +1,189 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: mesa-full
+  version: "26.1.1"
+  epoch: 0
+  description: Mesa DRI OpenGL/Vulkan, single unsplit package with per-arch drivers (Intel on x86_64, Asahi/ARM on aarch64)
+  copyright:
+    - license: MIT AND SGI-B-2.0 AND BSL-1.0
+  target-architecture:
+    - x86_64
+  dependencies:
+    # Win over Wolfi's split mesa for every name it provides.
+    provider-priority: "10"
+    provides:
+      - mesa=${{package.full-version}}
+      - mesa-egl=${{package.full-version}}
+      - mesa-gbm=${{package.full-version}}
+      - mesa-gl=${{package.full-version}}
+      - mesa-gles=${{package.full-version}}
+      - mesa-glx=${{package.full-version}}
+      - mesa-libgallium=${{package.full-version}}
+    runtime:
+      - libglvnd
+  resources:
+    cpu: "14"
+    memory: 13Gi
+vars:
+  llvm-ver: 19
+  py-version: "3.13"
+environment:
+  contents:
+    packages:
+      - autoconf
+      - automake
+      - bison
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - elfutils-dev
+      - expat-dev
+      - findutils
+      - flex
+      - gettext
+      - glslang-dev
+      - libdrm-dev
+      - libglvnd-dev
+      - libtool
+      - libva
+      - libva-dev
+      - libvdpau-dev
+      - libx11-dev
+      - libxcb-dev
+      - libxdamage-dev
+      - libxext-dev
+      - libxfixes-dev
+      - libxml2-dev
+      - libxrandr
+      - libxrandr-dev
+      - libxrender
+      - libxrender-dev
+      - libxshmfence-dev
+      - libxxf86vm-dev
+      - llvm-${{vars.llvm-ver}}
+      - llvm-${{vars.llvm-ver}}-dev
+      - meson
+      - py${{vars.py-version}}-mako
+      - py${{vars.py-version}}-markupsafe
+      - py${{vars.py-version}}-pygments
+      - py${{vars.py-version}}-pyyaml
+      - py${{vars.py-version}}-setuptools
+      - python-${{vars.py-version}}
+      - systemd-dev
+      - vulkan-loader
+      - wayland-dev
+      # -dev ships wayland-protocols.pc; without it mesa downloads+installs a
+      # bundled wayland-protocols subproject, leaking its files into our package.
+      - wayland-protocols-dev
+      - xorgproto
+      - zlib-dev
+      - zstd-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://gitlab.freedesktop.org/mesa/mesa
+      tag: mesa-${{package.version}}
+  - runs: |
+      export CFLAGS="$CFLAGS -O2 -g1"
+      export CXXFLAGS="$CXXFLAGS -O2 -g1"
+      export CPPFLAGS="$CPPFLAGS -O2 -g1"
+
+      _dri_driverdir=/usr/lib/xorg/modules/dri
+      # Per-arch driver sets, mirroring Alpine's mesa APKBUILD.
+      case "$(uname -m)" in
+      x86_64)
+        # Intel: i915 (Gen2-3), crocus (Gen4-7), iris (Gen8+, Iris Xe / 13th gen).
+        # ANV Vulkan: intel (Gen9+), intel_hasvk (Gen8-9). svga = VMware, virgl/virtio = guest.
+        _gallium_drivers="r300,r600,radeonsi,nouveau,llvmpipe,virgl,zink,svga,i915,iris,crocus"
+        _vulkan_drivers="amd,swrast,intel,intel_hasvk,virtio"
+        _vulkan_layers="device-select,overlay,intel-nullhw"
+        ;;
+      aarch64)
+        # asahi (Apple GPU) is DISABLED: it needs `libclc` for its libagx helper
+        # shaders, which Wolfi doesn't package. Confirmed by build:
+        # "meson.build:945: ERROR: Dependency \"libclc\" not found". To enable,
+        # package libclc (+ SPIRV-LLVM-Translator) and append `,asahi` below.
+        # (Alpine's other ARM drivers panfrost/NVK additionally need rust.)
+        _gallium_drivers="r300,r600,radeonsi,nouveau,llvmpipe,virgl,zink"
+        _vulkan_drivers="amd,swrast"
+        _vulkan_layers="device-select,overlay"
+        ;;
+      esac
+
+      meson \
+        --prefix=/usr \
+        -Ddri-drivers-path=$_dri_driverdir \
+        -Dgallium-drivers=$_gallium_drivers \
+        -Dvulkan-drivers=$_vulkan_drivers \
+        -Dvulkan-layers=$_vulkan_layers \
+        -Dplatforms=x11,wayland \
+        -Dllvm=enabled \
+        -Dglvnd=true \
+        -Dshared-llvm=enabled \
+        -Dshared-glapi=enabled \
+        -Dgbm=enabled \
+        -Dglx=dri \
+        -Dopengl=true \
+        -Dgles1=enabled \
+        -Dgles2=enabled \
+        -Degl=enabled \
+        -Dgallium-extra-hud=true \
+        -Dgallium-va=enabled \
+        -Damdgpu-virtio=true \
+        -Dallow-kcmp=enabled \
+        -Dexpat=enabled \
+        -Dxmlconfig=enabled \
+        -Dxlib-lease=enabled \
+        -Dshader-cache=enabled \
+        -Dzstd=enabled \
+        -Dvideo-codecs=all \
+        -Dbackend_max_links=2 \
+        -Db_ndebug=true \
+        -Db_lto=false \
+        . output
+
+      meson configure --no-pager output
+      meson compile -C output
+
+      DESTDIR="${{targets.destdir}}" meson install --no-rebuild -C output
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-dev
+    description: ${{package.name}} development headers and libraries
+    pipeline:
+      - uses: split/dev
+    dependencies:
+      # Provide mesa-dev (so it can't be co-installed with Wolfi's mesa-dev and
+      # the set stays coherent) but NOT at raised priority: mesa headers are
+      # driver-agnostic, so trumping Wolfi's mesa-dev gives builds nothing while
+      # dragging the fat runtime into build envs. Let Wolfi's lean mesa-dev win.
+      provides:
+        - mesa-dev=${{package.full-version}}
+      runtime:
+        - libglvnd-dev
+        - ${{package.name}}=${{package.full-version}}
+    test:
+      pipeline:
+        - uses: test/pkgconf
+test:
+  pipeline:
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
+    - name: Per-arch GPU drivers present
+      runs: |
+        set -eu
+        # Software rasterizer Vulkan ICD ships on every arch.
+        test -e /usr/share/vulkan/icd.d/lvp_icd.*.json
+        case "$(uname -m)" in
+        x86_64)
+          # Intel Gallium (Iris Xe / 13th gen) + ANV Vulkan ICD.
+          test -e /usr/lib/xorg/modules/dri/iris_dri.so
+          test -e /usr/lib/libvulkan_intel.so
+          test -e /usr/share/vulkan/icd.d/intel_icd.x86_64.json
+          ;;
+        aarch64)
+          # Base set only (no Apple/ARM HW drivers yet — need libclc/rust).
+          test -e /usr/lib/xorg/modules/dri/radeonsi_dri.so
+          ;;
+        esac
