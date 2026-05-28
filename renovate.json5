@@ -128,6 +128,13 @@
       // matches melange's `version` field (epoch lives separately).
       "matchDatasources": ["custom.alpine-base"],
       "extractVersion": "^(?<version>\\d+(?:\\.\\d+)*)"
+    },
+    {
+      // Pin SPIRV-LLVM-Translator to the LLVM 19 release line so it
+      // stays ABI-compatible with Wolfi's llvm-19 and mesa-full's llvm-ver: 19.
+      "matchDatasources": ["github-tags"],
+      "matchPackageNames": ["KhronosGroup/SPIRV-LLVM-Translator"],
+      "allowedVersions": "/^19\\./"
     }
   ]
 }
