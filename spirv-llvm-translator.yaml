@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: spirv-llvm-translator
+  version: "19.1.18"
+  epoch: 0
+  description: Khronos SPIR-V translator for the LLVM toolchain (LLVM 19)
+  copyright:
+    - license: NCSA AND Apache-2.0 WITH LLVM-exception
+  target-architecture:
+    - x86_64
+  dependencies:
+    runtime:
+      - libstdc++
+environment:
+  contents:
+    packages:
+      - build-base
+      - clang-19
+      - cmake
+      - libclang-cpp-19
+      - libxml2-dev
+      - llvm-19-dev
+      - samurai
+      - spirv-headers
+      - spirv-tools-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/KhronosGroup/SPIRV-LLVM-Translator
+      tag: v${{package.version}}
+  - runs: |
+      CC=clang CXX=clang++ cmake -B build -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DBUILD_SHARED_LIBS=True \
+        -DLLVM_SPIRV_INCLUDE_TESTS=OFF \
+        -DLLVM_EXTERNAL_SPIRV_HEADERS_SOURCE_DIR=/usr/include/spirv
+      cmake --build build
+      DESTDIR="${{targets.destdir}}" cmake --install build
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-dev
+    description: ${{package.name}} development libraries and headers
+    pipeline:
+      - uses: split/dev
+    dependencies:
+      runtime:
+        - ${{package.name}}
+    test:
+      pipeline:
+        - uses: test/pkgconf
+test:
+  pipeline:
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
+    - name: llvm-spirv runs
+      runs: |
+        set -eu
+        llvm-spirv --version
