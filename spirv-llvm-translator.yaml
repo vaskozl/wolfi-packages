@@ -21,13 +21,18 @@ environment:
       - libxml2-dev
       - llvm-19-dev
       - samurai
-      - spirv-headers
       - spirv-tools-dev
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/KhronosGroup/SPIRV-LLVM-Translator
       tag: v${{package.version}}
+  - uses: git-checkout
+    with:
+      repository: https://github.com/KhronosGroup/SPIRV-Headers
+      expected-commit: 9268f3057354a2cb65991ba5f38b16d81e803692
+      depth: -1
+      destination: spirv-headers
   - runs: |
       CC=clang CXX=clang++ cmake -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
@@ -35,7 +40,8 @@ pipeline:
         -DCMAKE_INSTALL_LIBDIR=lib \
         -DBUILD_SHARED_LIBS=True \
         -DLLVM_SPIRV_INCLUDE_TESTS=OFF \
-        -DLLVM_EXTERNAL_SPIRV_HEADERS_SOURCE_DIR=/usr/include/spirv
+        -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm \
+        -DLLVM_EXTERNAL_SPIRV_HEADERS_SOURCE_DIR="$PWD/spirv-headers"
       cmake --build build
       DESTDIR="${{targets.destdir}}" cmake --install build
   - uses: strip
