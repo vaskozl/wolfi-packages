@@ -135,6 +135,15 @@
       "matchDatasources": ["github-tags"],
       "matchPackageNames": ["KhronosGroup/SPIRV-LLVM-Translator"],
       "allowedVersions": "/^19\\./"
+    },
+    {
+      // Track libclc against Wolfi's llvm-19 apk (its ABI peer); strip the
+      // apk -rN suffix and cap to the 19.x line so it stays matched to
+      // mesa-full's llvm-ver: 19 and the spirv-llvm-translator.
+      "matchDatasources": ["custom.wolfi-base"],
+      "matchPackageNames": ["llvm-19"],
+      "extractVersion": "^(?<version>\\d+(?:\\.\\d+)*)",
+      "allowedVersions": "/^19\\./"
     }
   ]
 }
