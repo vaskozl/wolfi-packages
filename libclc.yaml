@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: libclc
+  # datasource: wolfi-base packageName: llvm-19
+  version: "19.1.7"
+  epoch: 0
+  description: OpenCL C library implementation for the LLVM toolchain (LLVM 19)
+  copyright:
+    - license: Apache-2.0 WITH LLVM-exception
+  target-architecture:
+    - x86_64
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - clang-19
+      - cmake
+      - llvm-19-dev
+      - python-3.13
+      - samurai
+      - spirv-llvm-translator
+pipeline:
+  - uses: fetch
+    with:
+      uri: https://github.com/llvm/llvm-project/releases/download/llvmorg-${{package.version}}/llvm-project-${{package.version}}.src.tar.xz
+      expected-sha256: 82401fea7b79d0078043f7598b835284d6650a75b93e64b6f761ea7b63097501
+  - runs: |
+      set -eu
+      cmake -B build -G Ninja -S libclc \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DLIBCLC_TARGETS_TO_BUILD="spirv-mesa3d-;spirv64-mesa3d-" \
+        -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm \
+        -DLLVM_SPIRV=/usr/bin/llvm-spirv
+      cmake --build build
+      DESTDIR="${{targets.destdir}}" cmake --install build
+test:
+  pipeline:
+    - uses: test/pkgconf
+    - name: pkgconf resolves libclc and SPIR-V libraries are present
+      runs: |
+        set -eu
+        pkgconf --exists libclc
+        pkgconf --modversion libclc
+        test -f /usr/share/clc/spirv-mesa3d-.spv
+        test -f /usr/share/clc/spirv64-mesa3d-.spv
