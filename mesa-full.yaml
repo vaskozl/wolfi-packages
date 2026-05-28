@@ -89,26 +89,9 @@ pipeline:
       export CPPFLAGS="$CPPFLAGS -O2 -g1"
 
       _dri_driverdir=/usr/lib/xorg/modules/dri
-      # Per-arch driver sets, mirroring Alpine's mesa APKBUILD.
-      case "$(uname -m)" in
-      x86_64)
-        # Intel: i915 (Gen2-3), crocus (Gen4-7), iris (Gen8+, Iris Xe / 13th gen).
-        # ANV Vulkan: intel (Gen9+), intel_hasvk (Gen8-9). svga = VMware, virgl/virtio = guest.
-        _gallium_drivers="r300,r600,radeonsi,nouveau,llvmpipe,virgl,zink,svga,i915,iris,crocus"
-        _vulkan_drivers="amd,swrast,intel,intel_hasvk,virtio"
-        _vulkan_layers="device-select,overlay,intel-nullhw"
-        ;;
-      aarch64)
-        # asahi (Apple GPU) is DISABLED: it needs `libclc` for its libagx helper
-        # shaders, which Wolfi doesn't package. Confirmed by build:
-        # "meson.build:945: ERROR: Dependency \"libclc\" not found". To enable,
-        # package libclc (+ SPIRV-LLVM-Translator) and append `,asahi` below.
-        # (Alpine's other ARM drivers panfrost/NVK additionally need rust.)
-        _gallium_drivers="r300,r600,radeonsi,nouveau,llvmpipe,virgl,zink"
-        _vulkan_drivers="amd,swrast"
-        _vulkan_layers="device-select,overlay"
-        ;;
-      esac
+      _gallium_drivers="r300,r600,radeonsi,nouveau,llvmpipe,virgl,zink,svga,i915,iris,crocus"
+      _vulkan_drivers="amd,swrast,virtio"
+      _vulkan_layers="device-select,overlay"
 
       meson \
         --prefix=/usr \
