@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Ships the curated multi-version firmware bundle from upstream's GitHub
+# release asset; the bare git tree only has raw per-version dirs that the
+# release script merges, so it cannot be reproduced via git-checkout.
+# datasource: github-releases
+# repository: https://github.com/thesofproject/sof-bin
+package:
+  name: sof-firmware
+  version: "2025.12.2"
+  epoch: 0
+  description: Sound Open Firmware (SOF) for Intel audio DSPs
+  copyright:
+    - license: BSD-3-Clause AND MIT AND ISC
+  target-architecture:
+    - x86_64
+environment:
+  contents:
+    packages:
+      - busybox
+      - ca-certificates-bundle
+      - curl
+pipeline:
+  - runs: |
+      set -eu
+      curl -sfL -o sof-bin.tar.gz \
+        "https://github.com/thesofproject/sof-bin/releases/download/v${{package.version}}/sof-bin-${{package.version}}.tar.gz"
+      tar xzf sof-bin.tar.gz
+      cd "sof-bin-${{package.version}}"
+
+      # Firmware blobs + topologies. cp -a preserves the sof-ace-tplg ->
+      # sof-ipc4-tplg compatibility symlink that the kernel expects.
+      install -d "${{targets.destdir}}/usr/lib/firmware/intel"
+      cp -a sof* "${{targets.destdir}}/usr/lib/firmware/intel/"
+
+      # Licences and READMEs (split into -doc below).
+      install -d "${{targets.destdir}}/usr/share/doc/${{package.name}}"
+      install -m644 LICENCE.* Notice.* README* \
+        "${{targets.destdir}}/usr/share/doc/${{package.name}}/"
+subpackages:
+  - name: "${{package.name}}-doc"
+    pipeline:
+      - uses: split/alldocs
+    description: Sound Open Firmware licences and READMEs
+    test:
+      pipeline:
+        - uses: test/docs
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        fw=/usr/lib/firmware/intel
+        # IPC3 DSP firmware images (.ri) and their topologies (.tplg).
+        find "$fw/sof" -name '*.ri' | grep -q .
+        find "$fw/sof-tplg" -name '*.tplg' | grep -q .
+        # IPC4 firmware for Meteor Lake and newer Intel platforms.
+        find "$fw/sof-ipc4" -name '*.ri' | grep -q .
+        # The sof-ace-tplg compatibility symlink must resolve to a dir.
+        test -d "$fw/sof-ace-tplg"
