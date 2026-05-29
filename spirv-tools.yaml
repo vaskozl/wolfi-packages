@@ -38,7 +38,9 @@ pipeline:
         -DSPIRV_WERROR=OFF \
         -DSPIRV_SKIP_TESTS=ON \
         -DSPIRV-Headers_SOURCE_DIR="$PWD/external/spirv-headers"
-      cmake --build build
+      # Serial build: the RAM-limited build cgroup exposes all host cores, so an
+      # unbounded ninja runs one compile per core and OOMs. -j1 stays in budget.
+      cmake --build build -j1
       DESTDIR="${{targets.destdir}}" cmake --install build
   - uses: strip
 subpackages:
@@ -50,11 +52,16 @@ subpackages:
       runtime:
         - ${{package.name}}
     test:
+      environment:
+        contents:
+          packages:
+            - pkgconf
       pipeline:
-        - uses: test/pkgconf
-        - name: SPIRV-Tools satisfies the Mesa version floor
+        - name: SPIRV-Tools resolves and satisfies the Mesa version floor
           runs: |
             set -eu
+            pkgconf --exists SPIRV-Tools
+            pkgconf --modversion SPIRV-Tools
             pkgconf --atleast-version=2024.1 SPIRV-Tools
 test:
   pipeline:
@@ -70,5 +77,5 @@ test:
     - name: assemble and validate a trivial module
       runs: |
         set -eu
-        printf 'OpCapability Shader\nOpMemoryModel Logical GLSL450\n' | spirv-as - -o /tmp/t.spv
+        printf 'OpCapability Shader\nOpCapability Linkage\nOpMemoryModel Logical GLSL450\n' | spirv-as - -o /tmp/t.spv
         spirv-val /tmp/t.spv
