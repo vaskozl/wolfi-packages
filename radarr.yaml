@@ -80,7 +80,16 @@ pipeline:
   - uses: strip
 test:
   pipeline:
-    - name: Verify radarr installation
+    - name: Verify radarr starts and serves
       runs: |
         set -eu
-        radarr --version
+        data="$(mktemp -d)"
+        /usr/lib/radarr/bin/Radarr -nobrowser -data="$data" &
+        pid=$!
+        ok=0
+        for i in $(seq 1 60); do
+          if wget -qO- http://127.0.0.1:7878/ping 2>/dev/null | grep -qF OK; then ok=1; break; fi
+          sleep 2
+        done
+        kill "$pid" 2>/dev/null || true
+        [ "$ok" -eq 1 ]
