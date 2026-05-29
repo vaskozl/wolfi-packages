@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: glslang
+  version: "16.3.0"
+  epoch: 0
+  description: Khronos reference front-end for GLSL/ESSL and SPIR-V generator
+  copyright:
+    - license: BSD-3-Clause AND Apache-2.0 AND MIT AND GPL-3.0-or-later
+  target-architecture:
+    - x86_64
+  dependencies:
+    runtime:
+      - spirv-tools
+environment:
+  contents:
+    packages:
+      - bison
+      - build-base
+      - cmake
+      - python-3.13
+      - samurai
+      - spirv-tools-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/KhronosGroup/glslang
+      tag: ${{package.version}}
+  - runs: |
+      set -eu
+      cmake -B build -G Ninja \
+        -DCMAKE_BUILD_TYPE=MinSizeRel \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DBUILD_SHARED_LIBS=ON \
+        -DALLOW_EXTERNAL_SPIRV_TOOLS=ON \
+        -DENABLE_CTEST=OFF
+      # Serial build: the RAM-limited build cgroup exposes all host cores, so an
+      # unbounded ninja runs one compile per core and OOMs. -j1 stays in budget.
+      cmake --build build -j1
+      DESTDIR="${{targets.destdir}}" cmake --install build
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-dev
+    description: ${{package.name}} development files
+    pipeline:
+      - uses: split/dev
+    dependencies:
+      runtime:
+        - ${{package.name}}
+    test:
+      pipeline:
+        - name: dev ships headers and the CMake package config
+          runs: |
+            set -eu
+            test -f /usr/include/glslang/Public/ShaderLang.h
+            test -f /usr/lib/cmake/glslang/glslang-config.cmake
+test:
+  pipeline:
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
+    - uses: test/ver-check
+      with:
+        bins: |
+          glslangValidator
+    - name: glslangValidator accepts --no-link (the mesa Intel-Vulkan float64 path)
+      runs: |
+        set -eu
+        # mesa's glsl2spirv.py appends --no-link when building the float64 SPIR-V
+        # library; this flag landed in glslang 14.0.0 and is the version floor we
+        # package for. Wolfi's older glslang rejects it.
+        # --no-link emits a library module (no main, unused functions kept),
+        # exactly like mesa's float64.glsl helper library.
+        printf '#version 450\nfloat add(float a, float b) { return a + b; }\n' > /tmp/t.vert
+        glslangValidator --no-link -V /tmp/t.vert -o /tmp/t.spv
+        test -s /tmp/t.spv
