@@ -293,6 +293,10 @@ Build envs accumulate cruft from copy-paste. Trim aggressively.
 
 `just lint` strips redundant test env entries automatically.
 
+### Build parallelism (OOM avoidance)
+
+The build cgroup (local bubblewrap and CI alike) is RAM-limited but exposes all host cores. Build tools that default to one job per core (`ninja`, `make -j`, `cargo`) then run a dozen parallel compiles and OOM on heavy C/C++ packages. Cap parallelism explicitly: `cmake --build build -j1` (or a small fixed `-j`), `make -j2`, etc. Prefer serial for large C++ trees (spirv-tools, mesa); the wall-clock cost is acceptable, an OOM-killed build is not.
+
 ### Family rules
 
 - **Pure-Perl modules (no XS)**: only `busybox` + `perl` (+ explicit `perl-*` deps the module declares). Drop `autoconf`/`automake`/`build-base`/`ca-certificates-bundle`.

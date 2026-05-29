@@ -3,7 +3,7 @@ package:
   name: libclc
   # datasource: wolfi-base packageName: llvm-19
   version: "19.1.7"
-  epoch: 0
+  epoch: 1 # rebuild for spirv-llvm-translator 19.1.18
   description: OpenCL C library implementation for the LLVM toolchain (LLVM 19)
   copyright:
     - license: Apache-2.0 WITH LLVM-exception

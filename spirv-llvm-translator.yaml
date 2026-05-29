@@ -2,7 +2,7 @@
 package:
   name: spirv-llvm-translator
   version: "19.1.18"
-  epoch: 0
+  epoch: 1 # rebuild against local spirv-tools
   description: Khronos SPIR-V translator for the LLVM toolchain (LLVM 19)
   copyright:
     - license: NCSA AND Apache-2.0 WITH LLVM-exception
