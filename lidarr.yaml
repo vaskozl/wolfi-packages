@@ -90,7 +90,8 @@ test:
         pid=$!
         ok=0
         for i in $(seq 1 60); do
-          if wget -qO- http://127.0.0.1:8686/ping 2>/dev/null | grep -qF OK; then ok=1; break; fi
+          if wget -qO- "http://[::1]:8686/ping" 2>/dev/null | grep -qF OK \
+            || wget -qO- http://127.0.0.1:8686/ping 2>/dev/null | grep -qF OK; then ok=1; break; fi
           sleep 2
         done
         kill "$pid" 2>/dev/null || true
