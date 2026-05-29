@@ -26,5 +26,7 @@ pipeline:
   - uses: strip
 test:
   pipeline:
-    - name: Verify kromgo installation, please improve the test as needed
-      runs: kromgo -help || exit 1
+    - uses: test/help-check
+      with:
+        bins: |
+          kromgo

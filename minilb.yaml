@@ -23,5 +23,7 @@ pipeline:
   - uses: strip
 test:
   pipeline:
-    - name: Verify minilb installation.
-      runs: minilb -h || exit 1
+    - uses: test/help-check
+      with:
+        bins: |
+          minilb

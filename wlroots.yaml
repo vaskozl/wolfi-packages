@@ -64,9 +64,7 @@ subpackages:
         - wlroots
     test:
       pipeline:
-        - runs: |
-            set -eu
-            stat /usr/include/wlroots-0.20/wlr/render/wlr_renderer.h
+        - uses: test/pkgconf
   - name: ${{package.name}}-static
     description: Static libraries for ${{package.name}}
     pipeline:

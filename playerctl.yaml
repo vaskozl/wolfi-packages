@@ -40,7 +40,11 @@ subpackages:
     description: playerctl debug symbols
 test:
   pipeline:
-    - runs: |
-        set -eu
-        playerctl --version
-        playerctl --help || true
+    - uses: test/ver-check
+      with:
+        bins: |
+          playerctl
+    - uses: test/help-check
+      with:
+        bins: |
+          playerctl

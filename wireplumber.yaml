@@ -70,9 +70,7 @@ subpackages:
         - wireplumber-libs
     test:
       pipeline:
-        - runs: |
-            set -eu
-            stat /usr/include/wireplumber-0.5/wp/wp.h
+        - uses: test/pkgconf
 
   - name: ${{package.name}}-doc
     description: WirePlumber documentation

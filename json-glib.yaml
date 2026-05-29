@@ -40,10 +40,7 @@ subpackages:
         - json-glib
     test:
       pipeline:
-        - runs: |
-            set -eu
-            stat /usr/lib/pkgconfig/json-glib-1.0.pc
-            stat /usr/include/json-glib-1.0/json-glib/json-glib.h
+        - uses: test/pkgconf
 test:
   pipeline:
     - uses: test/tw/ldd-check

@@ -33,5 +33,4 @@ test:
         stat /etc/hosts
         stat /etc/nftables.nft
         stat /etc/blocky.yaml
-        # Verify command is executable
-        /usr/bin/set-irq-affinity --help || true
+        stat /usr/bin/set-irq-affinity

@@ -76,11 +76,12 @@ For config-only packages, the `test:` section in `pinewall-config.yaml`:
 test:
   pipeline:
     - runs: |
+        set -eu
         stat /etc/hostname
         stat /etc/hosts
         stat /etc/nftables.nft
         stat /etc/blocky.yaml
-        /usr/bin/set-irq-affinity --help || true
+        stat /usr/bin/set-irq-affinity
 ```
 
 ## Justfile Recipes

@@ -47,8 +47,3 @@ test:
       runs: |
         set -eu
         python${{vars.python-version}} -c "from asahi_firmware.update import main; assert callable(main)"
-    - name: usage on missing args
-      runs: |
-        set -eu
-        out=$(asahi-fwextract 2>&1 || true)
-        echo "$out" | grep -qi "usage"

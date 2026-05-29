@@ -77,5 +77,7 @@ pipeline:
   - uses: strip
 test:
   pipeline:
-    - name: Verify prowlarr installation, please improve the test as needed
-      runs: prowlarr --version || exit 1
+    - name: Verify prowlarr installation
+      runs: |
+        set -eu
+        prowlarr --version
