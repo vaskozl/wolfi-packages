@@ -82,7 +82,18 @@ pipeline:
   - uses: strip
 test:
   pipeline:
-    - name: Verify lidarr installation, please improve the test as needed
+    - name: Verify lidarr starts and serves
       runs: |
         set -eu
-        lidarr --version
+        data="$(mktemp -d)"
+        log="$(mktemp)"
+        /usr/lib/lidarr/bin/Lidarr -nobrowser -data="$data" >"$log" 2>&1 &
+        pid=$!
+        ok=0
+        for i in $(seq 1 60); do
+          if grep -qF "Application started" "$log"; then ok=1; break; fi
+          kill -0 "$pid" 2>/dev/null || break
+          sleep 2
+        done
+        kill "$pid" 2>/dev/null || true
+        [ "$ok" -eq 1 ]
