@@ -2,7 +2,7 @@
 package:
   name: powertop
   version: "2.15"
-  epoch: 0
+  epoch: 1 # add service subpackage
   description: Power consumption monitor and tuner
   copyright:
     - license: GPL-2.0-only
@@ -54,6 +54,25 @@ subpackages:
           mv "${{targets.destdir}}/usr/share/bash-completion/completions/powertop" \
              "${{targets.subpkgdir}}/usr/share/bash-completion/completions/powertop"
     description: powertop bash completion
+  - name: ${{package.name}}-service
+    description: systemd service that applies powertop --auto-tune on boot
+    dependencies:
+      runtime:
+        - powertop
+    pipeline:
+      - runs: |
+          set -eu
+          install -Dm644 powertop.service \
+            "${{targets.subpkgdir}}/usr/lib/systemd/system/powertop.service"
+          sed -i 's|/usr/sbin/powertop|/usr/bin/powertop|' \
+            "${{targets.subpkgdir}}/usr/lib/systemd/system/powertop.service"
+    test:
+      pipeline:
+        - uses: test/verify-service
+        - runs: |
+            set -eu
+            grep -F 'ExecStart=/usr/bin/powertop --auto-tune' \
+              /usr/lib/systemd/system/powertop.service
 test:
   pipeline:
     - uses: test/ver-check
