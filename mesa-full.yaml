@@ -2,8 +2,8 @@
 package:
   name: mesa-full
   version: "26.1.1"
-  epoch: 0
-  description: Mesa DRI OpenGL/Vulkan, single unsplit package with per-arch drivers (Intel on x86_64, Asahi/ARM on aarch64)
+  epoch: 1
+  description: Mesa DRI OpenGL/Vulkan, single unsplit package with Intel drivers (x86_64)
   copyright:
     - license: MIT AND SGI-B-2.0 AND BSL-1.0
   target-architecture:
@@ -36,12 +36,15 @@ environment:
       - build-base
       - busybox
       - ca-certificates-bundle
+      - clang-${{vars.llvm-ver}}
       - elfutils-dev
       - expat-dev
       - findutils
       - flex
       - gettext
       - glslang-dev
+      - libclang-cpp-${{vars.llvm-ver}}
+      - libclc
       - libdrm-dev
       - libglvnd-dev
       - libtool
@@ -69,6 +72,8 @@ environment:
       - py${{vars.py-version}}-pyyaml
       - py${{vars.py-version}}-setuptools
       - python-${{vars.py-version}}
+      - spirv-llvm-translator-dev
+      - spirv-tools-dev
       - systemd-dev
       - vulkan-loader
       - wayland-dev
@@ -90,8 +95,8 @@ pipeline:
 
       _dri_driverdir=/usr/lib/xorg/modules/dri
       _gallium_drivers="r300,r600,radeonsi,nouveau,llvmpipe,virgl,zink,svga,i915,iris,crocus"
-      _vulkan_drivers="amd,swrast,virtio"
-      _vulkan_layers="device-select,overlay"
+      _vulkan_drivers="amd,swrast,intel,intel_hasvk,virtio"
+      _vulkan_layers="device-select,overlay,intel-nullhw"
 
       meson \
         --prefix=/usr \
@@ -153,20 +158,14 @@ test:
     - uses: test/ldd-check
       with:
         packages: ${{package.name}}
-    - name: Per-arch GPU drivers present
+    - name: GPU drivers present
       runs: |
         set -eu
-        # Software rasterizer Vulkan ICD ships on every arch.
+        # Software rasterizer Vulkan ICD.
         test -e /usr/share/vulkan/icd.d/lvp_icd.*.json
-        case "$(uname -m)" in
-        x86_64)
-          # Intel Gallium (Iris Xe / 13th gen) + ANV Vulkan ICD.
-          test -e /usr/lib/xorg/modules/dri/iris_dri.so
-          test -e /usr/lib/libvulkan_intel.so
-          test -e /usr/share/vulkan/icd.d/intel_icd.x86_64.json
-          ;;
-        aarch64)
-          # Base set only (no Apple/ARM HW drivers yet — need libclc/rust).
-          test -e /usr/lib/xorg/modules/dri/radeonsi_dri.so
-          ;;
-        esac
+        # Intel Gallium (Iris Xe / 13th gen) + ANV/HASVK Vulkan ICDs.
+        test -e /usr/lib/xorg/modules/dri/iris_dri.so
+        test -e /usr/lib/libvulkan_intel.so
+        test -e /usr/share/vulkan/icd.d/intel_icd.x86_64.json
+        test -e /usr/lib/libvulkan_intel_hasvk.so
+        test -e /usr/share/vulkan/icd.d/intel_hasvk_icd.x86_64.json
