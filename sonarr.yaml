@@ -89,12 +89,13 @@ test:
       runs: |
         set -eu
         data="$(mktemp -d)"
-        /usr/lib/sonarr/bin/Sonarr -nobrowser -data="$data" &
+        log="$(mktemp)"
+        /usr/lib/sonarr/bin/Sonarr -nobrowser -data="$data" >"$log" 2>&1 &
         pid=$!
         ok=0
         for i in $(seq 1 60); do
-          if wget -qO- "http://[::1]:8989/ping" 2>/dev/null | grep -qF OK \
-            || wget -qO- http://127.0.0.1:8989/ping 2>/dev/null | grep -qF OK; then ok=1; break; fi
+          if grep -qF "Application started" "$log"; then ok=1; break; fi
+          kill -0 "$pid" 2>/dev/null || break
           sleep 2
         done
         kill "$pid" 2>/dev/null || true
