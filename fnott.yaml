@@ -78,3 +78,8 @@ test:
     - runs: |
         set -eu
         stat /usr/lib/systemd/user/fnott.service
+
+update:
+  enabled: true
+  release-monitor:
+    identifier: 375603

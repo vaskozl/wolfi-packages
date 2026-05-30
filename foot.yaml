@@ -140,3 +140,8 @@ test:
         bins: |
           foot
           footclient
+
+update:
+  enabled: true
+  release-monitor:
+    identifier: 141611

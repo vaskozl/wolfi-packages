@@ -55,3 +55,8 @@ test:
         set -eu
         bootc --version | grep -F -e "${{package.version}}"
         bootc status | yq .apiVersion | grep -F -e "org.containers.bootc/v1"
+
+update:
+  enabled: true
+  github:
+    identifier: bootc-dev/bootc

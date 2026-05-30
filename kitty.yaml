@@ -165,3 +165,10 @@ test:
         infocmp xterm-kitty >/dev/null
         # Sanity: kitty should report its config path without a TTY.
         kitty +runpy 'import kitty; print(kitty.__file__)'
+
+update:
+  enabled: true
+  github:
+    identifier: kovidgoyal/kitty
+    use-tag: true
+    strip-prefix: v
