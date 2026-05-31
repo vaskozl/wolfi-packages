@@ -47,3 +47,7 @@ test:
       runs: |
         set -eu
         python${{vars.python-version}} -c "from asahi_firmware.update import main; assert callable(main)"
+
+update:
+  enabled: true
+  git: {}

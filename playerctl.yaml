@@ -48,3 +48,7 @@ test:
       with:
         bins: |
           playerctl
+
+update:
+  enabled: true
+  git: {}

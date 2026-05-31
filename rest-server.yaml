@@ -45,3 +45,7 @@ test:
         kill -0 "$pid"
         kill "$pid"
         wait "$pid" 2>/dev/null || true
+
+update:
+  enabled: true
+  git: {}

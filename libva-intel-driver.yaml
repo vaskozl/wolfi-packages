@@ -46,3 +46,7 @@ test:
     - runs: |
         set -eu
         stat /usr/lib/dri/i965_drv_video.so
+
+update:
+  enabled: true
+  git: {}

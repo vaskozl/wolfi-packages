@@ -50,3 +50,7 @@ test:
     - uses: test/ldd-check
       with:
         packages: ${{package.name}}
+
+update:
+  enabled: true
+  git: {}

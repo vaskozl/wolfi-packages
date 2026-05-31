@@ -38,3 +38,7 @@ test:
       runs: |
         set -eu
         kube-network-policies -h
+
+update:
+  enabled: true
+  git: {}

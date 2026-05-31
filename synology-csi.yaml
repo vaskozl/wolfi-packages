@@ -34,3 +34,7 @@ test:
       runs: |
         set -eu
         synology-csi-driver --help
+
+update:
+  enabled: true
+  git: {}

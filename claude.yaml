@@ -47,3 +47,8 @@ test:
       with:
         bins: |
           claude
+
+update:
+  enabled: true
+  github:
+    identifier: anthropics/claude-code

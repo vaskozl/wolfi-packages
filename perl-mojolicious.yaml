@@ -44,3 +44,7 @@ test:
         ')
         echo "$out"
         echo "$out" | grep -qF 'example.com|/path|bar'
+
+update:
+  enabled: true
+  git: {}

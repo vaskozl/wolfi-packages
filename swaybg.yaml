@@ -50,3 +50,7 @@ test:
       with:
         bins: |
           swaybg
+
+update:
+  enabled: true
+  git: {}

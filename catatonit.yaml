@@ -38,3 +38,7 @@ test:
         catatonit -- true
         # Verify catatonit forwards a non-zero child exit code.
         ! catatonit -- false
+
+update:
+  enabled: true
+  git: {}

@@ -39,3 +39,7 @@ test:
     - runs: |
         set -eu
         cage -v
+
+update:
+  enabled: true
+  git: {}

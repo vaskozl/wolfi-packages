@@ -39,3 +39,7 @@ test:
       with:
         bins: |
           anubis
+
+update:
+  enabled: true
+  git: {}

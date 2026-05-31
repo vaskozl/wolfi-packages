@@ -58,3 +58,7 @@ test:
         set -eu
         out=$(nqp-m -e 'say("ok")')
         echo "$out" | grep -Fx ok
+
+update:
+  enabled: true
+  git: {}

@@ -45,3 +45,8 @@ test:
         ')
         echo "$out"
         echo "$out" | grep -Fq 'hello path-tiny'
+
+update:
+  enabled: true
+  release-monitor:
+    identifier: 11962

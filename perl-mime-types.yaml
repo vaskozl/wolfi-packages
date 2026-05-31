@@ -44,3 +44,8 @@ test:
         ')
         echo "$out"
         echo "$out" | grep -Fq 'text/html'
+
+update:
+  enabled: true
+  release-monitor:
+    identifier: 6436

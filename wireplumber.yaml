@@ -106,3 +106,7 @@ test:
     # wireplumber is a daemon and requires a live PipeWire socket to function;
     # no headless functional invocation is possible. wpexec does accept --help:
     - runs: wpexec --help
+
+update:
+  enabled: true
+  git: {}

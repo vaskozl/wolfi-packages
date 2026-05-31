@@ -95,3 +95,7 @@ test:
         done
         kill "$pid" 2>/dev/null || true
         [ "$ok" -eq 1 ]
+
+update:
+  enabled: true
+  git: {}

@@ -53,3 +53,8 @@ test:
         echo "$out" | grep -F 'Subject: test subject'
         echo "$out" | grep -F 'multipart/mixed'
         echo "$out" | grep -F 'hello world'
+
+update:
+  enabled: true
+  release-monitor:
+    identifier: 3072

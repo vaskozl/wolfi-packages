@@ -164,3 +164,7 @@ test:
         php -l /usr/share/webapps/baikal/html/admin/install/index.php
         php -l /usr/share/webapps/baikal/html/dav.php
         php -r 'require "/usr/share/webapps/baikal/vendor/autoload.php";'
+
+update:
+  enabled: true
+  git: {}

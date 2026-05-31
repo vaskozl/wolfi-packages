@@ -33,3 +33,7 @@ test:
     - uses: test/help-check
       with:
         bins: xdg-dbus-proxy
+
+update:
+  enabled: true
+  git: {}

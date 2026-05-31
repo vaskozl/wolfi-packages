@@ -29,3 +29,7 @@ test:
       with:
         bins: |
           wolfi-scanner
+
+update:
+  enabled: true
+  git: {}

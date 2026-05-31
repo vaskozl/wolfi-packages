@@ -143,5 +143,4 @@ test:
 
 update:
   enabled: true
-  release-monitor:
-    identifier: 141611
+  git: {}

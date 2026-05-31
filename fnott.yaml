@@ -81,5 +81,4 @@ test:
 
 update:
   enabled: true
-  release-monitor:
-    identifier: 375603
+  git: {}

@@ -95,3 +95,7 @@ test:
         XML
         out=$(appstreamcli validate --no-net /tmp/test.metainfo.xml 2>&1 || true)
         echo "$out" | grep -q "org.example.Hello"
+
+update:
+  enabled: true
+  git: {}

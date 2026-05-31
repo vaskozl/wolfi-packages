@@ -20,3 +20,6 @@ test:
         # Verify base directories shipped by the package exist
         test -d /sysroot
         test -d /boot
+
+update:
+  enabled: false # no upstream monitor

@@ -86,3 +86,7 @@ test:
         echo "$out" | grep -F creds
         # Exercise a real subcommand path (no DB needed for --help on a leaf).
         maddy creds --help >/dev/null
+
+update:
+  enabled: true
+  git: {}

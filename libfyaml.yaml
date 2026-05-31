@@ -57,3 +57,7 @@ test:
         fy-tool --dump /tmp/in.yaml > /tmp/out.yaml
         grep -F 'key: value' /tmp/out.yaml
         grep -F -- '- a' /tmp/out.yaml
+
+update:
+  enabled: true
+  git: {}

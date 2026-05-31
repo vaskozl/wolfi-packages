@@ -30,3 +30,8 @@ test:
         # regulatory.db begins with the "RGDB" magic; proves real db content,
         # not a truncated/empty file.
         head -c4 /usr/lib/firmware/regulatory.db | grep -qF RGDB
+
+update:
+  enabled: true
+  release-monitor:
+    identifier: 15257

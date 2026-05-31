@@ -168,7 +168,4 @@ test:
 
 update:
   enabled: true
-  github:
-    identifier: kovidgoyal/kitty
-    use-tag: true
-    strip-prefix: v
+  git: {}

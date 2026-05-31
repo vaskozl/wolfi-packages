@@ -22,3 +22,6 @@ test:
         stat /usr/lib/sysusers.d/nori-user.conf
         stat /usr/lib/tmpfiles.d/nori-user.conf
         stat /usr/lib/systemd/system/systemd-sysusers.service.d/nori-user.conf
+
+update:
+  enabled: false # no upstream monitor

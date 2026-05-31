@@ -59,3 +59,8 @@ test:
         set -eu
         test -e /usr/lib/intel-opencl/libigdrcl.so
         grep -qF '/usr/lib/intel-opencl/libigdrcl.so' /etc/OpenCL/vendors/intel.icd
+
+update:
+  enabled: true
+  github:
+    identifier: intel/compute-runtime

@@ -73,3 +73,7 @@ test:
       runs: |
         set -eu
         sing-box version
+
+update:
+  enabled: true
+  git: {}

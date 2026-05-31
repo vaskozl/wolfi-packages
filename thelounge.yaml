@@ -92,3 +92,7 @@ test:
         set -eu
         thelounge --help
         thelounge version
+
+update:
+  enabled: true
+  git: {}

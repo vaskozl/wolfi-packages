@@ -49,3 +49,6 @@ pipeline:
         ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-lts/initramfs.img
   - runs: |
       ls -la ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-lts/
+
+update:
+  enabled: false # alpine-base datasource (alpine/wolfi-pinned)

@@ -77,3 +77,7 @@ test:
         bins: |
           bspwm
         flag: "-h"
+
+update:
+  enabled: true
+  git: {}

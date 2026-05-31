@@ -194,3 +194,7 @@ test:
         flatpak --supported-arches | grep -E '^(aarch64|x86_64)$'
         flatpak remotes
         flatpak list
+
+update:
+  enabled: true
+  git: {}

@@ -53,3 +53,7 @@ test:
         grep -q '^M1N1=' /etc/default/update-m1n1
         grep -q '^U_BOOT=' /etc/default/update-m1n1
         grep -q '^DTBS=' /etc/default/update-m1n1
+
+update:
+  enabled: true
+  git: {}

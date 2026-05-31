@@ -33,3 +33,7 @@ test:
       runs: |
         set -eu
         blocky version
+
+update:
+  enabled: true
+  git: {}

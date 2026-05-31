@@ -33,3 +33,7 @@ test:
         test -f /usr/share/m1n1/m1n1.bin
         test -f /usr/share/m1n1/m1n1.macho
         head -c4 /usr/share/m1n1/m1n1.macho | od -An -tx1 | grep -E 'cf fa ed fe|ca fe ba be|fe ed fa cf|be ba fe ca'
+
+update:
+  enabled: true
+  git: {}

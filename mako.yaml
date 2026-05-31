@@ -61,3 +61,7 @@ test:
     - runs: |
         set -eu
         stat /usr/lib/systemd/user/mako.service
+
+update:
+  enabled: true
+  git: {}

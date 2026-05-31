@@ -43,3 +43,7 @@ test:
       with:
         bins: |
           slurp
+
+update:
+  enabled: true
+  git: {}

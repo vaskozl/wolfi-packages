@@ -36,3 +36,7 @@ test:
       with:
         bins: |
           node_exporter
+
+update:
+  enabled: true
+  git: {}

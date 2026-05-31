@@ -31,3 +31,7 @@ test:
         plugin=/usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
         test -f "$plugin"
         zsh -c ". $plugin && typeset -f _zsh_autosuggest_start >/dev/null"
+
+update:
+  enabled: true
+  git: {}

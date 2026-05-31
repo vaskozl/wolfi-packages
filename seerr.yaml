@@ -145,3 +145,7 @@ test:
         set -eu
         test -x /usr/bin/seerr
         test -f /usr/lib/seerr/dist/index.js
+
+update:
+  enabled: true
+  git: {}

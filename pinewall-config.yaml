@@ -34,3 +34,7 @@ test:
         stat /etc/nftables.nft
         stat /etc/blocky.yaml
         stat /usr/bin/set-irq-affinity
+
+update:
+  enabled: true
+  git: {}

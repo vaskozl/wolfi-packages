@@ -76,3 +76,7 @@ test:
       runs: |
         set -eu
         llvm-spirv --version
+
+update:
+  enabled: true
+  git: {}

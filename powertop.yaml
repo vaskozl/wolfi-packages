@@ -87,3 +87,7 @@ test:
       runs: |
         set -eu
         powertop --help 2>&1 | grep -F -e "Usage:"
+
+update:
+  enabled: true
+  git: {}

@@ -40,3 +40,7 @@ test:
         data:
           key: value
         EOF
+
+update:
+  enabled: true
+  git: {}

@@ -55,3 +55,7 @@ test:
         printf '{"a":1,"b":[1,2,3]}' > /tmp/in.json
         json-glib-validate /tmp/in.json
         json-glib-format /tmp/in.json | grep -F '"a"'
+
+update:
+  enabled: true
+  git: {}

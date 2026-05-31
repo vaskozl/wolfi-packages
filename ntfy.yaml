@@ -73,3 +73,7 @@ test:
         # Exercise the cobra subcommand tree — fails if a subcommand isn't wired up.
         ntfy publish --help >/dev/null
         ntfy serve --help >/dev/null
+
+update:
+  enabled: true
+  git: {}

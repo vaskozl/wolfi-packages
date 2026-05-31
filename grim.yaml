@@ -46,3 +46,7 @@ test:
       with:
         bins: |
           grim
+
+update:
+  enabled: true
+  git: {}

@@ -70,3 +70,7 @@ test:
         set -eu
         test -f /etc/xdg/labwc/rc.xml
         test -f /usr/share/wayland-sessions/labwc.desktop
+
+update:
+  enabled: true
+  git: {}

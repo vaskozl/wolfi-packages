@@ -46,3 +46,7 @@ test:
       with:
         bins: |
           seatd
+
+update:
+  enabled: true
+  git: {}

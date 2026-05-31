@@ -40,3 +40,7 @@ test:
       with:
         bins: |
           sxhkd
+
+update:
+  enabled: true
+  git: {}

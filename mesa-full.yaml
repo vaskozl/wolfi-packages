@@ -173,3 +173,7 @@ test:
         test -e /usr/share/vulkan/icd.d/intel_icd.x86_64.json
         test -e /usr/lib/libvulkan_intel_hasvk.so
         test -e /usr/share/vulkan/icd.d/intel_hasvk_icd.x86_64.json
+
+update:
+  enabled: true
+  git: {}

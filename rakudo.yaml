@@ -65,3 +65,7 @@ test:
       runs: |
         set -eu
         raku -e 'say "Hello, Raku!"'
+
+update:
+  enabled: true
+  git: {}

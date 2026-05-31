@@ -29,3 +29,7 @@ test:
       with:
         bins: |
           tsidp-server
+
+update:
+  enabled: true
+  git: {}

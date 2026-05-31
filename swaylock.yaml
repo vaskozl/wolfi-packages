@@ -49,3 +49,7 @@ test:
       runs: |
         set -eu
         test -f /etc/pam.d/swaylock
+
+update:
+  enabled: true
+  git: {}

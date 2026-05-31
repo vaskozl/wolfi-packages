@@ -46,3 +46,8 @@ test:
         pkgconf --modversion libclc
         test -f /usr/share/clc/spirv-mesa3d-.spv
         test -f /usr/share/clc/spirv64-mesa3d-.spv
+
+update:
+  enabled: true
+  release-monitor:
+    identifier: 376264

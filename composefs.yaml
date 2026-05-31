@@ -57,3 +57,7 @@ test:
         {
           composefs-info 2>&1 || true
         } | grep -F -e "usage: composefs-info"
+
+update:
+  enabled: true
+  git: {}

@@ -30,3 +30,7 @@ test:
       with:
         bins: |
           kromgo
+
+update:
+  enabled: true
+  git: {}

@@ -38,3 +38,7 @@ test:
         bins: |
           trusttunnel
           trusttunnel-setup
+
+update:
+  enabled: true
+  git: {}

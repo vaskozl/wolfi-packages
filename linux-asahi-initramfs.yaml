@@ -76,3 +76,6 @@ test:
         _rel="${_pkgver#*_p}"
         ver="${_kver}-${_rel}-asahi"
         test -s "/usr/lib/modules/$ver/initramfs.img"
+
+update:
+  enabled: false # alpine-base datasource (alpine/wolfi-pinned)

@@ -32,3 +32,7 @@ test:
       runs: |
         set -eu
         renovate-apk-indexer -h
+
+update:
+  enabled: true
+  git: {}
