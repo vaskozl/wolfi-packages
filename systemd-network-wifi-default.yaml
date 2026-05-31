@@ -15,9 +15,8 @@ environment:
       - busybox
 pipeline:
   - runs: |
-      mkdir -p "${{targets.destdir}}/etc/systemd/network"
-      printf '[Match]\nName=wlan* wlp* wlx*\n\n[Network]\nDHCP=yes\n' \
-        > "${{targets.destdir}}/etc/systemd/network/25-wlan.network"
+      cp -a vendor/. "${{targets.destdir}}"/
+      find "${{targets.destdir}}" -type f -exec chmod 644 {} +
 test:
   pipeline:
     - runs: |

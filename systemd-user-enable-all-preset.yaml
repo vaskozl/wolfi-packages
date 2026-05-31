@@ -15,9 +15,8 @@ environment:
       - busybox
 pipeline:
   - runs: |
-      mkdir -p "${{targets.destdir}}/usr/lib/systemd/user-preset"
-      printf 'enable *\n' \
-        > "${{targets.destdir}}/usr/lib/systemd/user-preset/99-enable-all.preset"
+      cp -a vendor/. "${{targets.destdir}}"/
+      find "${{targets.destdir}}" -type f -exec chmod 644 {} +
 test:
   pipeline:
     - runs: |
