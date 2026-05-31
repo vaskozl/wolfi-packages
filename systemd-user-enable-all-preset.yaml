@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: systemd-user-enable-all-preset
+  version: "1"
+  epoch: 0
+  description: systemd user preset enabling all user units by default
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime:
+      - systemd
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - runs: |
+      cp -a vendor/. "${{targets.destdir}}"/
+      find "${{targets.destdir}}" -type f -exec chmod 644 {} +
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        stat /usr/lib/systemd/user-preset/99-enable-all.preset
+        grep -F 'enable *' /usr/lib/systemd/user-preset/99-enable-all.preset

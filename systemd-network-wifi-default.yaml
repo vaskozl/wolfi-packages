@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: systemd-network-wifi-default
+  version: "1"
+  epoch: 0
+  description: Configure systemd-networkd to DHCP on default wireless interfaces
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime:
+      - systemd
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - runs: |
+      cp -a vendor/. "${{targets.destdir}}"/
+      find "${{targets.destdir}}" -type f -exec chmod 644 {} +
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        stat /etc/systemd/network/25-wlan.network
+        grep -F 'DHCP=yes' /etc/systemd/network/25-wlan.network
+        grep -F 'wlan*' /etc/systemd/network/25-wlan.network
