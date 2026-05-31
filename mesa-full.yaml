@@ -2,7 +2,7 @@
 package:
   name: mesa-full
   version: "26.1.1"
-  epoch: 1
+  epoch: 2 # declare spirv-tools runtime dep (unversioned soname, SCA misses it)
   description: Mesa DRI OpenGL/Vulkan, single unsplit package with Intel drivers (x86_64)
   copyright:
     - license: MIT AND SGI-B-2.0 AND BSL-1.0
@@ -21,6 +21,10 @@ package:
       - mesa-libgallium=${{package.full-version}}
     runtime:
       - libglvnd
+      # CLC (Intel Vulkan) hard-requires the spirv-tools meson feature, which links
+      # the unversioned libSPIRV-Tools.so soname. melange's SCA only emits versioned
+      # so:NAME.so.N deps, so it can't auto-resolve this -- declare it explicitly.
+      - spirv-tools
   resources:
     cpu: "14"
     memory: 13Gi
