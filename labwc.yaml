@@ -1,6 +1,6 @@
 package:
   name: labwc
-  version: "0.9.7"
+  version: "0.20.0"
   epoch: 0
   description: A wlroots-based stacking Wayland compositor in the style of Openbox
   copyright:
@@ -70,7 +70,6 @@ test:
         set -eu
         test -f /etc/xdg/labwc/rc.xml
         test -f /usr/share/wayland-sessions/labwc.desktop
-
 update:
   enabled: true
   git: {}
