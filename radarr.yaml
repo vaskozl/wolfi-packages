@@ -2,8 +2,8 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/radarr/APKBUILD
 package:
   name: radarr
-  version: 6.1.1.10360
-  epoch: 2 # disable NuGetAudit (MailKit advisory)
+  version: "6.2.1.10437"
+  epoch: 0 # disable NuGetAudit (MailKit advisory)
   description: TV download automation for usenet and torrents.
   copyright:
     - license: GPL-3.0-only
@@ -37,7 +37,6 @@ pipeline:
 
           # remove upstream dotnet version
           rm global.json
-
       - runs: |
           export NuGetAudit=false
 
@@ -95,7 +94,6 @@ test:
         done
         kill "$pid" 2>/dev/null || true
         [ "$ok" -eq 1 ]
-
 update:
   enabled: true
   git: {}
