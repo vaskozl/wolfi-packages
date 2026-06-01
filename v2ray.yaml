@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: v2ray
-  version: "5.48.0"
-  epoch: 1 # pin go-1.26, add go-package, drop build-base, improve tests
+  version: "5.51.2"
+  epoch: 0 # pin go-1.26, add go-package, drop build-base, improve tests
   description: A platform for building proxies to bypass network restrictions
   copyright:
     - license: MIT
@@ -12,7 +12,6 @@ package:
   resources:
     cpu: "4"
     memory: 8Gi
-
 environment:
   contents:
     packages:
@@ -20,13 +19,11 @@ environment:
       - ca-certificates-bundle
       - curl
       - go-1.26
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/v2fly/v2ray-core
       tag: v${{package.version}}
-
   - uses: go/build
     with:
       go-package: go-1.26
@@ -35,21 +32,17 @@ pipeline:
       ldflags: |
         -X github.com/v2fly/v2ray-core/v5.codename=v2ray
         -X github.com/v2fly/v2ray-core/v5.version=${{package.version}}
-
   - runs: |
       # Install geosite and geoip databases
       mkdir -p ${{targets.destdir}}/usr/share/v2ray
       curl -L -o ${{targets.destdir}}/usr/share/v2ray/geosite.dat https://raw.githubusercontent.com/v2fly/domain-list-community/release/dlc.dat
       curl -L -o ${{targets.destdir}}/usr/share/v2ray/geoip.dat https://raw.githubusercontent.com/v2fly/geoip/release/geoip.dat
       curl -L -o ${{targets.destdir}}/usr/share/v2ray/geoip-only-cn-private.dat https://raw.githubusercontent.com/v2fly/geoip/release/geoip-only-cn-private.dat
-
   - runs: |
       # Install default JSON config files
       install -Dm755 -d ${{targets.destdir}}/etc/v2ray
       install -m644 release/config/*.json ${{targets.destdir}}/etc/v2ray/
-
   - uses: strip
-
 test:
   pipeline:
     - uses: test/ver-check
@@ -67,7 +60,6 @@ test:
         stat /usr/share/v2ray/geoip.dat
         stat /usr/share/v2ray/geoip-only-cn-private.dat
         ls /etc/v2ray/*.json
-
 update:
   enabled: true
   git: {}
