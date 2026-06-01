@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: synology-csi
-  version: 1.2.1
-  epoch: 1 # drop build-base, pin go-1.26, add go-package, fix test
+  version: "1.3.0"
+  epoch: 0 # drop build-base, pin go-1.26, add go-package, fix test
   description: The official Container Storage Interface driver for Synology NAS
   copyright:
     - license: Apache-2.0-only
@@ -34,7 +34,6 @@ test:
       runs: |
         set -eu
         synology-csi-driver --help
-
 update:
   enabled: true
   git: {}
