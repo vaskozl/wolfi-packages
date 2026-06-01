@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: flatpak
-  version: 1.16.6
-  epoch: 3
+  version: "1.17.7"
+  epoch: 0
   description: Application deployment framework for desktop apps
   copyright:
     - license: LGPL-2.1-or-later
@@ -194,7 +194,6 @@ test:
         flatpak --supported-arches | grep -E '^(aarch64|x86_64)$'
         flatpak remotes
         flatpak list
-
 update:
   enabled: true
   git: {}
