@@ -1,7 +1,7 @@
 package:
   name: thelounge
-  version: "4.4.3"
-  epoch: 3 # fix test anti-patterns
+  version: "4.5.0"
+  epoch: 0 # fix test anti-patterns
   description: Web IRC client that you host on your own server
   copyright:
     - license: MIT
@@ -12,10 +12,8 @@ package:
   resources:
     cpu: "4"
     memory: 8Gi
-
 vars:
   node-version: 22
-
 environment:
   contents:
     packages:
@@ -26,22 +24,18 @@ environment:
       - npm
       - python3
       - yarn
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/thelounge/thelounge
       tag: v${{package.version}}
-
   - runs: |
       export BROWSERSLIST_IGNORE_OLD_DATA=1
       export npm_config_build_from_source=1
       yarn install --frozen-lockfile
-
   - runs: |
       export NODE_ENV=production
       yarn build
-
   - runs: |
       # Install application files
       mkdir -p ${{targets.destdir}}/usr/share/webapps/thelounge
@@ -72,15 +66,12 @@ pipeline:
 
       # Set default home location
       mkdir -p ${{targets.destdir}}/var/lib/thelounge
-
   - uses: strip
-
 subpackages:
   - name: thelounge-doc
     description: TheLounge documentation
     pipeline:
       - uses: split/manpages
-
 test:
   environment:
     contents:
@@ -92,7 +83,6 @@ test:
         set -eu
         thelounge --help
         thelounge version
-
 update:
   enabled: true
   git: {}
