@@ -2,8 +2,8 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/main/perl-path-tiny/APKBUILD
 package:
   name: perl-path-tiny
-  version: "0.148"
-  epoch: 1 # pure-Perl env trim + functional test
+  version: "0.150"
+  epoch: 0 # pure-Perl env trim + functional test
   description: File path utility
   copyright:
     - license: Apache-2.0
@@ -15,7 +15,7 @@ environment:
 pipeline:
   - uses: fetch
     with:
-      expected-sha256: "818aed754b74f399e42c238bea738e20a52af89a6e3feb58bec9d0130eea4746"
+      expected-sha256: "ff20713d1a14d257af9c78209001f40dc177e4b9d1496115cbd8726d577946c7"
       uri: https://cpan.metacpan.org/authors/id/D/DA/DAGOLDEN/Path-Tiny-${{package.version}}.tar.gz
   - uses: perl/make
   - uses: autoconf/make
@@ -45,7 +45,6 @@ test:
         ')
         echo "$out"
         echo "$out" | grep -Fq 'hello path-tiny'
-
 update:
   enabled: true
   release-monitor:
