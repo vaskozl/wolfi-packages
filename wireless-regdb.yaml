@@ -2,7 +2,7 @@
 # datasource: alpine-base packageName: wireless-regdb
 package:
   name: wireless-regdb
-  version: 2026.03.18
+  version: "2026.05.30"
   epoch: 0
   description: Central Regulatory Domain Database
   copyright:
@@ -15,7 +15,7 @@ pipeline:
   - uses: fetch
     with:
       uri: https://www.kernel.org/pub/software/network/wireless-regdb/wireless-regdb-${{package.version}}.tar.xz
-      expected-sha256: 5fc0000475d8c5368ccc5222827c16aef98b1eb6a69c9b5a3e7b7e98528945ac
+      expected-sha256: 8a27bfc081bafed8c24dd70fab0d96f098e5a0bfcd08d3da672595f225ab8993
   - runs: |
       set -eu
       install -Dm644 -t "${{targets.destdir}}"/usr/lib/firmware \
@@ -30,7 +30,6 @@ test:
         # regulatory.db begins with the "RGDB" magic; proves real db content,
         # not a truncated/empty file.
         head -c4 /usr/lib/firmware/regulatory.db | grep -qF RGDB
-
 update:
   enabled: true
   release-monitor:
