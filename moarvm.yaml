@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: moarvm
-  version: "2026.04"
-  epoch: 2 # functional test refactor
+  version: "2026.05"
+  epoch: 0 # functional test refactor
   description: VM with adaptive optimization and JIT compilation, built for Rakudo
   copyright:
     - license: Artistic-2.0
@@ -14,7 +14,6 @@ package:
   resources:
     cpu: "4"
     memory: 8Gi
-
 environment:
   contents:
     packages:
@@ -26,13 +25,11 @@ environment:
       - perl
       - perl-utils
       - zstd-dev
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/MoarVM/MoarVM
       tag: ${{package.version}}
-
   - runs: |
       unset CPPFLAGS CFLAGS
       CC=${CC:-gcc}
@@ -43,13 +40,9 @@ pipeline:
         --has-libuv \
         --no-mimalloc \
         --cc="$CC"
-
   - runs: make
-
   - runs: make PKGCONFIGDIR=/usr/lib/pkgconfig DESTDIR="${{targets.destdir}}" install
-
   - uses: strip
-
 subpackages:
   - name: moarvm-dev
     pipeline:
@@ -62,19 +55,16 @@ subpackages:
         - mimalloc2-dev
         - zstd-dev
     description: moarvm development headers and libraries
-
   - name: moarvm-doc
     pipeline:
       - uses: split/manpages
     description: moarvm documentation
-
 test:
   pipeline:
     - uses: test/ver-check
       with:
         bins: |
           moar
-
 update:
   enabled: true
   git: {}
