@@ -2,12 +2,11 @@
 # Generated from https://gitlab.alpinelinux.org/alpine/aports/-/raw/master/community/sing-box/APKBUILD
 package:
   name: sing-box
-  version: "1.13.11"
-  epoch: 1 # pin go-1.26, add go-package, fix test
+  version: "1.13.12"
+  epoch: 0 # pin go-1.26, add go-package, fix test
   description: The universal proxy platform
   copyright:
     - license: GPL-3.0-or-later
-
 environment:
   contents:
     packages:
@@ -15,13 +14,11 @@ environment:
       - busybox
       - ca-certificates-bundle
       - go-1.26
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/SagerNet/sing-box
       tag: v${{package.version}}
-
   - uses: go/build
     with:
       go-package: go-1.26
@@ -29,7 +26,6 @@ pipeline:
       output: sing-box
       packages: ./cmd/sing-box
       tags: with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_acme,with_clash_api,with_tailscale,badlinkname,tfogo_checklinkname0
-
   - runs: |
       bin="${{targets.destdir}}/usr/bin/sing-box"
       install -Dm644 LICENSE -t "${{targets.destdir}}/usr/share/licenses/sing-box"
@@ -41,7 +37,6 @@ pipeline:
       "$bin" completion bash > "${{targets.destdir}}/usr/share/bash-completion/completions/sing-box"
       "$bin" completion fish > "${{targets.destdir}}/usr/share/fish/vendor_completions.d/sing-box.fish"
       "$bin" completion zsh  > "${{targets.destdir}}/usr/share/zsh/site-functions/_sing-box"
-
 subpackages:
   - name: sing-box-bash-completion
     description: Bash completion for sing-box
@@ -50,7 +45,6 @@ subpackages:
           mkdir -p "${{targets.subpkgdir}}/usr/share/bash-completion"
           mv "${{targets.destdir}}/usr/share/bash-completion/completions" \
              "${{targets.subpkgdir}}/usr/share/bash-completion/"
-
   - name: sing-box-fish-completion
     description: Fish completion for sing-box
     pipeline:
@@ -58,7 +52,6 @@ subpackages:
           mkdir -p "${{targets.subpkgdir}}/usr/share/fish"
           mv "${{targets.destdir}}/usr/share/fish/vendor_completions.d" \
              "${{targets.subpkgdir}}/usr/share/fish/"
-
   - name: sing-box-zsh-completion
     description: Zsh completion for sing-box
     pipeline:
@@ -66,14 +59,12 @@ subpackages:
           mkdir -p "${{targets.subpkgdir}}/usr/share/zsh"
           mv "${{targets.destdir}}/usr/share/zsh/site-functions" \
              "${{targets.subpkgdir}}/usr/share/zsh/"
-
 test:
   pipeline:
     - name: Verify sing-box
       runs: |
         set -eu
         sing-box version
-
 update:
   enabled: true
   git: {}
