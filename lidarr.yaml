@@ -2,8 +2,8 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/lidarr/APKBUILD
 package:
   name: lidarr
-  version: 3.1.0.4875
-  epoch: 2 # disable NuGetAudit (MailKit advisory)
+  version: "3.1.3.4968"
+  epoch: 0 # disable NuGetAudit (MailKit advisory)
   description: Music download automation for usenet and torrents.
   copyright:
     - license: GPL-3.0-only
@@ -97,7 +97,6 @@ test:
         done
         kill "$pid" 2>/dev/null || true
         [ "$ok" -eq 1 ]
-
 update:
   enabled: true
   git: {}
