@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: kromgo
-  version: 0.9.1
-  epoch: 2 # pin go-1.25 + go-package
+  version: "0.10.0"
+  epoch: 0 # pin go-1.25 + go-package
   description: Expose prometheus metrics safely to a public source.
   copyright:
     - license: Apache-2.0
