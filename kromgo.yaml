@@ -33,4 +33,6 @@ test:
 
 update:
   enabled: true
-  git: {}
+  git:
+    tag-filter-prefix: v
+    strip-prefix: v
