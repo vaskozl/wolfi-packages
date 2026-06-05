@@ -2,8 +2,8 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/main/perl-mime-lite/APKBUILD
 package:
   name: perl-mime-lite
-  version: "3.033"
-  epoch: 1 # pure-Perl env trim + functional test
+  version: "3.038"
+  epoch: 0 # pure-Perl env trim + functional test
   description: low-calorie MIME generator
   copyright:
     - license: GPL-1.0-or-later OR Artistic-1.0-Perl
@@ -15,7 +15,7 @@ environment:
 pipeline:
   - uses: fetch
     with:
-      expected-sha256: 78a279f1d2e242551c347ef97a13fc675766602cb84c2a80c569400f4f368bab
+      expected-sha256: 06eb47db74d594d2256cf4794f2c259e9f3f54b9f61b900544e6e1d879e244f5
       uri: https://cpan.metacpan.org/authors/id/R/RJ/RJBS/MIME-Lite-${{package.version}}.tar.gz
   - uses: perl/make
   - uses: autoconf/make
@@ -53,7 +53,6 @@ test:
         echo "$out" | grep -F 'Subject: test subject'
         echo "$out" | grep -F 'multipart/mixed'
         echo "$out" | grep -F 'hello world'
-
 update:
   enabled: true
   release-monitor:
