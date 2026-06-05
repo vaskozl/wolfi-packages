@@ -78,11 +78,14 @@ test:
       packages:
         - nodejs-${{vars.node-version}}
   pipeline:
-    - name: Verify thelounge wrapper and version
-      runs: |
-        set -eu
-        thelounge --help
-        thelounge version
+    - uses: test/ver-check
+      with:
+        bins: |
+          thelounge
+    - uses: test/help-check
+      with:
+        bins: |
+          thelounge
 update:
   enabled: true
   git: {}
