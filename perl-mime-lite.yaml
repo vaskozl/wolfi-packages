@@ -3,10 +3,13 @@
 package:
   name: perl-mime-lite
   version: "3.038"
-  epoch: 0 # pure-Perl env trim + functional test
+  epoch: 1 # add perl-email-date-format runtime dep
   description: low-calorie MIME generator
   copyright:
     - license: GPL-1.0-or-later OR Artistic-1.0-Perl
+  dependencies:
+    runtime:
+      - perl-email-date-format
 environment:
   contents:
     packages:
