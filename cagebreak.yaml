@@ -54,7 +54,8 @@ test:
         bins: |
           cagebreak
         flag: "-h"
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: project-repo/cagebreak
+    use-tag: true

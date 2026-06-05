@@ -11,7 +11,6 @@ package:
     runtime:
       - libgcc
       - libstdc++
-
 environment:
   contents:
     packages:
@@ -20,13 +19,11 @@ environment:
       - ca-certificates-bundle
       - cmake
       - samurai
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/intel/libvpl
       tag: v${{package.version}}
-
   - runs: |
       cmake -B build \
         -DCMAKE_BUILD_TYPE=Release \
@@ -38,9 +35,7 @@ pipeline:
         -DINSTALL_EXAMPLE_CODE=OFF
       cmake --build build
       DESTDIR="${{targets.destdir}}" cmake --install build
-
   - uses: strip
-
 subpackages:
   - name: ${{package.name}}-dev
     pipeline:
@@ -49,13 +44,13 @@ subpackages:
     dependencies:
       runtime:
         - libvpl
-
 test:
   pipeline:
     - uses: test/ldd-check
       with:
         packages: ${{package.name}}
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: intel/libvpl
+    strip-prefix: v

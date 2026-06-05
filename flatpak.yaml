@@ -196,4 +196,6 @@ test:
         flatpak list
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: flatpak/flatpak
+    use-tag: true

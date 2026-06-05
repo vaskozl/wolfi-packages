@@ -50,7 +50,8 @@ test:
         out=$(swayidle -h 2>&1 || true)
         echo "$out"
         echo "$out" | grep -qi usage
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: swaywm/swayidle
+    strip-prefix: v

@@ -43,7 +43,8 @@ test:
       with:
         bins: |
           slurp
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: emersion/slurp
+    strip-prefix: v

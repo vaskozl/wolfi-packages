@@ -55,7 +55,8 @@ test:
         set -eu
         bootc --version | grep -F -e "${{package.version}}"
         bootc status | yq .apiVersion | grep -F -e "org.containers.bootc/v1"
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: bootc-dev/bootc
+    strip-prefix: v

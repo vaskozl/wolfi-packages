@@ -32,7 +32,8 @@ test:
       runs: |
         set -eu
         renovate-apk-indexer -h
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: hown3d/renovate-apk-indexer
+    strip-prefix: v

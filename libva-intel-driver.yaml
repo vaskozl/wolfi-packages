@@ -11,7 +11,6 @@ package:
     runtime:
       - libva
       - libdrm
-
 environment:
   contents:
     packages:
@@ -20,7 +19,6 @@ environment:
       - libva-dev
       - meson
       - wayland-dev
-
 pipeline:
   - uses: git-checkout
     with:
@@ -33,20 +31,18 @@ pipeline:
   - uses: meson/compile
   - uses: meson/install
   - uses: strip
-
 subpackages:
   - name: "${{package.name}}-dev"
     pipeline:
       - uses: split/dev
     description: libva-intel-driver dev headers
-
 test:
   pipeline:
     - uses: test/ldd-check
     - runs: |
         set -eu
         stat /usr/lib/dri/i965_drv_video.so
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: intel/intel-vaapi-driver

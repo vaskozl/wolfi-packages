@@ -46,7 +46,8 @@ test:
       with:
         bins: |
           grim
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: emersion/grim
+    strip-prefix: v

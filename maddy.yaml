@@ -79,4 +79,6 @@ test:
         maddy creds --help >/dev/null
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: foxcpp/maddy
+    strip-prefix: v

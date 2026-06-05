@@ -31,7 +31,10 @@ test:
         set -eu
         # Go flag package exits 2 on -h; ignore that and assert the usage banner is printed.
         golink -h 2>&1 | grep -F "Usage of golink"
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: tailscale/golink
+    strip-prefix: v
+    use-tag: true
+    tag-filter-prefix: v

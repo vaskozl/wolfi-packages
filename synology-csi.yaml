@@ -36,4 +36,6 @@ test:
         synology-csi-driver --help
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: SynologyOpenSource/synology-csi
+    strip-prefix: v

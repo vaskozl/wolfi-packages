@@ -87,7 +87,10 @@ test:
     - runs: |
         set -eu
         stat /usr/lib/systemd/user/udiskie.service
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: coldfix/udiskie
+    strip-prefix: v
+    use-tag: true
+    tag-filter-prefix: v

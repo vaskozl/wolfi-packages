@@ -44,7 +44,10 @@ test:
         ')
         echo "$out"
         echo "$out" | grep -qF 'example.com|/path|bar'
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: mojolicious/mojo
+    strip-prefix: v
+    use-tag: true
+    tag-filter-prefix: v

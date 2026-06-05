@@ -12,7 +12,6 @@ package:
   resources:
     cpu: "4"
     memory: 8Gi
-
 environment:
   contents:
     packages:
@@ -23,30 +22,23 @@ environment:
       - moarvm-dev~${{package.version}}
       - perl
       - perl-utils
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/Raku/nqp
       tag: ${{package.version}}
-
   - runs: |
       perl Configure.pl \
         --prefix=/usr \
         --backends=moar
-
   - runs: make
-
   - runs: make DESTDIR="${{targets.destdir}}" install
-
   - uses: strip
-
 subpackages:
   - name: nqp-doc
     pipeline:
       - uses: split/manpages
     description: nqp documentation
-
 test:
   pipeline:
     - uses: test/ver-check
@@ -58,7 +50,7 @@ test:
         set -eu
         out=$(nqp-m -e 'say("ok")')
         echo "$out" | grep -Fx ok
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: Raku/nqp

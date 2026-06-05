@@ -49,4 +49,8 @@ test:
         python${{vars.python-version}} -c "from asahi_firmware.update import main; assert callable(main)"
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: AsahiLinux/asahi-installer
+    strip-prefix: v
+    use-tag: true
+    tag-filter-prefix: v

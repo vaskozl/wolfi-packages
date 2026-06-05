@@ -7,19 +7,16 @@ package:
     - license: MIT
   target-architecture:
     - x86_64
-
 environment:
   contents:
     packages:
       - build-base
       - cmake
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/intel/gmmlib
       tag: intel-gmmlib-${{package.version}}
-
   - runs: |
       cmake -B build \
         -DCMAKE_BUILD_TYPE=Release \
@@ -29,9 +26,7 @@ pipeline:
         -DRUN_TEST_SUITE=OFF
       cmake --build build
       DESTDIR="${{targets.destdir}}" cmake --install build
-
   - uses: strip
-
 subpackages:
   - name: ${{package.name}}-dev
     pipeline:
@@ -40,13 +35,15 @@ subpackages:
     dependencies:
       runtime:
         - intel-gmmlib
-
 test:
   pipeline:
     - uses: test/ldd-check
       with:
         packages: ${{package.name}}
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: intel/gmmlib
+    strip-prefix: intel-gmmlib-
+    use-tag: true
+    tag-filter-prefix: intel-gmmlib-

@@ -30,9 +30,10 @@ test:
       with:
         bins: |
           kromgo
-
 update:
   enabled: true
-  git:
-    tag-filter-prefix: v
+  github:
+    identifier: kashalls/kromgo
     strip-prefix: v
+    use-tag: true
+    tag-filter-prefix: v

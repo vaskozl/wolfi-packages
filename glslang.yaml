@@ -74,7 +74,7 @@ test:
         printf '#version 450\nfloat add(float a, float b) { return a + b; }\n' > /tmp/t.vert
         glslangValidator --no-link -V /tmp/t.vert -o /tmp/t.spv
         test -s /tmp/t.spv
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: KhronosGroup/glslang

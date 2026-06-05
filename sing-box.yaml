@@ -67,4 +67,6 @@ test:
         sing-box version
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: SagerNet/sing-box
+    strip-prefix: v

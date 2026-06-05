@@ -43,7 +43,10 @@ test:
         lzfse -encode -i /tmp/in.bin -o /tmp/out.lzfse
         lzfse -decode -i /tmp/out.lzfse -o /tmp/out.bin
         cmp /tmp/in.bin /tmp/out.bin
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: lzfse/lzfse
+    strip-prefix: lzfse-
+    use-tag: true
+    tag-filter-prefix: lzfse-

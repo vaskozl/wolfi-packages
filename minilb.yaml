@@ -27,7 +27,8 @@ test:
       with:
         bins: |
           minilb
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: vaskozl/minilb
+    use-tag: true

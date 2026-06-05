@@ -26,7 +26,8 @@ test:
     - runs: |
         set -eu
         stat /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: zsh-users/zsh-syntax-highlighting
+    use-tag: true

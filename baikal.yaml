@@ -18,7 +18,6 @@ package:
   resources:
     cpu: "2"
     memory: 4Gi
-
 environment:
   contents:
     packages:
@@ -31,13 +30,11 @@ environment:
       - php-8.5-pdo
       - php-8.5-phar
       - rsync
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/sabre-io/Baikal
       tag: ${{package.version}}
-
   - runs: |
       set -eu
       # Create directory structure
@@ -56,7 +53,6 @@ pipeline:
       # Install dependencies (ignore platform reqs for missing extensions)
       cd build/baikal
       composer install --no-dev --no-interaction --ignore-platform-reqs
-
   - runs: |
       set -eu
       # Install to /usr/share/webapps
@@ -71,9 +67,7 @@ pipeline:
       chmod 755 ${{targets.destdir}}/usr/share/webapps/baikal
       find ${{targets.destdir}}/usr/share/webapps/baikal -type d -exec chmod 755 {} \;
       find ${{targets.destdir}}/usr/share/webapps/baikal -type f -exec chmod 644 {} \;
-
   - uses: strip
-
 subpackages:
   - name: baikal-mysql
     description: Baikal with MySQL support
@@ -96,7 +90,6 @@ subpackages:
             set -eu
             test -f /usr/share/webapps/baikal/composer.json
             php -m | grep -F pdo_mysql
-
   - name: baikal-pgsql
     description: Baikal with PostgreSQL support
     dependencies:
@@ -117,7 +110,6 @@ subpackages:
             set -eu
             test -f /usr/share/webapps/baikal/composer.json
             php -m | grep -F pdo_pgsql
-
   - name: baikal-sqlite
     description: Baikal with SQLite support
     dependencies:
@@ -138,7 +130,6 @@ subpackages:
             set -eu
             test -f /usr/share/webapps/baikal/composer.json
             php -m | grep -F pdo_sqlite
-
 test:
   environment:
     contents:
@@ -164,7 +155,7 @@ test:
         php -l /usr/share/webapps/baikal/html/admin/install/index.php
         php -l /usr/share/webapps/baikal/html/dav.php
         php -r 'require "/usr/share/webapps/baikal/vendor/autoload.php";'
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: sabre-io/Baikal

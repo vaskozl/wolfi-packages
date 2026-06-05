@@ -13,7 +13,6 @@ package:
   resources:
     cpu: "4"
     memory: 8Gi
-
 environment:
   contents:
     packages:
@@ -25,36 +24,28 @@ environment:
       - nqp~${{package.version}}
       - perl
       - perl-utils
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/rakudo/rakudo
       tag: ${{package.version}}
-
   - runs: |
       perl Configure.pl \
         --prefix=/usr \
         --backends=moar \
         --rakudo-home=/usr/share/rakudo
-
   - runs: make
-
   - runs: make DESTDIR="${{targets.destdir}}" install
-
   - uses: strip
-
 subpackages:
   - name: rakudo-dev
     pipeline:
       - uses: split/dev
     description: rakudo development files
-
   - name: rakudo-doc
     pipeline:
       - uses: split/manpages
     description: rakudo documentation
-
 test:
   pipeline:
     - name: Verify raku binary
@@ -65,7 +56,7 @@ test:
       runs: |
         set -eu
         raku -e 'say "Hello, Raku!"'
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: rakudo/rakudo

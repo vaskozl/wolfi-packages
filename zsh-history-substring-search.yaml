@@ -25,7 +25,8 @@ test:
     - runs: |
         set -eu
         stat /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: zsh-users/zsh-history-substring-search
+    strip-prefix: v

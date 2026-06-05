@@ -10,7 +10,6 @@ package:
     runtime:
       - ncurses
       - wayland-libs-egl
-
 environment:
   contents:
     packages:
@@ -42,7 +41,6 @@ environment:
       - wayland-protocols-dev
       - xxhash-dev
       - zlib-dev
-
 pipeline:
   # repository: https://github.com/kovidgoyal/kitty
   - uses: git-checkout
@@ -85,7 +83,6 @@ pipeline:
       "$KITTEN" __complete__ setup fish \
         > "${{targets.destdir}}/usr/share/fish/vendor_completions.d/kitty.fish" 2>/dev/null || true
   - uses: strip
-
 subpackages:
   - name: "${{package.name}}-terminfo"
     description: kitty terminal descriptions
@@ -93,7 +90,6 @@ subpackages:
       - runs: |
           mkdir -p "${{targets.subpkgdir}}"/usr/share
           mv "${{targets.destdir}}"/usr/share/terminfo "${{targets.subpkgdir}}"/usr/share/
-
   - name: "${{package.name}}-bash-completion"
     description: bash completion for kitty
     pipeline:
@@ -108,7 +104,6 @@ subpackages:
       runtime:
         - merged-usrsbin
         - wolfi-baselayout
-
   - name: "${{package.name}}-zsh-completion"
     description: zsh completion for kitty
     pipeline:
@@ -123,7 +118,6 @@ subpackages:
       runtime:
         - merged-usrsbin
         - wolfi-baselayout
-
   - name: "${{package.name}}-fish-completion"
     description: fish completion for kitty
     pipeline:
@@ -138,11 +132,9 @@ subpackages:
       runtime:
         - merged-usrsbin
         - wolfi-baselayout
-
   - name: "${{package.name}}-dbg"
     pipeline:
       - uses: split/debug
-
 test:
   environment:
     contents:
@@ -165,7 +157,8 @@ test:
         infocmp xterm-kitty >/dev/null
         # Sanity: kitty should report its config path without a TTY.
         kitty +runpy 'import kitty; print(kitty.__file__)'
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: kovidgoyal/kitty
+    strip-prefix: v

@@ -39,7 +39,8 @@ test:
     - runs: |
         set -eu
         cage -v
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: cage-kiosk/cage
+    strip-prefix: v

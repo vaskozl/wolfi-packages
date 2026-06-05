@@ -62,4 +62,8 @@ test:
         ls /etc/v2ray/*.json
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: v2fly/v2ray-core
+    strip-prefix: v
+    use-tag: true
+    tag-filter-prefix: v

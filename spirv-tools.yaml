@@ -79,7 +79,8 @@ test:
         set -eu
         printf 'OpCapability Shader\nOpCapability Linkage\nOpMemoryModel Logical GLSL450\n' | spirv-as - -o /tmp/t.spv
         spirv-val /tmp/t.spv
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: KhronosGroup/SPIRV-Tools
+    strip-prefix: v

@@ -31,4 +31,6 @@ test:
           tsidp-server
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: tailscale/tsidp
+    strip-prefix: v

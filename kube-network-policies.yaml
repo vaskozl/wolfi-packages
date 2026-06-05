@@ -38,7 +38,8 @@ test:
       runs: |
         set -eu
         kube-network-policies -h
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: kubernetes-sigs/kube-network-policies
+    strip-prefix: v

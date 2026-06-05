@@ -77,7 +77,8 @@ test:
         bins: |
           bspwm
         flag: "-h"
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: baskerville/bspwm
+    use-tag: true

@@ -50,7 +50,8 @@ test:
       with:
         bins: |
           swaybg
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: swaywm/swaybg
+    strip-prefix: v

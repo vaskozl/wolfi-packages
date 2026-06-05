@@ -76,7 +76,8 @@ test:
       runs: |
         set -eu
         llvm-spirv --version
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: KhronosGroup/SPIRV-LLVM-Translator
+    strip-prefix: v

@@ -99,4 +99,8 @@ test:
         [ "$ok" -eq 1 ]
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: Lidarr/Lidarr
+    strip-prefix: v
+    use-tag: true
+    tag-filter-prefix: v

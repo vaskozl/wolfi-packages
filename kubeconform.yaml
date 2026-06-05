@@ -38,7 +38,8 @@ test:
         data:
           key: value
         EOF
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: yannh/kubeconform
+    strip-prefix: v

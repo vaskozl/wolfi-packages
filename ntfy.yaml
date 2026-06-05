@@ -68,4 +68,6 @@ test:
         ntfy serve --help >/dev/null
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: binwiederhier/ntfy
+    strip-prefix: v

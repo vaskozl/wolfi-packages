@@ -94,4 +94,8 @@ test:
         [ "$ok" -eq 1 ]
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: Prowlarr/Prowlarr
+    strip-prefix: v
+    use-tag: true
+    tag-filter-prefix: v

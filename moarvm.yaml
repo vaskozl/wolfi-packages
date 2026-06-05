@@ -67,4 +67,5 @@ test:
           moar
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: MoarVM/MoarVM

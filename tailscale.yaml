@@ -104,4 +104,8 @@ test:
         pkill tailscaled || true
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: tailscale/tailscale
+    strip-prefix: v
+    use-tag: true
+    tag-filter-prefix: v

@@ -113,7 +113,6 @@ pipeline:
               ;;
           esac
           echo "node_modules final size: $(du -sh node_modules | cut -f1)"
-
   - runs: |
       set -eu
       mkdir -p ${{targets.contextdir}}/usr/bin \
@@ -134,7 +133,6 @@ pipeline:
 
       printf '#!/bin/sh\nexec node /usr/lib/seerr/dist/index.js "$@"\n' > ${{targets.contextdir}}/usr/bin/seerr
       chmod 755 ${{targets.contextdir}}/usr/bin/seerr
-
 test:
   environment:
     contents:
@@ -145,7 +143,8 @@ test:
         set -eu
         test -x /usr/bin/seerr
         test -f /usr/lib/seerr/dist/index.js
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: seerr-team/seerr
+    strip-prefix: v

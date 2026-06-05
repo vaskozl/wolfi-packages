@@ -48,7 +48,8 @@ test:
       with:
         bins: |
           playerctl
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: altdesktop/playerctl
+    strip-prefix: v

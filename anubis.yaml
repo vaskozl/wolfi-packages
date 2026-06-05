@@ -39,7 +39,8 @@ test:
       with:
         bins: |
           anubis
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: TecharoHQ/anubis
+    strip-prefix: v

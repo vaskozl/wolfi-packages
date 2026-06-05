@@ -88,4 +88,6 @@ test:
           thelounge
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: thelounge/thelounge
+    strip-prefix: v

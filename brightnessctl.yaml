@@ -43,7 +43,7 @@ test:
       runs: |
         set -eu
         stat /usr/lib/udev/rules.d/90-brightnessctl.rules
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: Hummer12007/brightnessctl

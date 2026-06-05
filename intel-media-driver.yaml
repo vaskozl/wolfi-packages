@@ -7,7 +7,6 @@ package:
     - license: BSD-3-Clause AND MIT
   target-architecture:
     - x86_64
-
 environment:
   contents:
     packages:
@@ -16,13 +15,11 @@ environment:
       - intel-gmmlib-dev
       - libpciaccess-dev
       - libva-dev
-
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/intel/media-driver
       tag: intel-media-${{package.version}}
-
   - runs: |
       cmake -B build \
         -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
@@ -34,9 +31,7 @@ pipeline:
         -DMEDIA_BUILD_FATAL_WARNINGS=OFF
       cmake --build build
       DESTDIR="${{targets.destdir}}" cmake --install build
-
   - uses: strip
-
 subpackages:
   - name: ${{package.name}}-dev
     pipeline:
@@ -45,13 +40,13 @@ subpackages:
     dependencies:
       runtime:
         - intel-media-driver
-
 test:
   pipeline:
     - uses: test/ldd-check
       with:
         packages: ${{package.name}}
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: intel/media-driver
+    strip-prefix: intel-media-

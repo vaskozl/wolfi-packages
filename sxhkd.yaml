@@ -40,7 +40,8 @@ test:
       with:
         bins: |
           sxhkd
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: baskerville/sxhkd
+    use-tag: true

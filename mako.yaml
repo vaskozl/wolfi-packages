@@ -61,7 +61,8 @@ test:
     - runs: |
         set -eu
         stat /usr/lib/systemd/user/mako.service
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: emersion/mako
+    strip-prefix: v

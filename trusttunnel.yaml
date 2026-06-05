@@ -40,4 +40,8 @@ test:
           trusttunnel-setup
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: TrustTunnel/TrustTunnel
+    strip-prefix: v
+    use-tag: true
+    tag-filter-prefix: v

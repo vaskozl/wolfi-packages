@@ -111,7 +111,10 @@ test:
         niri validate -c /usr/share/doc/niri/default-config.kdl
         ! grep -q alacritty /usr/share/doc/niri/default-config.kdl
         grep -q foot /usr/share/doc/niri/default-config.kdl
-
 update:
   enabled: true
-  git: {}
+  github:
+    identifier: YaLTeR/niri
+    strip-prefix: v
+    use-tag: true
+    tag-filter-prefix: v
