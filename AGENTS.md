@@ -306,12 +306,6 @@ The build cgroup (local bubblewrap and CI alike) is RAM-limited but exposes all 
 
 ## Language-Specific Skills
 
-### Go
-
-- Pin a Go version stream in `environment.contents.packages` (e.g. `go-1.25`), never bare `go`.
-- Add `go-package: go-1.25` (matching the env entry) to **every** `go/build` and `go/bump` step. Without it, the pipeline picks whatever `go` is on `$PATH`.
-- Use `go/bump` to bump indirect deps for CVEs rather than carrying a vendored patch.
-
 ### Perl
 
 - Pure-Perl distributions need only `busybox` + `perl` at build time.

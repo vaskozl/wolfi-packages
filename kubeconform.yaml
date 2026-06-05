@@ -2,8 +2,8 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/kubeconform/APKBUILD
 package:
   name: kubeconform
-  version: 0.7.0
-  epoch: 1 # go-package + tightened test
+  version: 0.8.0
+  epoch: 0
   description: A FAST Kubernetes manifests validator, with support for Custom Resources!
   copyright:
     - license: Apache-2.0
@@ -12,7 +12,6 @@ environment:
     packages:
       - busybox
       - ca-certificates-bundle
-      - go-1.25
 pipeline:
   - uses: git-checkout
     with:
@@ -20,7 +19,6 @@ pipeline:
       tag: v${{package.version}}
   - uses: go/build
     with:
-      go-package: go-1.25
       packages: ./cmd/kubeconform
       output: kubeconform
   - uses: strip
