@@ -2,7 +2,7 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/community/blocky/APKBUILD
 package:
   name: blocky
-  version: "0.30.0"
+  version: "0.31.0"
   epoch: 0 # pin go-1.25, tighten test
   description: DNS proxy as ad-blocker for local network
   copyright:
