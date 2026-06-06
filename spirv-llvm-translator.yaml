@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: spirv-llvm-translator
-  version: "19.1.18"
-  epoch: 1 # rebuild against local spirv-tools
+  version: "22.1.3"
+  epoch: 0 # rebuild against local spirv-tools
   description: Khronos SPIR-V translator for the LLVM toolchain (LLVM 19)
   copyright:
     - license: NCSA AND Apache-2.0 WITH LLVM-exception
