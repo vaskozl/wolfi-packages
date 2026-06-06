@@ -2,7 +2,7 @@
 package:
   name: mesa-full
   version: "26.1.1"
-  epoch: 3 # split lib subpackages so mesa-gbm provider ships libgbm.so dev symlink
+  epoch: 4 # pin spirv-llvm-translator-dev to 19.1 for LLVMSPIRVLib < 19.2
   description: Mesa DRI OpenGL/Vulkan, single unsplit package with Intel drivers (x86_64)
   copyright:
     - license: MIT AND SGI-B-2.0 AND BSL-1.0
@@ -72,7 +72,10 @@ environment:
       - py${{vars.py-version}}-pyyaml
       - py${{vars.py-version}}-setuptools
       - python-${{vars.py-version}}
-      - spirv-llvm-translator-dev
+      # Pin to the 19.1 stream: mesa (built against LLVM 19) requires
+      # LLVMSPIRVLib < 19.2, but Wolfi ships a newer 22.x that apk would
+      # otherwise prefer by version. Forces our local 19.1.18 build.
+      - spirv-llvm-translator-dev<19.2
       - spirv-tools-dev
       - systemd-dev
       - vulkan-loader
