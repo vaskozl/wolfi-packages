@@ -1,7 +1,7 @@
 package:
   name: baikal
   version: "0.11.1"
-  epoch: 3 # fix rsync flattening Core/ and html/ into pkg root
+  epoch: 3 # --no-security-blocking: composer security blocking on upstream-pinned advisories
   description: Lightweight CalDAV/CardDAV server
   copyright:
     - license: GPL-3.0-or-later
@@ -51,10 +51,7 @@ pipeline:
         build/baikal/
 
       # Install dependencies (ignore platform reqs for missing extensions).
-      # --no-security-blocking: we ship the upstream release as-is; remediating
-      # transitive twig/symfony advisories is upstream's job. Without it Composer
-      # discards every advisory-flagged version pre-resolution and the build
-      # becomes permanently unbuildable as new advisories accrue.
+      # --no-security-blocking: upstream advisories on twig/symfony; upstream's job to remediate
       cd build/baikal
       composer install --no-dev --no-interaction --ignore-platform-reqs --no-security-blocking
   - runs: |
