@@ -3,7 +3,7 @@ package:
   name: spirv-llvm-translator
   version: "22.1.3"
   epoch: 0 # rebuild against local spirv-tools
-  description: Khronos SPIR-V translator for the LLVM toolchain (LLVM 19)
+  description: Khronos SPIR-V translator for the LLVM toolchain (LLVM 22)
   copyright:
     - license: NCSA AND Apache-2.0 WITH LLVM-exception
   target-architecture:
@@ -16,11 +16,11 @@ environment:
   contents:
     packages:
       - build-base
-      - clang-19
+      - clang-22
       - cmake
-      - libclang-cpp-19
+      - libclang-cpp-22
       - libxml2-dev
-      - llvm-19-dev
+      - llvm-22-dev
       - samurai
       - spirv-tools
       - spirv-tools-dev
@@ -32,7 +32,7 @@ pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/KhronosGroup/SPIRV-Headers
-      expected-commit: 9268f3057354a2cb65991ba5f38b16d81e803692
+      expected-commit: b8a32968473ce852a809b9de5f04f02a5a9dfa78
       depth: -1
       destination: spirv-headers
   - runs: |
@@ -43,7 +43,7 @@ pipeline:
         -DCMAKE_INSTALL_LIBDIR=lib \
         -DBUILD_SHARED_LIBS=True \
         -DLLVM_SPIRV_INCLUDE_TESTS=OFF \
-        -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm \
+        -DLLVM_DIR=/usr/lib/llvm-22/lib/cmake/llvm \
         -DLLVM_EXTERNAL_SPIRV_HEADERS_SOURCE_DIR="$PWD/spirv-headers"
       cmake --build build
       DESTDIR="${{targets.destdir}}" cmake --install build
