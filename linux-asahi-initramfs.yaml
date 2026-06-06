@@ -3,7 +3,7 @@ package:
   name: linux-asahi-initramfs
   # datasource: alpine-base packageName: linux-asahi
   version: 7.0.8_p1
-  epoch: 1 # rebuild for dracut 108
+  epoch: 2 # decouple kernel pin from initramfs epoch
   description: The Linux Asahi kernel initramfs
   target-architecture:
     - aarch64
@@ -11,7 +11,7 @@ package:
     - license: GPL-2.0
   dependencies:
     runtime:
-      - linux-asahi=${{package.full-version}}
+      - linux-asahi~${{package.version}}
       - zstd
 environment:
   contents:
@@ -28,7 +28,7 @@ environment:
       - findutils
       - kmod
       - libgcrypt
-      - linux-asahi=${{package.full-version}}
+      - linux-asahi~${{package.version}}
       - posix-libc-utils
       - wolfi-baselayout
       - zstd
