@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: rakudo
-  version: "2026.04"
-  epoch: 2 # drop busybox from test env (implicit), fix test anti-patterns
+  version: "2026.05"
+  epoch: 0 # drop busybox from test env (implicit), fix test anti-patterns
   description: Rakudo is a compiler for the Raku programming language
   copyright:
     - license: Artistic-2.0
