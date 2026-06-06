@@ -1,8 +1,8 @@
 package:
   name: seerr
-  version: 3.2.0
+  version: "3.3.0"
   description: "Open-source media request and discovery manager for Jellyfin, Plex, and Emby."
-  epoch: 10 # fix aarch64 native prebuild deletion (linux-arm* wildcard was also matching linux-arm64)
+  epoch: 0 # fix aarch64 native prebuild deletion (linux-arm* wildcard was also matching linux-arm64)
   copyright:
     - license: MIT
 environment:
