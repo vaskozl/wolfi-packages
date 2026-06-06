@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: nqp
-  version: "2026.04"
-  epoch: 2 # functional test refactor
+  version: "2026.05"
+  epoch: 0 # functional test refactor
   description: Not Quite Perl (NQP) is a minimal Perl 6-like language for building compilers
   copyright:
     - license: Artistic-2.0
