@@ -1,10 +1,10 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: libclc
-  # datasource: wolfi-base packageName: llvm-19
+  # datasource: wolfi-base packageName: llvm-22
   version: "22.1.7"
-  epoch: 0 # rebuild for spirv-llvm-translator 19.1.18
-  description: OpenCL C library implementation for the LLVM toolchain (LLVM 19)
+  epoch: 0 # rebuild for spirv-llvm-translator 22.1.3
+  description: OpenCL C library implementation for the LLVM toolchain (LLVM 22)
   copyright:
     - license: Apache-2.0 WITH LLVM-exception
   target-architecture:
@@ -15,9 +15,9 @@ environment:
       - build-base
       - busybox
       - ca-certificates-bundle
-      - clang-19
+      - clang-22
       - cmake
-      - llvm-19-dev
+      - llvm-22-dev
       - python-3.13
       - samurai
       - spirv-llvm-translator
@@ -32,7 +32,7 @@ pipeline:
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/usr \
         -DLIBCLC_TARGETS_TO_BUILD="spirv-mesa3d-;spirv64-mesa3d-" \
-        -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm \
+        -DLLVM_DIR=/usr/lib/llvm-22/lib/cmake/llvm \
         -DLLVM_SPIRV=/usr/bin/llvm-spirv
       cmake --build build
       DESTDIR="${{targets.destdir}}" cmake --install build

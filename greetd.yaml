@@ -144,7 +144,6 @@ test:
         stat /usr/lib/systemd/system/greetd.service
         grep -F display-manager.service /usr/lib/systemd/system/greetd.service
         grep -F greeter /usr/lib/sysusers.d/greetd.conf
-
 update:
   enabled: true
   git: {}

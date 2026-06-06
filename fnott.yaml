@@ -78,7 +78,6 @@ test:
     - runs: |
         set -eu
         stat /usr/lib/systemd/user/fnott.service
-
 update:
   enabled: true
   git: {}

@@ -11,7 +11,6 @@ package:
     - license: MIT
   target-architecture:
     - x86_64
-
 environment:
   contents:
     packages:
@@ -19,7 +18,6 @@ environment:
       - busybox
       - ca-certificates-bundle
       - curl
-
 pipeline:
   # Upstream ships each tag with assets named intel-igc-{core,opencl}-2_<version>+<build>_amd64.deb,
   # where <build> is an opaque build counter that varies per release. Discover the URLs via the
@@ -35,7 +33,6 @@ pipeline:
         [ -n "$url" ] || { echo "asset $asset not found in $api" >&2; exit 1; }
         curl -sfL -o "${asset}.deb" "$url"
       done
-
   - runs: |
       install -d "${{targets.destdir}}/usr/lib"
       for deb in intel-igc-core-2.deb intel-igc-opencl-2.deb; do
@@ -44,13 +41,11 @@ pipeline:
       # Debian ships under /usr/local/lib — relocate to /usr/lib for Wolfi.
       mv "${{targets.destdir}}"/usr/local/lib/* "${{targets.destdir}}"/usr/lib/
       rmdir "${{targets.destdir}}"/usr/local/lib "${{targets.destdir}}"/usr/local
-
 test:
   pipeline:
     - uses: test/ldd-check
       with:
         packages: ${{package.name}}
-
 update:
   enabled: true
   github:

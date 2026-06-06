@@ -140,7 +140,6 @@ test:
         bins: |
           foot
           footclient
-
 update:
   enabled: true
   git: {}

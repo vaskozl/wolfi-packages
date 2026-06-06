@@ -11,8 +11,8 @@ environment:
       - busybox
 pipeline:
   - runs: |
-        mkdir -p "${{targets.destdir}}"/sysroot
-        mkdir -p "${{targets.destdir}}"/boot
+      mkdir -p "${{targets.destdir}}"/sysroot
+      mkdir -p "${{targets.destdir}}"/boot
 test:
   pipeline:
     - runs: |
@@ -20,6 +20,5 @@ test:
         # Verify base directories shipped by the package exist
         test -d /sysroot
         test -d /boot
-
 update:
   enabled: false # no upstream monitor
