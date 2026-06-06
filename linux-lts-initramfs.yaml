@@ -3,7 +3,7 @@ package:
   name: linux-lts-initramfs
   # datasource: alpine-base packageName: linux-lts
   version: 6.18.34
-  epoch: 0
+  epoch: 1 # rebuild for dracut 108
   description: The Linux LTS kernel initramfs
   copyright:
     - license: GPL-2.0
@@ -49,6 +49,5 @@ pipeline:
         ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-lts/initramfs.img
   - runs: |
       ls -la ${{targets.destdir}}/usr/lib/modules/${{package.version}}-${{package.epoch}}-lts/
-
 update:
   enabled: false # alpine-base datasource (alpine/wolfi-pinned)
