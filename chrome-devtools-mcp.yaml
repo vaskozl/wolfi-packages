@@ -1,0 +1,53 @@
+package:
+  name: chrome-devtools-mcp
+  version: 1.1.1
+  epoch: 0
+  description: Chrome DevTools MCP server plus the mcp-proxy stdio/SSE bridge
+  copyright:
+    - license: Apache-2.0 # chrome-devtools-mcp
+    - license: MIT # mcp-proxy
+  dependencies:
+    runtime:
+      - nodejs-${{vars.node-version}}
+vars:
+  node-version: "22"
+  mcp-proxy-version: "6.5.1"
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - nodejs-${{vars.node-version}}
+      - npm
+pipeline:
+  - runs: |
+      set -eu
+      mkdir -p "${{targets.destdir}}/usr/lib/chrome-devtools-mcp"
+      cd "${{targets.destdir}}/usr/lib/chrome-devtools-mcp"
+      npm install --omit=dev --no-package-lock \
+        mcp-proxy@${{vars.mcp-proxy-version}} \
+        chrome-devtools-mcp@${{package.version}}
+  - runs: |
+      set -eu
+      mkdir -p "${{targets.destdir}}/usr/bin"
+      printf '#!/bin/sh\nexec node /usr/lib/chrome-devtools-mcp/node_modules/mcp-proxy/dist/bin/mcp-proxy.mjs "$@"\n' > "${{targets.destdir}}/usr/bin/mcp-proxy"
+      chmod 755 "${{targets.destdir}}/usr/bin/mcp-proxy"
+      printf '#!/bin/sh\nexec node /usr/lib/chrome-devtools-mcp/node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js "$@"\n' > "${{targets.destdir}}/usr/bin/chrome-devtools-mcp"
+      chmod 755 "${{targets.destdir}}/usr/bin/chrome-devtools-mcp"
+test:
+  environment:
+    contents:
+      packages:
+        - nodejs-${{vars.node-version}}
+  pipeline:
+    - uses: test/help-check
+      with:
+        bins: |
+          mcp-proxy
+          chrome-devtools-mcp
+update:
+  enabled: true
+  github:
+    identifier: ChromeDevTools/chrome-devtools-mcp
+    strip-prefix: chrome-devtools-mcp-v
