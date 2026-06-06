@@ -1,7 +1,7 @@
 package:
   name: waypipe
   version: "0.11.0"
-  epoch: 0
+  epoch: 1 # rebuild for mesa-full 26.1.1 libgbm.so dev symlink (-lgbm)
   description: Proxy for Wayland clients
   copyright:
     - license: MIT
@@ -73,7 +73,6 @@ test:
         # --socket option via the top-level help output instead.
         waypipe --help | grep -qi '^  client'
         waypipe --help | grep -qi -- '--socket'
-
 update:
   enabled: true
   git: {}
