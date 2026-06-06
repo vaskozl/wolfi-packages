@@ -11,7 +11,7 @@ package:
     - license: GPL-2.0
   dependencies:
     runtime:
-      - linux-asahi=${{package.full-version}}
+      - linux-asahi~${{package.version}}
       - zstd
 environment:
   contents:
@@ -28,7 +28,7 @@ environment:
       - findutils
       - kmod
       - libgcrypt
-      - linux-asahi=${{package.full-version}}
+      - linux-asahi~${{package.version}}
       - posix-libc-utils
       - wolfi-baselayout
       - zstd
