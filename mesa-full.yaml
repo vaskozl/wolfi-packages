@@ -2,23 +2,19 @@
 package:
   name: mesa-full
   version: "26.1.1"
-  epoch: 2 # declare spirv-tools runtime dep (unversioned soname, SCA misses it)
+  epoch: 4 # pin spirv-llvm-translator-dev to 19.1 for LLVMSPIRVLib < 19.2
   description: Mesa DRI OpenGL/Vulkan, single unsplit package with Intel drivers (x86_64)
   copyright:
     - license: MIT AND SGI-B-2.0 AND BSL-1.0
   target-architecture:
     - x86_64
   dependencies:
-    # Win over Wolfi's split mesa for every name it provides.
+    # Win over Wolfi's split mesa. The mesa-egl/gbm/gl/gles/glx/libgallium
+    # virtuals are provided by the lib subpackages below (each at priority 10),
+    # mirroring Wolfi's mesa.yaml file layout so we are a true drop-in.
     provider-priority: "10"
     provides:
       - mesa=${{package.full-version}}
-      - mesa-egl=${{package.full-version}}
-      - mesa-gbm=${{package.full-version}}
-      - mesa-gl=${{package.full-version}}
-      - mesa-gles=${{package.full-version}}
-      - mesa-glx=${{package.full-version}}
-      - mesa-libgallium=${{package.full-version}}
     runtime:
       - libglvnd
       # CLC (Intel Vulkan) hard-requires the spirv-tools meson feature, which links
@@ -76,7 +72,10 @@ environment:
       - py${{vars.py-version}}-pyyaml
       - py${{vars.py-version}}-setuptools
       - python-${{vars.py-version}}
-      - spirv-llvm-translator-dev
+      # Pin to the 19.1 stream: mesa (built against LLVM 19) requires
+      # LLVMSPIRVLib < 19.2, but Wolfi ships a newer 22.x that apk would
+      # otherwise prefer by version. Forces our local 19.1.18 build.
+      - spirv-llvm-translator-dev<19.2
       - spirv-tools-dev
       - systemd-dev
       - vulkan-loader
@@ -139,7 +138,54 @@ pipeline:
 
       DESTDIR="${{targets.destdir}}" meson install --no-rebuild -C output
   - uses: strip
+data:
+  - name: libs
+    items:
+      egl: libEGL_mesa
+      glx: libGLX_mesa
+      gbm: libgbm
+      libgallium: libgallium-${{package.version}}
+  - name: transitive
+    items:
+      gl: ""
+      gles: ""
 subpackages:
+  # Runtime lib subpackages mirroring Wolfi's mesa.yaml matrix layout. Each
+  # provides the Wolfi virtual name at priority 10 so it wins over Wolfi's
+  # same-named package despite our older version. Listed BEFORE -dev so their
+  # mv claims the unversioned .so dev symlinks (notably libgbm.so) before
+  # split/dev runs.
+  - range: libs
+    name: ${{package.name}}-${{range.key}}
+    description: mesa ${{range.key}} (drop-in for Wolfi mesa-${{range.key}})
+    dependencies:
+      provider-priority: "10"
+      provides:
+        - mesa-${{range.key}}=${{package.full-version}}
+      runtime:
+        - libglvnd
+        - mesa-libgallium=${{package.full-version}}
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/lib"
+          mv "${{targets.destdir}}/usr/lib/${{range.value}}.so"* "${{targets.subpkgdir}}/usr/lib/"
+    test:
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: ${{package.name}}-${{range.key}}
+  # Transitive metapackages (no files), mirroring Wolfi's mesa-gl/mesa-gles.
+  - range: transitive
+    name: ${{package.name}}-${{range.key}}
+    description: mesa transitive package for ${{range.key}} (drop-in for Wolfi mesa-${{range.key}})
+    dependencies:
+      provider-priority: "10"
+      provides:
+        - mesa-${{range.key}}=${{package.full-version}}
+      runtime:
+        - ${{package.name}}=${{package.full-version}}
+        - mesa-glx=${{package.full-version}}
+    pipeline: []
   - name: ${{package.name}}-dev
     description: ${{package.name}} development headers and libraries
     pipeline:
@@ -173,7 +219,6 @@ test:
         test -e /usr/share/vulkan/icd.d/intel_icd.x86_64.json
         test -e /usr/lib/libvulkan_intel_hasvk.so
         test -e /usr/share/vulkan/icd.d/intel_hasvk_icd.x86_64.json
-
 update:
   enabled: true
   git: {}
