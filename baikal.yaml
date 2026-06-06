@@ -1,7 +1,7 @@
 package:
   name: baikal
   version: "0.11.1"
-  epoch: 2 # fix rsync flattening Core/ and html/ into pkg root
+  epoch: 3 # fix rsync flattening Core/ and html/ into pkg root
   description: Lightweight CalDAV/CardDAV server
   copyright:
     - license: GPL-3.0-or-later
@@ -50,9 +50,13 @@ pipeline:
         composer.json \
         build/baikal/
 
-      # Install dependencies (ignore platform reqs for missing extensions)
+      # Install dependencies (ignore platform reqs for missing extensions).
+      # --no-security-blocking: we ship the upstream release as-is; remediating
+      # transitive twig/symfony advisories is upstream's job. Without it Composer
+      # discards every advisory-flagged version pre-resolution and the build
+      # becomes permanently unbuildable as new advisories accrue.
       cd build/baikal
-      composer install --no-dev --no-interaction --ignore-platform-reqs
+      composer install --no-dev --no-interaction --ignore-platform-reqs --no-security-blocking
   - runs: |
       set -eu
       # Install to /usr/share/webapps

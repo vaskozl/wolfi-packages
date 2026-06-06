@@ -1,7 +1,7 @@
 package:
   name: dracut
   version: "108"
-  epoch: 1 # tighten test pipeline
+  epoch: 2 # tighten test pipeline
   description: Initramfs generator using udev
   copyright:
     - license: GPL-2.0-or-later AND LGPL-2.1-or-later AND GPL-2.0-only
@@ -51,12 +51,19 @@ subpackages:
         - uses: test/tw/ldd-check
 test:
   pipeline:
-    - runs: |
+    - uses: test/ver-check
+      with:
+        bins: |
+          dracut
+    - uses: test/help-check
+      with:
+        bins: |
+          dracut
+          lsinitrd
+    - name: dracut-catimages is present
+      runs: |
         set -eu
-        dracut --help | grep -F -e "Creates initial ramdisk images for preloading modules"
-        dracut --version
-        lsinitrd --help 2>&1 | grep -F -e "Usage: lsinitrd"
-        dracut-catimages --help 2>&1 | grep -F -e "Creates initial ramdisk image by concatenating several images from the command"
+        command -v dracut-catimages
 update:
   enabled: true
   github:
