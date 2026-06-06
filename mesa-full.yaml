@@ -135,102 +135,50 @@ pipeline:
 
       DESTDIR="${{targets.destdir}}" meson install --no-rebuild -C output
   - uses: strip
+data:
+  - name: libs
+    items:
+      egl: libEGL_mesa
+      glx: libGLX_mesa
+      gbm: libgbm
+      libgallium: libgallium-${{package.version}}
+  - name: transitive
+    items:
+      gl: ""
+      gles: ""
 subpackages:
-  # Runtime lib subpackages mirroring Wolfi's mesa.yaml layout. Each provides
-  # the Wolfi virtual name at priority 10 so it wins over Wolfi's same-named
-  # package despite our older version. Listed BEFORE -dev so their mv claims
-  # the unversioned .so dev symlinks (notably libgbm.so) before split/dev runs.
-  - name: ${{package.name}}-libgallium
-    description: Mesa Gallium driver shared library (drop-in for Wolfi mesa-libgallium)
+  # Runtime lib subpackages mirroring Wolfi's mesa.yaml matrix layout. Each
+  # provides the Wolfi virtual name at priority 10 so it wins over Wolfi's
+  # same-named package despite our older version. Listed BEFORE -dev so their
+  # mv claims the unversioned .so dev symlinks (notably libgbm.so) before
+  # split/dev runs.
+  - range: libs
+    name: ${{package.name}}-${{range.key}}
+    description: mesa ${{range.key}} (drop-in for Wolfi mesa-${{range.key}})
     dependencies:
       provider-priority: "10"
       provides:
-        - mesa-libgallium=${{package.full-version}}
-      runtime:
-        - libglvnd
-    pipeline:
-      - runs: |
-          mkdir -p "${{targets.subpkgdir}}/usr/lib"
-          mv "${{targets.destdir}}/usr/lib/libgallium-${{package.version}}.so"* "${{targets.subpkgdir}}/usr/lib/"
-    test:
-      pipeline:
-        - uses: test/ldd-check
-          with:
-            packages: ${{package.name}}-libgallium
-  - name: ${{package.name}}-egl
-    description: Mesa EGL library (drop-in for Wolfi mesa-egl)
-    dependencies:
-      provider-priority: "10"
-      provides:
-        - mesa-egl=${{package.full-version}}
+        - mesa-${{range.key}}=${{package.full-version}}
       runtime:
         - libglvnd
         - mesa-libgallium=${{package.full-version}}
     pipeline:
       - runs: |
           mkdir -p "${{targets.subpkgdir}}/usr/lib"
-          mv "${{targets.destdir}}/usr/lib/libEGL_mesa.so"* "${{targets.subpkgdir}}/usr/lib/"
+          mv "${{targets.destdir}}/usr/lib/${{range.value}}.so"* "${{targets.subpkgdir}}/usr/lib/"
     test:
       pipeline:
         - uses: test/ldd-check
           with:
-            packages: ${{package.name}}-egl
-  - name: ${{package.name}}-glx
-    description: Mesa GLX library (drop-in for Wolfi mesa-glx)
-    dependencies:
-      provider-priority: "10"
-      provides:
-        - mesa-glx=${{package.full-version}}
-      runtime:
-        - libglvnd
-        - mesa-libgallium=${{package.full-version}}
-    pipeline:
-      - runs: |
-          mkdir -p "${{targets.subpkgdir}}/usr/lib"
-          mv "${{targets.destdir}}/usr/lib/libGLX_mesa.so"* "${{targets.subpkgdir}}/usr/lib/"
-    test:
-      pipeline:
-        - uses: test/ldd-check
-          with:
-            packages: ${{package.name}}-glx
-  # The libgbm.so* glob captures the unversioned libgbm.so dev symlink along
-  # with libgbm.so.1* -- this is the fix for -lgbm on x86_64. The /usr/lib/gbm
-  # DRI backend dir stays in the main package, matching Wolfi's mesa-gbm.
-  - name: ${{package.name}}-gbm
-    description: Mesa GBM library (drop-in for Wolfi mesa-gbm, incl. libgbm.so dev symlink)
-    dependencies:
-      provider-priority: "10"
-      provides:
-        - mesa-gbm=${{package.full-version}}
-      runtime:
-        - libglvnd
-        - mesa-libgallium=${{package.full-version}}
-    pipeline:
-      - runs: |
-          mkdir -p "${{targets.subpkgdir}}/usr/lib"
-          mv "${{targets.destdir}}/usr/lib/libgbm.so"* "${{targets.subpkgdir}}/usr/lib/"
-    test:
-      pipeline:
-        - uses: test/ldd-check
-          with:
-            packages: ${{package.name}}-gbm
+            packages: ${{package.name}}-${{range.key}}
   # Transitive metapackages (no files), mirroring Wolfi's mesa-gl/mesa-gles.
-  - name: ${{package.name}}-gl
-    description: Mesa GL transitive package (drop-in for Wolfi mesa-gl)
+  - range: transitive
+    name: ${{package.name}}-${{range.key}}
+    description: mesa transitive package for ${{range.key}} (drop-in for Wolfi mesa-${{range.key}})
     dependencies:
       provider-priority: "10"
       provides:
-        - mesa-gl=${{package.full-version}}
-      runtime:
-        - ${{package.name}}=${{package.full-version}}
-        - mesa-glx=${{package.full-version}}
-    pipeline: []
-  - name: ${{package.name}}-gles
-    description: Mesa GLES transitive package (drop-in for Wolfi mesa-gles)
-    dependencies:
-      provider-priority: "10"
-      provides:
-        - mesa-gles=${{package.full-version}}
+        - mesa-${{range.key}}=${{package.full-version}}
       runtime:
         - ${{package.name}}=${{package.full-version}}
         - mesa-glx=${{package.full-version}}
