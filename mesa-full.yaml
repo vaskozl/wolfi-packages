@@ -2,23 +2,19 @@
 package:
   name: mesa-full
   version: "26.1.1"
-  epoch: 2 # declare spirv-tools runtime dep (unversioned soname, SCA misses it)
+  epoch: 3 # split lib subpackages so mesa-gbm provider ships libgbm.so dev symlink
   description: Mesa DRI OpenGL/Vulkan, single unsplit package with Intel drivers (x86_64)
   copyright:
     - license: MIT AND SGI-B-2.0 AND BSL-1.0
   target-architecture:
     - x86_64
   dependencies:
-    # Win over Wolfi's split mesa for every name it provides.
+    # Win over Wolfi's split mesa. The mesa-egl/gbm/gl/gles/glx/libgallium
+    # virtuals are provided by the lib subpackages below (each at priority 10),
+    # mirroring Wolfi's mesa.yaml file layout so we are a true drop-in.
     provider-priority: "10"
     provides:
       - mesa=${{package.full-version}}
-      - mesa-egl=${{package.full-version}}
-      - mesa-gbm=${{package.full-version}}
-      - mesa-gl=${{package.full-version}}
-      - mesa-gles=${{package.full-version}}
-      - mesa-glx=${{package.full-version}}
-      - mesa-libgallium=${{package.full-version}}
     runtime:
       - libglvnd
       # CLC (Intel Vulkan) hard-requires the spirv-tools meson feature, which links
@@ -140,6 +136,105 @@ pipeline:
       DESTDIR="${{targets.destdir}}" meson install --no-rebuild -C output
   - uses: strip
 subpackages:
+  # Runtime lib subpackages mirroring Wolfi's mesa.yaml layout. Each provides
+  # the Wolfi virtual name at priority 10 so it wins over Wolfi's same-named
+  # package despite our older version. Listed BEFORE -dev so their mv claims
+  # the unversioned .so dev symlinks (notably libgbm.so) before split/dev runs.
+  - name: ${{package.name}}-libgallium
+    description: Mesa Gallium driver shared library (drop-in for Wolfi mesa-libgallium)
+    dependencies:
+      provider-priority: "10"
+      provides:
+        - mesa-libgallium=${{package.full-version}}
+      runtime:
+        - libglvnd
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/lib"
+          mv "${{targets.destdir}}/usr/lib/libgallium-${{package.version}}.so"* "${{targets.subpkgdir}}/usr/lib/"
+    test:
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: ${{package.name}}-libgallium
+  - name: ${{package.name}}-egl
+    description: Mesa EGL library (drop-in for Wolfi mesa-egl)
+    dependencies:
+      provider-priority: "10"
+      provides:
+        - mesa-egl=${{package.full-version}}
+      runtime:
+        - libglvnd
+        - mesa-libgallium=${{package.full-version}}
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/lib"
+          mv "${{targets.destdir}}/usr/lib/libEGL_mesa.so"* "${{targets.subpkgdir}}/usr/lib/"
+    test:
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: ${{package.name}}-egl
+  - name: ${{package.name}}-glx
+    description: Mesa GLX library (drop-in for Wolfi mesa-glx)
+    dependencies:
+      provider-priority: "10"
+      provides:
+        - mesa-glx=${{package.full-version}}
+      runtime:
+        - libglvnd
+        - mesa-libgallium=${{package.full-version}}
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/lib"
+          mv "${{targets.destdir}}/usr/lib/libGLX_mesa.so"* "${{targets.subpkgdir}}/usr/lib/"
+    test:
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: ${{package.name}}-glx
+  # The libgbm.so* glob captures the unversioned libgbm.so dev symlink along
+  # with libgbm.so.1* -- this is the fix for -lgbm on x86_64. The /usr/lib/gbm
+  # DRI backend dir stays in the main package, matching Wolfi's mesa-gbm.
+  - name: ${{package.name}}-gbm
+    description: Mesa GBM library (drop-in for Wolfi mesa-gbm, incl. libgbm.so dev symlink)
+    dependencies:
+      provider-priority: "10"
+      provides:
+        - mesa-gbm=${{package.full-version}}
+      runtime:
+        - libglvnd
+        - mesa-libgallium=${{package.full-version}}
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}/usr/lib"
+          mv "${{targets.destdir}}/usr/lib/libgbm.so"* "${{targets.subpkgdir}}/usr/lib/"
+    test:
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: ${{package.name}}-gbm
+  # Transitive metapackages (no files), mirroring Wolfi's mesa-gl/mesa-gles.
+  - name: ${{package.name}}-gl
+    description: Mesa GL transitive package (drop-in for Wolfi mesa-gl)
+    dependencies:
+      provider-priority: "10"
+      provides:
+        - mesa-gl=${{package.full-version}}
+      runtime:
+        - ${{package.name}}=${{package.full-version}}
+        - mesa-glx=${{package.full-version}}
+    pipeline: []
+  - name: ${{package.name}}-gles
+    description: Mesa GLES transitive package (drop-in for Wolfi mesa-gles)
+    dependencies:
+      provider-priority: "10"
+      provides:
+        - mesa-gles=${{package.full-version}}
+      runtime:
+        - ${{package.name}}=${{package.full-version}}
+        - mesa-glx=${{package.full-version}}
+    pipeline: []
   - name: ${{package.name}}-dev
     description: ${{package.name}} development headers and libraries
     pipeline:
@@ -173,7 +268,6 @@ test:
         test -e /usr/share/vulkan/icd.d/intel_icd.x86_64.json
         test -e /usr/lib/libvulkan_intel_hasvk.so
         test -e /usr/share/vulkan/icd.d/intel_hasvk_icd.x86_64.json
-
 update:
   enabled: true
   git: {}
