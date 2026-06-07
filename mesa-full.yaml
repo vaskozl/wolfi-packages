@@ -1,29 +1,20 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: mesa-full
-  version: "26.1.1"
-  epoch: 5 # add spirv-tools runtime to lib subpackages for libSPIRV-Tools.so
+  version: "26.1.2"
+  epoch: 0
   description: Mesa DRI OpenGL/Vulkan, single unsplit package with Intel drivers (x86_64)
   copyright:
     - license: MIT AND SGI-B-2.0 AND BSL-1.0
   target-architecture:
     - x86_64
   dependencies:
-    # Win over Wolfi's split mesa. The mesa-egl/gbm/gl/gles/glx/libgallium
-    # virtuals are provided by the lib subpackages below (each at priority 10),
-    # mirroring Wolfi's mesa.yaml file layout so we are a true drop-in.
     provider-priority: "10"
     provides:
       - mesa=${{package.full-version}}
     runtime:
       - libglvnd
-      # CLC (Intel Vulkan) hard-requires the spirv-tools meson feature, which links
-      # the unversioned libSPIRV-Tools.so soname. melange's SCA only emits versioned
-      # so:NAME.so.N deps, so it can't auto-resolve this -- declare it explicitly.
       - spirv-tools
-  resources:
-    cpu: "14"
-    memory: 13Gi
 vars:
   llvm-ver: 19
   py-version: "3.13"
@@ -72,17 +63,12 @@ environment:
       - py${{vars.py-version}}-pyyaml
       - py${{vars.py-version}}-setuptools
       - python-${{vars.py-version}}
-      # Pin to the 19.1 stream: mesa (built against LLVM 19) requires
-      # LLVMSPIRVLib < 19.2, but Wolfi ships a newer 22.x that apk would
-      # otherwise prefer by version. Forces our local 19.1.18 build.
+      # Pin to the 19.1 stream: mesa requires LLVMSPIRVLib < 19.2
       - spirv-llvm-translator-dev<19.2
       - spirv-tools-dev
       - systemd-dev
       - vulkan-loader
       - wayland-dev
-      # main ships the protocol .xml files, -dev ships wayland-protocols.pc.
-      # Without both mesa downloads+installs a bundled wayland-protocols
-      # subproject, leaking its files into our package.
       - wayland-protocols
       - wayland-protocols-dev
       - xorgproto
@@ -167,8 +153,6 @@ subpackages:
       runtime:
         - libglvnd
         - mesa-libgallium=${{package.full-version}}
-        # libEGL_mesa.so (CLC) links the unversioned libSPIRV-Tools.so soname,
-        # which melange's SCA can't auto-resolve -- declare it explicitly.
         - spirv-tools
     pipeline:
       - runs: |
@@ -179,7 +163,6 @@ subpackages:
         - uses: test/ldd-check
           with:
             packages: ${{package.name}}-${{range.key}}
-  # Transitive metapackages (no files), mirroring Wolfi's mesa-gl/mesa-gles.
   - range: transitive
     name: ${{package.name}}-${{range.key}}
     description: mesa transitive package for ${{range.key}} (drop-in for Wolfi mesa-${{range.key}})
@@ -226,4 +209,9 @@ test:
         test -e /usr/share/vulkan/icd.d/intel_hasvk_icd.x86_64.json
 update:
   enabled: true
-  git: {}
+  ignore-regex-patterns:
+    - "_"
+    - "-"
+  git:
+    strip-prefix: mesa-
+    tag-filter-prefix: mesa-
