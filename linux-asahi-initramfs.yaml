@@ -2,8 +2,8 @@
 package:
   name: linux-asahi-initramfs
   # datasource: alpine-base packageName: linux-asahi
-  version: 7.0.8_p1
-  epoch: 1 # rebuild for dracut 108
+  version: 7.0.10_p1
+  epoch: 0
   description: The Linux Asahi kernel initramfs
   target-architecture:
     - aarch64
