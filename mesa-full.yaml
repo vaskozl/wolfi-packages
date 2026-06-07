@@ -2,7 +2,7 @@
 package:
   name: mesa-full
   version: "26.1.1"
-  epoch: 4 # pin spirv-llvm-translator-dev to 19.1 for LLVMSPIRVLib < 19.2
+  epoch: 5 # add spirv-tools runtime to lib subpackages for libSPIRV-Tools.so
   description: Mesa DRI OpenGL/Vulkan, single unsplit package with Intel drivers (x86_64)
   copyright:
     - license: MIT AND SGI-B-2.0 AND BSL-1.0
@@ -80,8 +80,10 @@ environment:
       - systemd-dev
       - vulkan-loader
       - wayland-dev
-      # -dev ships wayland-protocols.pc; without it mesa downloads+installs a
-      # bundled wayland-protocols subproject, leaking its files into our package.
+      # main ships the protocol .xml files, -dev ships wayland-protocols.pc.
+      # Without both mesa downloads+installs a bundled wayland-protocols
+      # subproject, leaking its files into our package.
+      - wayland-protocols
       - wayland-protocols-dev
       - xorgproto
       - zlib-dev
@@ -165,6 +167,9 @@ subpackages:
       runtime:
         - libglvnd
         - mesa-libgallium=${{package.full-version}}
+        # libEGL_mesa.so (CLC) links the unversioned libSPIRV-Tools.so soname,
+        # which melange's SCA can't auto-resolve -- declare it explicitly.
+        - spirv-tools
     pipeline:
       - runs: |
           mkdir -p "${{targets.subpkgdir}}/usr/lib"
