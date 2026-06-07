@@ -126,7 +126,7 @@ pipeline:
       cp package.json ${{targets.contextdir}}/usr/lib/seerr/
       cp seerr-api.yml ${{targets.contextdir}}/usr/lib/seerr/
       cp package.json ${{targets.contextdir}}/usr/lib/seerr/
-      cp next.config.js ${{targets.contextdir}}/usr/lib/seerr/
+      cp next.config.ts ${{targets.contextdir}}/usr/lib/seerr/
 
       # Fix paths
       find "${{targets.contextdir}}/usr/lib/seerr/.next" -type f -print0 | xargs -0 sed -i "s^${{package.srcdir}}^/usr/lib/seerr^g"
