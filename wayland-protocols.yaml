@@ -1,6 +1,6 @@
 package:
   name: wayland-protocols
-  version: "1.48"
+  version: "1.49"
   epoch: 0
   description: Wayland protocol extensions
   copyright:
@@ -41,7 +41,6 @@ test:
     - runs: |
         set -eu
         stat /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml
-
 update:
   enabled: true
   git: {}
