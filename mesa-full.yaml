@@ -80,8 +80,10 @@ environment:
       - systemd-dev
       - vulkan-loader
       - wayland-dev
-      # -dev ships wayland-protocols.pc; without it mesa downloads+installs a
-      # bundled wayland-protocols subproject, leaking its files into our package.
+      # main ships the protocol .xml files, -dev ships wayland-protocols.pc.
+      # Without both mesa downloads+installs a bundled wayland-protocols
+      # subproject, leaking its files into our package.
+      - wayland-protocols
       - wayland-protocols-dev
       - xorgproto
       - zlib-dev
