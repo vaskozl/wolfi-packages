@@ -58,7 +58,6 @@ test:
       with:
         bins: |
           fuzzel
-
 update:
   enabled: true
   git: {}
