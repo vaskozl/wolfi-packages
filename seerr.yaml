@@ -15,18 +15,15 @@ environment:
       - jq
       - node-gyp
       - nodejs-${{vars.node-version}}
-      - pnpm
+      - pnpm<11
       - python3
 vars:
-  node-version: 25
+  node-version: 22
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/seerr-team/seerr
       tag: v${{package.version}}
-  - uses: patch
-    with:
-      patches: npm.patch
   - name: pnpm-build
     pipeline:
       - runs: |
