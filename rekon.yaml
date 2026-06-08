@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: rekon
+  version: "0.0.2"
+  epoch: 0
+  description: rekon framework example apps (clock, blog, ci, saas, pkgupdate)
+  copyright:
+    - license: Apache-2.0
+environment:
+  contents:
+    packages:
+      - ca-certificates-bundle
+      - go-1.26
+data:
+  - name: root-servers
+    items:
+      blog: ""
+      ci: ""
+      clock: ""
+  - name: nested-servers
+    items:
+      pkgupdate: ""
+      saas: ""
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://gitlab.sko.ai/doudous/rekon
+      tag: ${{package.version}}
+      type-hint: gitlab
+  - runs: |
+      set -eu
+      mkdir -p "${{targets.destdir}}/usr/share/doc/rekon"
+      cp -r README.md docs "${{targets.destdir}}/usr/share/doc/rekon/"
+subpackages:
+  - range: root-servers
+    name: rekon-${{range.key}}
+    description: rekon ${{range.key}} example app
+    pipeline:
+      - uses: go/build
+        with:
+          go-package: go-1.26
+          modroot: .
+          packages: ./examples/${{range.key}}
+          output: rekon-${{range.key}}
+          extra-args: -buildvcs=false
+    test:
+      pipeline:
+        - uses: test/help-check
+          with:
+            bins: |
+              rekon-${{range.key}}
+  - range: nested-servers
+    name: rekon-${{range.key}}
+    description: rekon ${{range.key}} example app
+    pipeline:
+      - uses: go/build
+        with:
+          go-package: go-1.26
+          modroot: examples/${{range.key}}
+          packages: .
+          output: rekon-${{range.key}}
+          extra-args: -buildvcs=false
+    test:
+      pipeline:
+        - uses: test/help-check
+          with:
+            bins: |
+              rekon-${{range.key}}
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        stat /usr/share/doc/rekon/README.md
