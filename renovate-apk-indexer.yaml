@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: renovate-apk-indexer
-  version: 0.1.0
-  epoch: 3 # drop build-base, pin go-1.26, add go-package, fix test
+  version: "0.2.0"
+  epoch: 0 # drop build-base, pin go-1.26, add go-package, fix test
   description: APK custom datasource HTTP server for renovate
   copyright:
     - license: Apache-2.0
@@ -17,9 +17,6 @@ pipeline:
     with:
       repository: https://github.com/hown3d/renovate-apk-indexer
       tag: v${{package.version}}
-  - uses: patch
-    with:
-      patches: e1d0ce8629e288cac062e748e62ee2204026f6ab.patch
   - uses: go/build
     with:
       go-package: go-1.26
