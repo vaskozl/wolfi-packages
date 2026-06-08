@@ -46,6 +46,11 @@ stages: [generate, build]
         export MELANGE_FLAGS="$MELANGE_FLAGS --ignore-signatures"
       fi
       mkdir -p "$OUT_DIR" "$CACHE_DIR" "$APK_CACHE_DIR"
+      cat >> common.env <<EOF
+      export GIT_CONFIG_COUNT=1
+      export GIT_CONFIG_KEY_0=url.https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/.insteadOf
+      export GIT_CONFIG_VALUE_0=https://${CI_SERVER_HOST}/
+      EOF
   variables:
     MELANGE_FLAGS: >-
       --workspace-dir=$CI_PROJECT_DIR
