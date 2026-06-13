@@ -78,3 +78,6 @@ test:
     - runs: |
         set -eu
         stat /usr/share/doc/rekon/README.md
+update:
+  enabled: true
+  git: {}
