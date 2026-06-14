@@ -18,7 +18,7 @@ stages: [generate, build]
   stage: build
   interruptible: true
   image:
-    name: ghcr.io/vaskozl/melange:0.53.0@sha256:1ef2d61d99de7d57b586026cc7a491c066311154b3bfe183880083b0215e3a17
+    name: ghcr.io/vaskozl/melange:0.53.1@sha256:7b308b614e0e51baab51017b7d7dae4a3232bc63d49725cee6b2a4729fc79086
     entrypoint: [""]
   before_script:
     - |
