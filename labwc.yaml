@@ -1,6 +1,6 @@
 package:
   name: labwc
-  version: "0.20.0"
+  version: "0.20.1"
   epoch: 0
   description: A wlroots-based stacking Wayland compositor in the style of Openbox
   copyright:
