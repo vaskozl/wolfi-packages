@@ -4,7 +4,7 @@
 # repository: https://github.com/intel/compute-runtime
 package:
   name: intel-compute-runtime
-  version: "26.18.38308.1"
+  version: "26.22.38646.4"
   epoch: 0
   description: Intel Graphics Compute Runtime for OpenCL (NEO, repackaged upstream binaries)
   copyright:
