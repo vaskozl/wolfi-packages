@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: rekon
-  version: "0.0.9"
+  version: "0.0.10"
   epoch: 0
   description: rekon framework example apps (clock, blog, ci, saas, pkgupdate)
   copyright:
@@ -26,7 +26,7 @@ pipeline:
   - uses: git-checkout
     with:
       repository: https://gitlab.sko.ai/doudous/rekon
-      tag: ${{package.version}}
+      tag: v${{package.version}}
       type-hint: gitlab
   - runs: |
       set -eu
@@ -80,4 +80,6 @@ test:
         stat /usr/share/doc/rekon/README.md
 update:
   enabled: true
-  git: {}
+  git:
+    strip-prefix: v
+    tag-filter-prefix: v
