@@ -98,6 +98,25 @@ generate:
     # yaml without propagating epoch to its reverse-deps. On main this is
     # a no-op (origin/main diffs against itself).
     - BASE_REF=origin/main .gitlab/bump-epochs.pl --check
+    # Guard against accidental signing-key clobbers: melange.rsa.pub is the
+    # repo's source-of-truth APK signing pubkey. Local `just build` runs used to
+    # regenerate it into the worktree, so a stray `git add` could silently rotate
+    # it. Fail any MR that touches it unless a commit in the MR explicitly opts
+    # in with the [rotate-signing-key] marker, so deliberate rotation stays a
+    # reviewed, isolated change. On main this diffs origin/main against itself
+    # and is a no-op.
+    - |
+      if git diff --name-only origin/main -- melange.rsa.pub | grep -q .; then
+        if git log origin/main..HEAD --format=%B | grep -qF '[rotate-signing-key]'; then
+          echo "melange.rsa.pub change authorized via [rotate-signing-key] commit marker."
+        else
+          echo "ERROR: this MR modifies melange.rsa.pub (the repo signing pubkey)." >&2
+          echo "Key rotation must be deliberate and reviewed in isolation; it should" >&2
+          echo "not ride along with an unrelated change. If this change is intended," >&2
+          echo "add [rotate-signing-key] to the commit message that touches the key." >&2
+          exit 1
+        fi
+      fi
     - .gitlab/gen-dag.sh > generated-pipeline.yml
   artifacts:
     paths: [generated-pipeline.yml]
