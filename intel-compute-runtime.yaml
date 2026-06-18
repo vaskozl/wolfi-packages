@@ -5,7 +5,7 @@
 package:
   name: intel-compute-runtime
   version: "26.22.38646.4"
-  epoch: 0
+  epoch: 1
   description: Intel Graphics Compute Runtime for OpenCL (NEO, repackaged upstream binaries)
   copyright:
     - license: MIT
