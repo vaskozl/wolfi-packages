@@ -1,6 +1,6 @@
 package:
   name: appstream
-  version: 1.1.2
+  version: "1.1.3"
   epoch: 0
   description: Software component metadata catalog library and tools
   copyright:
@@ -38,7 +38,7 @@ pipeline:
         -Ddocs=false \
         -Dgir=true \
         -Dinstall-docs=false \
-        -Dman=true \
+        -Dman=false \
         -Dqt=false \
         -Dstemming=false \
         -Dsvg-support=false \
@@ -56,13 +56,6 @@ subpackages:
     dependencies:
       runtime:
         - appstream
-  - name: ${{package.name}}-doc
-    pipeline:
-      - uses: split/manpages
-    description: appstream manpages
-    test:
-      pipeline:
-        - uses: test/docs
 test:
   pipeline:
     - uses: test/tw/ldd-check
