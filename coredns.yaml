@@ -1,0 +1,112 @@
+package:
+  name: coredns
+  version: "1.14.4"
+  epoch: 0
+  description: CoreDNS is a DNS server that chains plugins
+  copyright:
+    - license: Apache-2.0
+environment:
+  contents:
+    packages:
+      - go-1.25
+      - libcap-utils
+      - make
+  accounts:
+    # Need to run with privilege to be able to do setcap
+    run-as: root
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/coredns/coredns
+      tag: v${{package.version}}
+  - runs: |
+      # Generate code and fetch plugins
+      GOLANG_VERSION=$(go version | awk '{print $3}' | sed 's/^go//') make gen
+  - uses: go/build
+    with:
+      go-package: go-1.25
+      ldflags: -X github.com/coredns/coredns/coremain.GitCommit=v${{package.version}}
+      output: coredns
+      packages: .
+  - runs: setcap cap_net_bind_service=+ep "${{targets.contextdir}}/usr/bin/coredns"
+subpackages:
+  - name: ${{package.name}}-compat
+    dependencies:
+      provides:
+        - coredns-compat=${{package.full-version}}
+    pipeline:
+      - runs: |
+          mkdir -p "${{targets.subpkgdir}}"
+          ln -sf ./usr/bin/coredns "${{targets.subpkgdir}}/coredns"
+    test:
+      environment:
+        contents:
+          packages:
+            - ${{package.name}}
+      pipeline:
+        - runs: |
+            set -euo pipefail
+            readlink -f /coredns | grep -F /usr/bin/coredns
+        - uses: test/tw/ver-check
+          with:
+            bins: coredns
+        - uses: test/tw/help-check
+          with:
+            bins: coredns
+update:
+  enabled: true
+  github:
+    identifier: coredns/coredns
+    strip-prefix: v
+    use-tag: true
+# only passes with docker runner: `MELANGE_EXTRA_OPTS="--runner docker"
+test:
+  environment:
+    contents:
+      packages:
+        - bind-tools
+        - libcap-utils
+  pipeline:
+    - uses: test/tw/ldd-check
+    - runs: |
+        coredns -plugins
+    - uses: test/tw/ver-check
+      with:
+        bins: coredns
+    - uses: test/tw/help-check
+      with:
+        bins: coredns
+    - runs: |
+        set -euo pipefail
+        cat > Corefile <<EOF
+        .:1053 {
+            file /home/build/db.wolfi.dev
+            log
+            errors
+            cache
+        }
+        EOF
+
+        cat > /home/build/db.wolfi.dev <<'EOF'
+        $TTL 3600
+        @    IN SOA ns1.wolfi.dev. admin.wolfi.dev. (
+                  20240101   ; Serial
+                  7200       ; Refresh
+                  3600       ; Retry
+                  1209600    ; Expire
+                  3600 )     ; Negative Cache TTL
+        ;
+        @    IN NS  ns1.wolfi.dev.
+        ;
+        foo.wolfi.dev  IN TXT "hi"
+        EOF
+
+        coredns > /dev/null 2>&1 &
+        sleep 2
+
+        # validates intree plugins can be successfully loaded
+        dig @localhost -p 1053 foo.wolfi.dev TXT +short | grep -F '"hi"'
+    - name: Test file capabilities
+      runs: |
+        set -euo pipefail
+        getcap /usr/bin/coredns | cut -d ' ' -f2 | grep -E '^cap_net_bind_service=ep$'
