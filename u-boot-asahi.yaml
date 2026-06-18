@@ -44,6 +44,5 @@ test:
     - runs: |
         set -eu
         test -s /usr/share/u-boot-asahi/u-boot-nodtb.bin
-
 update:
   enabled: false # alpine-community datasource (alpine/wolfi-pinned)

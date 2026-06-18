@@ -36,7 +36,6 @@ subpackages:
         - runs: |
             set -eu
             stat /usr/include/tllist.h
-
 update:
   enabled: true
   git: {}

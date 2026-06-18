@@ -56,7 +56,6 @@ test:
         find "$fw/sof-ipc4" -name '*.ri' | grep -q .
         # The sof-ace-tplg compatibility symlink must resolve to a dir.
         test -d "$fw/sof-ace-tplg"
-
 update:
   enabled: true
   github:
