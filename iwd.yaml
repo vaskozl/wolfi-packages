@@ -101,7 +101,6 @@ test:
         stat /etc/iwd/main.conf
         stat /usr/share/dbus-1/system.d/iwd-dbus.conf
         stat /usr/lib/systemd/system/iwd.service
-
 update:
   enabled: true
   release-monitor:

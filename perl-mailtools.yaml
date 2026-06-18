@@ -45,7 +45,6 @@ test:
         ')
         echo "$out"
         echo "$out" | grep -qF 'foo@example.com|Foo Bar'
-
 update:
   enabled: true
   release-monitor:

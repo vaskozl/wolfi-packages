@@ -173,7 +173,7 @@ subpackages:
       runtime:
         - ${{package.name}}=${{package.full-version}}
         - mesa-glx=${{package.full-version}}
-    pipeline: 
+    pipeline:
   - name: ${{package.name}}-dev
     description: ${{package.name}} development headers and libraries
     pipeline:

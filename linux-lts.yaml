@@ -54,6 +54,5 @@ pipeline:
         "$out/config"
       install -Dm0644 "alpinepkg/boot/System.map-${{package.version}}-${{package.epoch}}-lts" \
         "$out/System.map"
-
 update:
   enabled: false # alpine-base datasource (alpine/wolfi-pinned)

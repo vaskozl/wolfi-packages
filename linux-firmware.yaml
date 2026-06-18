@@ -38,7 +38,6 @@ test:
         ls /usr/lib/firmware/amdgpu/gc_11_0_3_*.bin.zst >/dev/null
         ls /usr/lib/firmware/i915/tgl_guc_*.bin.zst >/dev/null
         ls /usr/lib/firmware/i915/adlp_guc_*.bin.zst >/dev/null
-
 update:
   enabled: true
   git: {}
