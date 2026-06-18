@@ -3,7 +3,7 @@ package:
   name: libclc
   # datasource: wolfi-base packageName: llvm-22
   version: "22.1.8"
-  epoch: 0 # rebuild for spirv-llvm-translator 22.1.3
+  epoch: 1 # rebuild for spirv-llvm-translator 22.1.3
   description: OpenCL C library implementation for the LLVM toolchain (LLVM 22)
   copyright:
     - license: Apache-2.0 WITH LLVM-exception
