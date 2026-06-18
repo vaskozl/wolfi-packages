@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: mesa-full
-  version: "26.1.2"
+  version: "26.1.3"
   epoch: 0
   description: Mesa DRI OpenGL/Vulkan, single unsplit package with Intel drivers (x86_64)
   copyright:
@@ -173,7 +173,7 @@ subpackages:
       runtime:
         - ${{package.name}}=${{package.full-version}}
         - mesa-glx=${{package.full-version}}
-    pipeline: []
+    pipeline: 
   - name: ${{package.name}}-dev
     description: ${{package.name}} development headers and libraries
     pipeline:
