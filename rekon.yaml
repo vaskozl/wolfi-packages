@@ -80,4 +80,6 @@ test:
         stat /usr/share/doc/rekon/README.md
 update:
   enabled: true
-  git: {}
+  git:
+    strip-prefix: v
+    tag-filter-prefix: v
