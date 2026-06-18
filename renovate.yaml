@@ -25,11 +25,10 @@ environment:
       - build-base
       - busybox
       - ca-certificates-bundle
-      - corepack
       - jq
       - nodejs-${{vars.node-version}}
       - npm
-      - pnpm
+      - pnpm<11
       - python3
 pipeline:
   - uses: git-checkout
@@ -60,8 +59,6 @@ pipeline:
       jq '.pnpm.overrides."ip-address" = "10.1.1"' package.json > temp.json && mv temp.json package.json # CVE-2026-42338 / GHSA-v2v4-37r5-5v8g
       jq '.pnpm.overrides."qs" = "6.15.2"' package.json > temp.json && mv temp.json package.json # CVE-2026-8723 / GHSA-q8mj-m7cp-5q26
   - runs: |
-      corepack enable
-      corepack install
       # Install deps with scripts disabled, then explicitly rebuild the
       # two native modules upstream tracks in pnpm.onlyBuiltDependencies.
       # pnpm 10's implicit approval path was silently skipping these in
