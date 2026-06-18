@@ -38,7 +38,7 @@ pipeline:
         -Ddocs=false \
         -Dgir=true \
         -Dinstall-docs=false \
-        -Dman=true \
+        -Dman=false \
         -Dqt=false \
         -Dstemming=false \
         -Dsvg-support=false \
@@ -56,13 +56,6 @@ subpackages:
     dependencies:
       runtime:
         - appstream
-  - name: ${{package.name}}-doc
-    pipeline:
-      - uses: split/manpages
-    description: appstream manpages
-    test:
-      pipeline:
-        - uses: test/docs
 test:
   pipeline:
     - uses: test/tw/ldd-check
