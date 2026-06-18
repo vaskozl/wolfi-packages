@@ -2,7 +2,7 @@
 package:
   name: asahi-fwextract
   version: "0.8.3"
-  epoch: 0
+  epoch: 1
   description: Asahi Linux firmware extractor
   copyright:
     - license: MIT
