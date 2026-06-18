@@ -1,7 +1,7 @@
 package:
   name: renovate
   version: "43.170.15"
-  epoch: 0
+  epoch: 1 # raise node heap for compile:ts
   description: "Automated dependency updates. Multi-platform and multi-language."
   copyright:
     - license: AGPL-3.0-only
@@ -71,6 +71,9 @@ pipeline:
       # own tools/docker/Dockerfile.
       pnpm i --no-frozen-lockfile --ignore-scripts
       pnpm rebuild re2 better-sqlite3
+      # compile:ts exhausts V8's default old-space heap, which is far
+      # smaller than the cgroup limit; raise it for the build only.
+      export NODE_OPTIONS="--max-old-space-size=8192"
       pnpm build
   - runs: |
       mkdir -p ${{targets.contextdir}}/usr/bin \
