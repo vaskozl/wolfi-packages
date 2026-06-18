@@ -4,7 +4,11 @@
 arch := `uname -m | sed 's/arm64/aarch64/'`
 runner := env_var_or_default("RUNNER", "bubblewrap")
 out_dir := justfile_directory() / "packages"
-key := env_var_or_default("KEY", "melange.rsa")
+# Local builds sign with a throwaway, gitignored key so they never overwrite the
+# committed melange.rsa.pub (the repo's source-of-truth signing pubkey). A
+# maintainer holding the real private key can set KEY=melange.rsa to override.
+local_key := "local-signing.rsa"
+key := env_var_or_default("KEY", local_key)
 arches := "x86_64 aarch64"
 
 # Reproducibility: derive SOURCE_DATE_EPOCH from the latest commit timestamp so
@@ -24,7 +28,7 @@ default:
 
 # Regenerate RSA signing keys and remove stale package indexes
 keygen:
-    melange keygen
+    melange keygen {{key}}
     find {{out_dir}} -name 'APKINDEX.tar.gz' -delete
 
 # Setup RSA signing key if missing
@@ -46,7 +50,7 @@ build pkg: setup
         --arch="{{arch}}" \
         --runner={{runner}} \
         --repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os,{{out_dir}} \
-        --keyring-append=melange.rsa.pub,https://apks.sko.ai/melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub \
+        --keyring-append={{key}}.pub,melange.rsa.pub,https://apks.sko.ai/melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub \
         --signing-key={{key}} \
         --pipeline-dirs=./pipelines \
         --env-file=common.env \
@@ -75,7 +79,7 @@ test pkg: setup
         --arch="{{arch}}" \
         --runner={{runner}} \
         --repository-append=https://apks.sko.ai,https://packages.wolfi.dev/os,{{out_dir}} \
-        --keyring-append=melange.rsa.pub,https://apks.sko.ai/melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub \
+        --keyring-append={{key}}.pub,melange.rsa.pub,https://apks.sko.ai/melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub \
         --pipeline-dirs ./pipelines \
         --env-file=common.env \
         --test-package-append=busybox \
