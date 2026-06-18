@@ -3,7 +3,7 @@
 package:
   name: radarr
   version: "6.2.1.10461"
-  epoch: 0 # disable NuGetAudit (MailKit advisory)
+  epoch: 1 # disable NuGetAudit (MailKit advisory)
   description: TV download automation for usenet and torrents.
   copyright:
     - license: GPL-3.0-only
