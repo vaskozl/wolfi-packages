@@ -21,7 +21,7 @@ pipeline:
       repository: https://github.com/cloudflare/cloudflared
       tag: ${{package.version}}
       expected-commit: 0e84636de9450d9e73c1e28932ed2bd62cb33e10
-  - uses: bump
+  - uses: go/bump
     with:
       deps: |-
         google.golang.org/grpc@v1.79.3
