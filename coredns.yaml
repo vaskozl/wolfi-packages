@@ -1,7 +1,7 @@
 package:
   name: coredns
   version: "1.14.4"
-  epoch: 0
+  epoch: 1 # drop run-as:root build account that broke bwrap in CI
   description: CoreDNS is a DNS server that chains plugins
   copyright:
     - license: Apache-2.0
@@ -11,9 +11,6 @@ environment:
       - go-1.25
       - libcap-utils
       - make
-  accounts:
-    # Need to run with privilege to be able to do setcap
-    run-as: root
 pipeline:
   - uses: git-checkout
     with:
@@ -47,10 +44,10 @@ subpackages:
         - runs: |
             set -euo pipefail
             readlink -f /coredns | grep -F /usr/bin/coredns
-        - uses: test/tw/ver-check
+        - uses: test/ver-check
           with:
             bins: coredns
-        - uses: test/tw/help-check
+        - uses: test/help-check
           with:
             bins: coredns
 update:
@@ -59,7 +56,6 @@ update:
     identifier: coredns/coredns
     strip-prefix: v
     use-tag: true
-# only passes with docker runner: `MELANGE_EXTRA_OPTS="--runner docker"
 test:
   environment:
     contents:
@@ -70,10 +66,10 @@ test:
     - uses: test/tw/ldd-check
     - runs: |
         coredns -plugins
-    - uses: test/tw/ver-check
+    - uses: test/ver-check
       with:
         bins: coredns
-    - uses: test/tw/help-check
+    - uses: test/help-check
       with:
         bins: coredns
     - runs: |
