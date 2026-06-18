@@ -5,7 +5,7 @@
 package:
   name: intel-graphics-compiler
   version: "2.36.3"
-  epoch: 0
+  epoch: 1
   description: Intel Graphics Compiler for OpenCL (repackaged upstream binaries)
   copyright:
     - license: MIT
