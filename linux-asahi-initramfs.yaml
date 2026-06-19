@@ -3,7 +3,7 @@ package:
   name: linux-asahi-initramfs
   # datasource: alpine-base packageName: linux-asahi
   version: 7.0.8_p1
-  epoch: 1 # rebuild for dracut 108
+  epoch: 2 # explicit kver to dracut
   description: The Linux Asahi kernel initramfs
   target-architecture:
     - aarch64
@@ -58,7 +58,8 @@ pipeline:
       mkdir -p /var/tmp "${{targets.destdir}}/usr/lib/modules/${_kernver}"
       ls -al /lib/modules
       depmod "${_kernver}"
-      dracut --force --verbose --kernel-cmdline "SYSTEMD_SULOGIN_FORCE=1" \
+      dracut --force --verbose --kver "${_kernver}" \
+        --kernel-cmdline "SYSTEMD_SULOGIN_FORCE=1" \
         "${{targets.destdir}}/usr/lib/modules/${_kernver}/initramfs.img"
   - runs: |
       set -eu

@@ -3,7 +3,7 @@ package:
   name: linux-lts-initramfs
   # datasource: alpine-base packageName: linux-lts
   version: 6.18.35
-  epoch: 0
+  epoch: 1 # explicit kver to dracut
   description: The Linux LTS kernel initramfs
   copyright:
     - license: GPL-2.0
@@ -49,7 +49,8 @@ pipeline:
       mkdir -p /var/tmp "${{targets.destdir}}/usr/lib/modules/$kver"
       ls -al /lib/modules
       depmod "$kver"
-      dracut --force --verbose --kernel-cmdline "SYSTEMD_SULOGIN_FORCE=1" \
+      dracut --force --verbose --kver "$kver" \
+        --kernel-cmdline "SYSTEMD_SULOGIN_FORCE=1" \
         "${{targets.destdir}}/usr/lib/modules/$kver/initramfs.img"
   - runs: |
       set -eu
