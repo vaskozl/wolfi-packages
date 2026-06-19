@@ -14,7 +14,7 @@ package:
       - nodejs-${{vars.node-version}}
   resources:
     cpu: "2"
-    memory: 11Gi
+    memory: 24Gi
 vars:
   # Upstream is using node 24
   node-version: 24
