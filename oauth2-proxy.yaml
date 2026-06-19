@@ -1,6 +1,6 @@
 package:
   name: oauth2-proxy
-  version: "7.15.2"
+  version: "7.15.3"
   epoch: 0
   description: Reverse proxy and static file server that provides authentication using various providers to validate accounts by email, domain or group.
   copyright:
