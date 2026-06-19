@@ -1,7 +1,7 @@
 package:
   name: renovate
   version: "43.170.15"
-  epoch: 1 # raise node heap for compile:ts
+  epoch: 1 # raise build memory + node heap for compile:ts
   description: "Automated dependency updates. Multi-platform and multi-language."
   copyright:
     - license: AGPL-3.0-only
@@ -14,7 +14,7 @@ package:
       - nodejs-${{vars.node-version}}
   resources:
     cpu: "2"
-    memory: 24Gi
+    memory: 31Gi
 vars:
   # Upstream is using node 24
   node-version: 24
