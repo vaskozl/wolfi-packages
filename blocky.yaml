@@ -3,7 +3,7 @@
 package:
   name: blocky
   version: "0.32.0"
-  epoch: 0
+  epoch: 1
   description: DNS proxy as ad-blocker for local network
   copyright:
     - license: Apache-2.0
