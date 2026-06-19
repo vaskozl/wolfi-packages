@@ -16,7 +16,7 @@ environment:
 pipeline:
   - runs: |
       set -eu
-      install -Dm644 powertop/powertop.service \
+      install -Dm644 powertop.service \
         "${{targets.destdir}}/usr/lib/systemd/system/powertop.service"
 test:
   pipeline:
