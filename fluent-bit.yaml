@@ -1,6 +1,6 @@
 package:
   name: fluent-bit
-  version: "5.0.6"
+  version: "5.0.7"
   epoch: 0
   description: Fast and Lightweight Log processor and forwarder
   resources:
