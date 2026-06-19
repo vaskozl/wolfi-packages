@@ -1,6 +1,6 @@
 package:
   name: buildkitd
-  version: "0.30.0"
+  version: "0.31.0"
   description: "concurrent, cache-efficient, and Dockerfile-agnostic builder toolkit"
   epoch: 0
   copyright:
@@ -30,7 +30,7 @@ pipeline:
     with:
       repository: https://github.com/moby/buildkit
       tag: v${{package.version}}
-      expected-commit: dd2170e156c9633da1b2d1a58a6188e3f7d36fa4
+      expected-commit: c411f0ac55a2c56d3d68b7d92d257538d5d6f464
   - uses: bump
     with:
       deps: |-
