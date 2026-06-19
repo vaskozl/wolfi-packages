@@ -2,7 +2,7 @@
 package:
   name: kitty
   version: "0.47.4"
-  epoch: 0
+  epoch: 1
   description: Modern, hackable, featureful, OpenGL based terminal emulator
   copyright:
     - license: GPL-3.0-only
