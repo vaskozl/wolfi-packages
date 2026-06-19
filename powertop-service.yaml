@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: powertop-service
+  version: "1"
+  epoch: 0
+  description: systemd service that applies powertop --auto-tune on boot
+  copyright:
+    - license: GPL-2.0-only
+  dependencies:
+    runtime:
+      - powertop
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - runs: |
+      set -eu
+      install -Dm644 powertop/powertop.service \
+        "${{targets.destdir}}/usr/lib/systemd/system/powertop.service"
+test:
+  pipeline:
+    - uses: test/verify-service
+    - runs: |
+        set -eu
+        grep -F 'ExecStart=/usr/bin/powertop --auto-tune' \
+          /usr/lib/systemd/system/powertop.service
+update:
+  enabled: false # no upstream monitor
