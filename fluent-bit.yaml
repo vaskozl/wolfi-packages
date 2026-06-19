@@ -92,10 +92,10 @@ subpackages:
     description: fluent-bit dev
     test:
       pipeline:
-        - uses: test/virtualpackage
-          with:
-            virtual-pkg-name: fluent-bit-dev
-            real-pkg-name: ${{subpkg.name}}
+        - name: Expect fluent-bit development headers on disk
+          runs: |
+            set -eu
+            test -f /usr/include/fluent-bit/flb_api.h
   - name: ${{package.name}}-compat
     pipeline:
       - runs: |
@@ -107,10 +107,10 @@ subpackages:
         - fluent-bit-compat=${{package.full-version}}
     test:
       pipeline:
-        - uses: test/virtualpackage
-          with:
-            virtual-pkg-name: fluent-bit-compat
-            real-pkg-name: ${{subpkg.name}}
+        - name: Expect the /fluent-bit/bin/fluent-bit compat symlink
+          runs: |
+            set -eu
+            test -L /fluent-bit/bin/fluent-bit
 update:
   enabled: true
   github:
@@ -142,10 +142,10 @@ test:
         #
         # NOTE: 5-seconds is the 'fluent-bit' default for graceful shutdown,
         #       this is why we wait 6-seconds before the SIGKILL.
-        # NOTE: 'fluent-bit' is a daemon and will never exit, this is why we use
-        #       the '--preserve-status' flag, which passes through the binary's
-        #       exit code and skips a '124' exit code on timeout.
-        timeout --preserve-status -s INT -k 6 5 \
+        # NOTE: 'fluent-bit' is a daemon and will never exit on its own, so we
+        #       send SIGINT after 5s; busybox 'timeout' returns the binary's own
+        #       exit code once it shuts down gracefully.
+        timeout -s INT -k 6 5 \
           fluent-bit -i dummy -o stdout -l ${PWD}/out.log
     - name: Validate Presence of all Library Dependencies
       uses: test/tw/ldd-check
