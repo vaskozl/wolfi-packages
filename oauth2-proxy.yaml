@@ -1,6 +1,6 @@
 package:
   name: oauth2-proxy
-  version: "7.15.2"
+  version: "7.15.3"
   epoch: 0
   description: Reverse proxy and static file server that provides authentication using various providers to validate accounts by email, domain or group.
   copyright:
@@ -30,7 +30,7 @@ pipeline:
     with:
       repository: https://github.com/oauth2-proxy/oauth2-proxy
       tag: v${{package.version}}
-      expected-commit: 5961fd99b42c3625b8ef08690d38be5cb37f44b0
+      expected-commit: 66b3a17db09f0b51a4bc3159d4c7fe3fbeca1288
   - uses: bump
     with:
       deps: |-
