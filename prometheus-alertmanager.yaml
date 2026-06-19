@@ -30,7 +30,7 @@ pipeline:
     with:
       repository: https://github.com/prometheus/alertmanager
       tag: v${{package.version}}
-      expected-commit: 8768aa6f65f1a888b5aa5fbf877cf20ad45d1f61
+      expected-commit: 5d3ceb55bf3775ea152dcdf3803bbbb2b4afed54
   - uses: bump
     with:
       deps: |-
@@ -60,8 +60,8 @@ pipeline:
     runs: |
       set -eu
       case "$(uname -m)" in
-        x86_64)  ARCH=amd64; SHA=e3ba4a543111dd4bbf436838385cbf88108f0b128a723e61fe97d3569294ad4d ;;
-        aarch64) ARCH=arm64; SHA=fff322eae493eabdec5c16dfdfb26b37508aaf3ca3238ab1ed1e5bebf3ff4cd9 ;;
+        x86_64)  ARCH=amd64; SHA=8ce11c42e8a6dfbbf93a59c0b193cb1329210b36d0c7ef3df7b745608675a1d1 ;;
+        aarch64) ARCH=arm64; SHA=d01853efe9c61a7009e55d8df98f0f4c9e9b9c58130be177c5812203fd7bfa81 ;;
         *) echo "unsupported arch: $(uname -m)"; exit 1 ;;
       esac
       cd /tmp
