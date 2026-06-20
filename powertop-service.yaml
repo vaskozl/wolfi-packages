@@ -2,7 +2,7 @@
 package:
   name: powertop-service
   version: "1"
-  epoch: 0
+  epoch: 1
   description: systemd service that applies powertop --auto-tune on boot
   copyright:
     - license: GPL-2.0-only
