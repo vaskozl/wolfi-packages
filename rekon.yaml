@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: rekon
-  version: "0.0.11"
+  version: "0.0.12"
   epoch: 0
   description: rekon framework example apps (clock, blog, ci, saas, pkgupdate)
   copyright:
@@ -9,7 +9,6 @@ package:
 environment:
   contents:
     packages:
-      - bun
       - ca-certificates-bundle
       - go-1.26
 data:
@@ -28,12 +27,13 @@ pipeline:
       repository: https://gitlab.sko.ai/doudous/rekon
       tag: v${{package.version}}
       type-hint: gitlab
-  - runs: |
-      set -eu
-      cd server/ui
-      bun install --frozen-lockfile
-      go tool templ generate
-      bun run build:css
+  - uses: go/build
+    with:
+      go-package: go-1.26
+      modroot: .
+      packages: ./cmd/rekonctl
+      output: rekonctl
+      extra-args: -buildvcs=false
   - runs: |
       set -eu
       mkdir -p "${{targets.destdir}}/usr/share/doc/rekon"
@@ -75,6 +75,10 @@ subpackages:
               rekon-${{range.key}}
 test:
   pipeline:
+    - uses: test/help-check
+      with:
+        bins: |
+          rekonctl
     - runs: |
         set -eu
         stat /usr/share/doc/rekon/README.md
