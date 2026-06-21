@@ -1,0 +1,95 @@
+package:
+  name: pipewire
+  version: "1.6.7"
+  epoch: 0
+  description: Multimedia processing graphs
+  copyright:
+    - license: MIT
+  dependencies:
+    provider-priority: "10"
+environment:
+  contents:
+    packages:
+      - alsa-lib-dev
+      - avahi-dev
+      - bluez-dev
+      - build-base
+      - dbus-dev
+      - fftw-dev
+      - glib-dev
+      - gst-plugins-base-dev
+      - gstreamer-dev
+      - libsndfile-dev
+      - libusb-dev
+      - libxcb-dev
+      - libxfixes-dev
+      - meson
+      - openssl-dev
+      - opus-dev
+      - pulseaudio-dev
+      - readline-dev
+      - sbc-dev
+      - systemd-dev
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://gitlab.freedesktop.org/pipewire/pipewire.git
+      tag: ${{package.version}}
+  - uses: meson/configure
+    with:
+      opts: |
+        --auto-features=enabled \
+        -Dbluez5-codec-aac=disabled \
+        -Dbluez5-codec-aptx=disabled \
+        -Dbluez5-codec-lc3=disabled \
+        -Dbluez5-codec-lc3plus=disabled \
+        -Dbluez5-codec-ldac=disabled \
+        -Dbluez5-codec-ldac-dec=disabled \
+        -Dbluez5-backend-ofono=disabled \
+        -Dbluez5-plc-spandsp=disabled \
+        -Debur128=disabled \
+        -Decho-cancel-webrtc=disabled \
+        -Dexamples=disabled \
+        -Djack=disabled \
+        -Djack-devel=true \
+        -Dlibcamera=disabled \
+        -Dlibcanberra=disabled \
+        -Dlibffado=disabled \
+        -Dlibjack-path=/usr/lib \
+        -Dlibmysofa=disabled \
+        -Dlibv4l2-path=/usr/lib \
+        -Dlv2=disabled \
+        -Donnxruntime=disabled \
+        -Droc=disabled \
+        -Dsdl2=disabled \
+        -Dselinux=disabled \
+        -Dsession-managers=[] \
+        -Dsnap=disabled \
+        -Dtests=disabled \
+        -Dudevrulesdir=/usr/lib/udev/rules.d
+  - uses: meson/compile
+  - uses: meson/install
+  - runs: |
+      set -eu
+      install -d "${{targets.destdir}}/usr/lib/systemd/user/sockets.target.wants"
+      ln -sf ../pipewire.socket \
+        "${{targets.destdir}}/usr/lib/systemd/user/sockets.target.wants/pipewire.socket"
+      ln -sf ../pipewire-pulse.socket \
+        "${{targets.destdir}}/usr/lib/systemd/user/sockets.target.wants/pipewire-pulse.socket"
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-dev
+    description: ${{package.name}} development libraries and headers
+    pipeline:
+      - uses: split/dev
+    test:
+      pipeline:
+        - uses: test/pkgconf
+test:
+  pipeline:
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
+update:
+  enabled: true
+  git: {}
