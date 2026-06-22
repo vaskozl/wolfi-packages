@@ -2,8 +2,8 @@
 package:
   name: linux-asahi-initramfs
   # datasource: alpine-base packageName: linux-asahi
-  version: 7.0.8_p1
-  epoch: 2 # explicit kver to dracut
+  version: 7.0.13_p1
+  epoch: 0
   description: The Linux Asahi kernel initramfs
   target-architecture:
     - aarch64
