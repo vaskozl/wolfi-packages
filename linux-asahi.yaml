@@ -2,7 +2,7 @@
 package:
   name: linux-asahi
   # datasource: alpine-base packageName: linux-asahi
-  version: 7.0.8_p1
+  version: 7.0.13_p1
   epoch: 0
   description: Repackaged Alpine linux-asahi kernel for Apple Silicon
   target-architecture:
