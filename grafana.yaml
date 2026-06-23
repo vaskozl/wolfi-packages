@@ -1,6 +1,6 @@
 package:
   name: grafana
-  version: "13.0.2"
+  version: "13.0.3"
   epoch: 0
   # When bumping, check if we can unpin nodejs-22.
   # Remove this comment when nodejs-22 is unpinned.
