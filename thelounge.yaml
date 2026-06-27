@@ -51,8 +51,6 @@ pipeline:
       cp -r public ${{targets.destdir}}/usr/share/webapps/thelounge/
 
       # Additional runtime files
-      mkdir -p ${{targets.destdir}}/usr/share/webapps/thelounge/client
-      cp client/index.html.tpl ${{targets.destdir}}/usr/share/webapps/thelounge/client/
       cp .thelounge_home ${{targets.destdir}}/usr/share/webapps/thelounge/
 
       # Prune to production dependencies only, then copy
