@@ -1,12 +1,14 @@
 package:
-  name: pipewire
+  name: pipewire-full
   version: "1.6.7"
   epoch: 0
-  description: Multimedia processing graphs
+  description: Multimedia processing graphs, single unsplit package
   copyright:
     - license: MIT
   dependencies:
     provider-priority: "10"
+    provides:
+      - pipewire=${{package.full-version}}
 environment:
   contents:
     packages:
@@ -82,6 +84,11 @@ subpackages:
     description: ${{package.name}} development libraries and headers
     pipeline:
       - uses: split/dev
+    dependencies:
+      provides:
+        - pipewire-dev=${{package.full-version}}
+      runtime:
+        - ${{package.name}}=${{package.full-version}}
     test:
       pipeline:
         - uses: test/pkgconf
