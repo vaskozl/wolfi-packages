@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: rekon
-  version: "0.0.18"
+  version: "0.0.19"
   epoch: 0
   description: rekon framework example apps (clock, blog, ci, saas, pkgupdate)
   copyright:
