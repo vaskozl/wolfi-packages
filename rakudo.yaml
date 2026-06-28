@@ -2,7 +2,7 @@
 package:
   name: rakudo
   version: "2026.06"
-  epoch: 0 # drop busybox from test env (implicit), fix test anti-patterns
+  epoch: 1 # drop busybox from test env (implicit), fix test anti-patterns
   description: Rakudo is a compiler for the Raku programming language
   copyright:
     - license: Artistic-2.0
