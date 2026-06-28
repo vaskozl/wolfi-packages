@@ -1,6 +1,6 @@
 package:
   name: thelounge
-  version: "4.5.0"
+  version: "4.5.1"
   epoch: 0 # fix test anti-patterns
   description: Web IRC client that you host on your own server
   copyright:
@@ -47,12 +47,14 @@ pipeline:
       # Compiled server code (tsc output)
       cp -r dist ${{targets.destdir}}/usr/share/webapps/thelounge/
 
-      # Webpack-built client assets
+      # Vite-built client assets
       cp -r public ${{targets.destdir}}/usr/share/webapps/thelounge/
 
+      # Runtime version helper (required by dist/server/helper.js)
+      mkdir -p ${{targets.destdir}}/usr/share/webapps/thelounge/scripts
+      cp scripts/version.js ${{targets.destdir}}/usr/share/webapps/thelounge/scripts/
+
       # Additional runtime files
-      mkdir -p ${{targets.destdir}}/usr/share/webapps/thelounge/client
-      cp client/index.html.tpl ${{targets.destdir}}/usr/share/webapps/thelounge/client/
       cp .thelounge_home ${{targets.destdir}}/usr/share/webapps/thelounge/
 
       # Prune to production dependencies only, then copy
