@@ -41,7 +41,7 @@ pipeline:
     with:
       repository: https://github.com/fluent/fluent-bit
       tag: v${{package.version}}
-      expected-commit: 5880717dd881b8839850a4645996de1ac47b1a5d
+      expected-commit: c2b1cfd5f5b3530d613c167fc999a7df4eb2eabb
   - runs: |
       cd build
       cmake -DFLB_RELEASE=On \
