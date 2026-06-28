@@ -2,7 +2,7 @@
 package:
   name: nqp
   version: "2026.06"
-  epoch: 0 # functional test refactor
+  epoch: 1 # functional test refactor
   description: Not Quite Perl (NQP) is a minimal Perl 6-like language for building compilers
   copyright:
     - license: Artistic-2.0
