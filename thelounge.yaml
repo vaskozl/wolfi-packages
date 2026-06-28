@@ -47,8 +47,12 @@ pipeline:
       # Compiled server code (tsc output)
       cp -r dist ${{targets.destdir}}/usr/share/webapps/thelounge/
 
-      # Webpack-built client assets
+      # Vite-built client assets
       cp -r public ${{targets.destdir}}/usr/share/webapps/thelounge/
+
+      # Runtime version helper (required by dist/server/helper.js)
+      mkdir -p ${{targets.destdir}}/usr/share/webapps/thelounge/scripts
+      cp scripts/version.js ${{targets.destdir}}/usr/share/webapps/thelounge/scripts/
 
       # Additional runtime files
       cp .thelounge_home ${{targets.destdir}}/usr/share/webapps/thelounge/
