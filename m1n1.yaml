@@ -1,6 +1,6 @@
 package:
   name: m1n1
-  version: "1.5.2"
+  version: "1.6.0"
   epoch: 0
   description: Bootloader and experimentation playground for Apple Silicon
   copyright:
@@ -13,16 +13,19 @@ environment:
       - bash
       - build-base
       - busybox
+      - ca-certificates-bundle
       - imagemagick
       - llvm
+      - rust
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/AsahiLinux/m1n1
       tag: v${{package.version}}
+      recurse-submodules: true
   - runs: |
       set -eu
-      make ARCH=
+      make ARCH= BUILDSTD=1
       mkdir -p ${{targets.destdir}}/usr/share/m1n1
       install -m644 build/m1n1.bin   ${{targets.destdir}}/usr/share/m1n1/
       install -m644 build/m1n1.macho ${{targets.destdir}}/usr/share/m1n1/
