@@ -2,7 +2,7 @@
 package:
   name: moarvm
   version: "2026.06"
-  epoch: 0 # functional test refactor
+  epoch: 1 # rebuild to publish 2026.06 for rakudo
   description: VM with adaptive optimization and JIT compilation, built for Rakudo
   copyright:
     - license: Artistic-2.0
