@@ -2,7 +2,7 @@
 package:
   name: linux-lts
   # datasource: alpine-base packageName: linux-lts
-  version: 6.18.36
+  version: 6.18.37
   epoch: 0
   description: Repackaged Alpine linux-lts kernel
   copyright:
