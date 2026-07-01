@@ -1,7 +1,7 @@
 package:
   name: ostree
-  version: "2026.1"
-  epoch: 1 # functional test improvements
+  version: "2026.2"
+  epoch: 0 # functional test improvements
   description: "Operating system and container binary deployment and upgrades"
   copyright:
     - license: GPL-2.0-only
