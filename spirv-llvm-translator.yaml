@@ -32,7 +32,7 @@ pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/KhronosGroup/SPIRV-Headers
-      expected-commit: b8a32968473ce852a809b9de5f04f02a5a9dfa78
+      expected-commit: 948a3b0997e2dffea5484b3df7bd5590c5b844cc
       depth: -1
       destination: spirv-headers
   - runs: |
