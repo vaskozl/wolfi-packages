@@ -44,7 +44,6 @@ environment:
       - libvdpau-dev
       - libx11-dev
       - libxcb-dev
-      - libxdamage-dev
       - libxext-dev
       - libxfixes-dev
       - libxml2-dev
