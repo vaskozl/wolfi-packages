@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: alps
+  version: "1"
+  epoch: 0
+  description: Simple and extensible webmail
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - busybox
+      - ca-certificates-bundle
+      - go-1.26
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/migadu/alps
+      tag: v${{package.version}}
+  - uses: go/build
+    with:
+      go-package: go-1.26
+      packages: ./cmd/alps
+      output: alps
+      ldflags: -X main.version=v${{package.version}}
+  - runs: |
+      # Upstream unit hardcodes /usr/local/bin; Wolfi installs to /usr/bin.
+      sed -i 's|/usr/local/bin/alps|/usr/bin/alps|' dist/alps.service
+      install -Dm644 dist/alps.service "${{targets.destdir}}/usr/lib/systemd/system/alps.service"
+      install -Dm644 ./alps-sysusers.conf "${{targets.destdir}}/usr/lib/sysusers.d/alps.conf"
+      install -Dm644 config.example.toml "${{targets.destdir}}/usr/share/doc/alps/config.example.toml"
+  - uses: strip
+test:
+  environment:
+    contents:
+      packages:
+        - wget
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          alps
+    - name: Verify version ldflag, systemd unit, and HTTP boot
+      runs: |
+        set -eu
+        # ldflag must be injected: without it -version prints "alps unknown".
+        alps -version 2>&1 | grep -F "alps v"
+        stat /usr/lib/sysusers.d/alps.conf
+        stat /usr/share/doc/alps/config.example.toml
+        grep -F /usr/bin/alps /usr/lib/systemd/system/alps.service
+        # Minimal config: IMAP/SMTP URLs are only parsed at boot, not dialled,
+        # so the server serves its login page without a reachable mail server.
+        cat > /tmp/alps.toml <<'EOF'
+        [server]
+        addr = "127.0.0.1:1323"
+
+        [smtp]
+        server = "smtp://localhost:25"
+
+        [provider.imap]
+        server = "imap://localhost:143"
+        EOF
+        alps -config /tmp/alps.toml &
+        pid=$!
+        ok=""
+        i=0
+        while [ "$i" -lt 30 ]; do
+          if wget -qO- http://127.0.0.1:1323/ | grep -qi html; then
+            ok=1
+            break
+          fi
+          i=$((i + 1))
+          sleep 1
+        done
+        kill "$pid" 2>/dev/null || true
+        [ -n "$ok" ]
+update:
+  enabled: true
+  github:
+    identifier: migadu/alps
+    strip-prefix: v
+    use-tag: true
+    tag-filter-prefix: v
