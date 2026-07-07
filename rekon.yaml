@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: rekon
-  version: "0.0.26"
+  version: "0.0.27"
   epoch: 0
   description: rekon framework example apps (clock, blog, saas, pkgupdate)
   copyright:
@@ -65,7 +65,7 @@ subpackages:
           modroot: examples/${{range.key}}
           packages: .
           output: rekon-${{range.key}}
-          extra-args: -buildvcs=false
+          extra-args: -buildvcs=false -mod=mod
     test:
       pipeline:
         - uses: test/help-check
