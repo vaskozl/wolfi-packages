@@ -65,7 +65,7 @@ subpackages:
           modroot: examples/${{range.key}}
           packages: .
           output: rekon-${{range.key}}
-          extra-args: -buildvcs=false
+          extra-args: -buildvcs=false -mod=mod
     test:
       pipeline:
         - uses: test/help-check
