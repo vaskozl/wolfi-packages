@@ -2,7 +2,7 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/prowlarr/APKBUILD
 package:
   name: prowlarr
-  version: "2.5.0.5422"
+  version: "2.5.1.5460"
   epoch: 0 # disable NuGetAudit (MailKit advisory)
   description: TV download automation for usenet and torrents.
   copyright:
