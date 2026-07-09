@@ -1,6 +1,6 @@
 package:
   name: pipewire-full
-  version: "1.6.7"
+  version: "1.6.8"
   epoch: 0
   description: Multimedia processing graphs, single unsplit package
   copyright:
