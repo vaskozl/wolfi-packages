@@ -2,7 +2,7 @@
 package:
   name: rekon
   version: "0.0.31"
-  epoch: 0
+  epoch: 1
   description: rekon framework example apps (clock, blog, saas, pkgupdate)
   copyright:
     - license: Apache-2.0
@@ -16,6 +16,7 @@ data:
     items:
       blog: ""
       clock: ""
+      homeflow: ""
   - name: nested-servers
     items:
       pkgupdate: ""
