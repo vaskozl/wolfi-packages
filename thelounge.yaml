@@ -1,6 +1,6 @@
 package:
   name: thelounge
-  version: "4.5.1"
+  version: "4.5.2"
   epoch: 0 # fix test anti-patterns
   description: Web IRC client that you host on your own server
   copyright:
