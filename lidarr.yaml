@@ -2,7 +2,7 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/lidarr/APKBUILD
 package:
   name: lidarr
-  version: "3.1.3.4968"
+  version: "3.1.3.4975"
   epoch: 0 # disable NuGetAudit (MailKit advisory)
   description: Music download automation for usenet and torrents.
   copyright:
@@ -90,13 +90,14 @@ test:
         /usr/lib/lidarr/bin/Lidarr -nobrowser -data="$data" >"$log" 2>&1 &
         pid=$!
         ok=0
-        for i in $(seq 1 60); do
+        # slow arm64 CI runners need several minutes for first-start JIT and db migration
+        for i in $(seq 1 300); do
           if grep -qF "Application started" "$log"; then ok=1; break; fi
           kill -0 "$pid" 2>/dev/null || break
           sleep 2
         done
         kill "$pid" 2>/dev/null || true
-        [ "$ok" -eq 1 ]
+        [ "$ok" -eq 1 ] || { tail -50 "$log"; exit 1; }
 update:
   enabled: true
   github:
