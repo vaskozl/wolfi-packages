@@ -2,7 +2,7 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/radarr/APKBUILD
 package:
   name: radarr
-  version: "6.2.1.10461"
+  version: "6.3.0.10514"
   epoch: 0 # disable NuGetAudit (MailKit advisory)
   description: TV download automation for usenet and torrents.
   copyright:
@@ -87,13 +87,14 @@ test:
         /usr/lib/radarr/bin/Radarr -nobrowser -data="$data" >"$log" 2>&1 &
         pid=$!
         ok=0
-        for i in $(seq 1 60); do
+        # startup takes ~2min on the slow arm64 runner, allow 5
+        for i in $(seq 1 150); do
           if grep -qF "Application started" "$log"; then ok=1; break; fi
           kill -0 "$pid" 2>/dev/null || break
           sleep 2
         done
         kill "$pid" 2>/dev/null || true
-        [ "$ok" -eq 1 ]
+        [ "$ok" -eq 1 ] || { tail -50 "$log"; exit 1; }
 update:
   enabled: true
   github:
