@@ -1,6 +1,6 @@
 package:
   name: prometheus-node-exporter
-  version: "1.12.0"
+  version: "1.12.1"
   epoch: 0 # add curl back, needed by upstream Makefile.common for promu
   description: Prometheus Exporter for machine metrics
   copyright:
