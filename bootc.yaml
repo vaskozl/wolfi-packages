@@ -1,6 +1,6 @@
 package:
   name: bootc
-  version: "1.16.3"
+  version: "1.16.4"
   epoch: 0 # drop --apply from fetch-apply-updates.service
   description: Boot and upgrade via container images
   copyright:
