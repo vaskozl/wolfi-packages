@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: kitty
-  version: "0.47.4"
-  epoch: 1
+  version: "0.48.0"
+  epoch: 0
   description: Modern, hackable, featureful, OpenGL based terminal emulator
   copyright:
     - license: GPL-3.0-only
