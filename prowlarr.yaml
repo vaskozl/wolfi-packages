@@ -2,7 +2,7 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/prowlarr/APKBUILD
 package:
   name: prowlarr
-  version: "2.5.1.5464"
+  version: "2.5.2.5483"
   epoch: 0 # disable NuGetAudit (MailKit advisory)
   description: TV download automation for usenet and torrents.
   copyright:
@@ -62,10 +62,12 @@ pipeline:
           yarn build --env production --no-stats
 
           # cleanup
+          # libmsalruntime is a desktop auth broker linking GTK/WebKit; useless headless
           find "$_artifacts" \( \
               -name "ServiceUninstall.*" -o \
               -name "ServiceInstall.*" -o \
-              -name "Prowlarr.Windows.*" \) -delete
+              -name "Prowlarr.Windows.*" -o \
+              -name "libmsalruntime*.so" \) -delete
 
           mv "${{vars.output}}"/UI "$_artifacts"
           mv "$_artifacts" bin
