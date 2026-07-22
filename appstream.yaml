@@ -44,6 +44,7 @@ pipeline:
         -Dsvg-support=false \
         -Dsystemd=true \
         -Dvapi=false \
+        -Dwayland=false \
         -Dzstd-support=true
   - uses: meson/compile
   - uses: meson/install
