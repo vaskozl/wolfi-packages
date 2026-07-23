@@ -2,8 +2,8 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/anubis/APKBUILD
 package:
   name: anubis
-  version: 1.25.0
-  epoch: 2 # use test/ver-check
+  version: "1.26.0"
+  epoch: 0 # use test/ver-check
   description: Block AI scrapers using a sha256 proof-of-work challenge
   copyright:
     - license: MIT
