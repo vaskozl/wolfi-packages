@@ -1,7 +1,7 @@
 package:
   name: libdisplay-info
-  version: "0.3.0"
-  epoch: 1 # add ldd-check test
+  version: "0.4.0"
+  epoch: 0 # add ldd-check test
   description: EDID and DisplayID library
   copyright:
     - license: MIT
