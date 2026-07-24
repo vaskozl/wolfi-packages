@@ -1,6 +1,6 @@
 package:
   name: appstream
-  version: "1.1.4"
+  version: "1.1.5"
   epoch: 0
   description: Software component metadata catalog library and tools
   copyright:
@@ -35,6 +35,7 @@ pipeline:
         -Dapidocs=false \
         -Dapt-support=false \
         -Dbash-completion=false \
+        -Ddisplay-detection=none \
         -Ddocs=false \
         -Dgir=true \
         -Dinstall-docs=false \
@@ -44,7 +45,6 @@ pipeline:
         -Dsvg-support=false \
         -Dsystemd=true \
         -Dvapi=false \
-        -Dwayland=false \
         -Dzstd-support=true
   - uses: meson/compile
   - uses: meson/install
