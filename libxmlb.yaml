@@ -1,6 +1,6 @@
 package:
   name: libxmlb
-  version: "0.3.28"
+  version: "0.3.29"
   epoch: 0
   description: A library to help create and query binary XML blobs
   copyright:
