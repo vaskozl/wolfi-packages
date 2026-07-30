@@ -1,6 +1,6 @@
 package:
   name: intel-media-driver
-  version: "26.1.5"
+  version: "26.2.4"
   epoch: 0 # switch test to ldd-check
   description: Intel Media Driver for VAAPI (iHD, Gen9+ Intel GPUs)
   copyright:
