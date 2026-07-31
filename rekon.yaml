@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: rekon
-  version: "0.0.36"
-  epoch: 0 # build homeflow as nested module
-  description: rekon framework example apps (clock, blog, saas, pkgupdate)
+  version: "0.0.37"
+  epoch: 0
+  description: rekon framework example apps (clock, blog, dossier, saas, pkgupdate)
   copyright:
     - license: Apache-2.0
 environment:
@@ -16,6 +16,7 @@ data:
     items:
       blog: ""
       clock: ""
+      dossier: ""
   - name: nested-servers
     items:
       homeflow: ""
