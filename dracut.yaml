@@ -1,6 +1,6 @@
 package:
   name: dracut
-  version: "111"
+  version: "112"
   epoch: 0 # tighten test pipeline
   description: Initramfs generator using udev
   copyright:
