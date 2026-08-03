@@ -1,7 +1,7 @@
 package:
   name: baikal
-  version: "0.11.1"
-  epoch: 3 # --no-security-blocking: composer security blocking on upstream-pinned advisories
+  version: "0.12.0"
+  epoch: 0 # --no-security-blocking: composer security blocking on upstream-pinned advisories
   description: Lightweight CalDAV/CardDAV server
   copyright:
     - license: GPL-3.0-or-later
