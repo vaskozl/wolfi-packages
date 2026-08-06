@@ -2,8 +2,8 @@
 package:
   name: u-boot-asahi
   # datasource: alpine-base packageName: u-boot-asahi
-  version: 2026.04_p1
-  epoch: 1
+  version: 2026.04_p2
+  epoch: 0
   description: Repackaged Alpine u-boot bootloader for Apple Silicon Macs
   target-architecture:
     - aarch64
