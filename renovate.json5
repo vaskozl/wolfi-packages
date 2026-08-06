@@ -32,7 +32,7 @@
       "matchStringsStrategy": "combination",
       "matchStrings": [
         "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
-        "repository:\\s*https:\\/\\/codeberg\\.org\\/(?<depName>.*)"
+        "repository:\\s*https:\\/\\/codeberg\\.org\\/(?<depName>.*?)(?:\\.git)?(?=\\r?\\n|$)"
       ],
       "registryUrlTemplate": "https://codeberg.org",
       "datasourceTemplate": "forgejo-tags",
@@ -45,7 +45,7 @@
       "matchStringsStrategy": "combination",
       "matchStrings": [
         "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
-        "repository:\\s*https:\\/\\/gitlab\\.freedesktop\\.org\\/(?<depName>.*)"
+        "repository:\\s*https:\\/\\/gitlab\\.freedesktop\\.org\\/(?<depName>.*?)(?:\\.git)?(?=\\r?\\n|$)"
       ],
       "registryUrlTemplate": "https://gitlab.freedesktop.org",
       "datasourceTemplate": "gitlab-tags",
@@ -86,7 +86,7 @@
       "customType": "regex",
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
       "matchStrings": [
-        "#\\s*datasource:\\s*(?<datasource>[\\w-]+)\\s+packageName:\\s*(?<depName>\\S+)\\s*\\n\\s*version:\\s*['\"]?(?<currentValue>\\d+(?:\\.\\d+)*)['\"]?"
+        "#\\s*datasource:\\s*(?<datasource>[\\w-]+)\\s+packageName:\\s*(?<depName>\\S+)\\s*\\n\\s*version:\\s*['\"]?(?<currentValue>\\d+(?:\\.\\d+)*(?:_p\\d+)?)['\"]?"
       ],
       "datasourceTemplate": "custom.{{datasource}}",
       "versioningTemplate": "loose"
@@ -127,7 +127,7 @@
       // Strip the Alpine `-rN` suffix so the version written into the YAML
       // matches melange's `version` field (epoch lives separately).
       "matchDatasources": ["custom.alpine-base"],
-      "extractVersion": "^(?<version>\\d+(?:\\.\\d+)*)"
+      "extractVersion": "^(?<version>\\d+(?:\\.\\d+)*(?:_p\\d+)?)"
     },
     {
       // Pin SPIRV-LLVM-Translator to the LLVM 19 release line so it

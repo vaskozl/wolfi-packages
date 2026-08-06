@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 # iwd's git tree expects a sibling clone of `ell` at ../ell/ matched to each
 # release; the upstream tarball bundles that snapshot, so we fetch the tarball.
-# repository: https://git.kernel.org/pub/scm/network/wireless/iwd.git
 package:
   name: iwd
+  # datasource: alpine-base packageName: iwd
   version: "3.12"
-  epoch: 0
+  epoch: 1
   description: Internet Wireless Daemon -- modern wpa_supplicant alternative
   copyright:
     - license: LGPL-2.1-or-later

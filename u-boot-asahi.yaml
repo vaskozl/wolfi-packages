@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: u-boot-asahi
-  # datasource: alpine-community packageName: u-boot-asahi
+  # datasource: alpine-base packageName: u-boot-asahi
   version: 2026.04_p1
-  epoch: 0
+  epoch: 1
   description: Repackaged Alpine u-boot bootloader for Apple Silicon Macs
   target-architecture:
     - aarch64

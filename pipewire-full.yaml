@@ -1,7 +1,7 @@
 package:
   name: pipewire-full
   version: "1.6.8"
-  epoch: 0
+  epoch: 1
   description: Multimedia processing graphs, single unsplit package
   copyright:
     - license: MIT
@@ -35,7 +35,7 @@ environment:
 pipeline:
   - uses: git-checkout
     with:
-      repository: https://gitlab.freedesktop.org/pipewire/pipewire.git
+      repository: https://gitlab.freedesktop.org/pipewire/pipewire
       tag: ${{package.version}}
   - uses: meson/configure
     with:
