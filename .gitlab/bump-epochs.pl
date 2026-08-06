@@ -114,6 +114,26 @@ sub bump_epoch_keep_comment {
     return $new;
 }
 
+sub normalize_yaml {
+    # Drop full-line comments and normalise whitespace so comment/formatting-only
+    # edits don't read as content changes. Trailing (end-of-line) comments are
+    # deliberately left alone: a '#' inside a quoted string or a runs: shell block
+    # is content, and stripping it would hide real edits.
+    my ($text) = @_;
+    return '' unless defined $text;
+    my @keep;
+    for my $line (split /\n/, $text, -1) {
+        next if $line =~ /^\s*#/;
+        $line =~ s/[ \t]+$//;
+        push @keep, $line;
+    }
+    my $out = join "\n", @keep;
+    $out =~ s/\n{2,}/\n/g;
+    $out =~ s/^\n+//;
+    $out =~ s/\n+$//;
+    return $out;
+}
+
 sub print_help {
     open my $fh, '<', $0 or die $!;
     <$fh>;  # skip shebang
@@ -145,6 +165,7 @@ for my $y (@candidates) {
     next unless defined $blob;          # new file
     my $head = slurp($y);
     next if $head eq $blob;
+    next if normalize_yaml($head) eq normalize_yaml($blob);
 
     my ($cv, $ce) = pkg_state($head);
     my ($mv, $me) = pkg_state($blob);
