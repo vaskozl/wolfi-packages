@@ -5,7 +5,7 @@
 package:
   name: intel-compute-runtime
   version: "26.27.39122.11"
-  epoch: 0
+  epoch: 1 # rebuild for intel-gmmlib 22.10.1
   description: Intel Graphics Compute Runtime for OpenCL (NEO, repackaged upstream binaries)
   copyright:
     - license: MIT

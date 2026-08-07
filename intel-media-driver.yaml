@@ -1,7 +1,7 @@
 package:
   name: intel-media-driver
   version: "26.2.4"
-  epoch: 0 # switch test to ldd-check
+  epoch: 1 # rebuild for intel-gmmlib 22.10.1
   description: Intel Media Driver for VAAPI (iHD, Gen9+ Intel GPUs)
   copyright:
     - license: BSD-3-Clause AND MIT
