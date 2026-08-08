@@ -10,6 +10,7 @@ package:
 environment:
   contents:
     packages:
+      - bash
       - brotli
       - build-base
       - busybox
