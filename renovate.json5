@@ -130,11 +130,11 @@
       "extractVersion": "^(?<version>\\d+(?:\\.\\d+)*(?:_p\\d+)?)"
     },
     {
-      // Pin SPIRV-LLVM-Translator to the LLVM 19 release line so it
-      // stays ABI-compatible with Wolfi's llvm-19 and mesa-full's llvm-ver: 19.
+      // Pin SPIRV-LLVM-Translator to the LLVM 22 release line so it
+      // stays ABI-compatible with Wolfi's llvm-22.
       "matchDatasources": ["github-tags"],
       "matchPackageNames": ["KhronosGroup/SPIRV-LLVM-Translator"],
-      "allowedVersions": "/^19\\./"
+      "allowedVersions": "/^22\\./"
     },
     {
       // SPIRV-Tools uses date-based tags (vYYYY.N). Track only stable date
