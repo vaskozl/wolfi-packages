@@ -16,9 +16,9 @@ data:
     items:
       blog: ""
       clock: ""
-      dossier: ""
   - name: nested-servers
     items:
+      dossier: ""
       homeflow: ""
       pkgupdate: ""
       saas: ""
