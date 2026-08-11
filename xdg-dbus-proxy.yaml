@@ -1,6 +1,6 @@
 package:
   name: xdg-dbus-proxy
-  version: 0.1.7
+  version: "0.1.8"
   epoch: 0
   description: DBus proxy for Flatpak and other containers
   copyright:
