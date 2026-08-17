@@ -18,25 +18,28 @@ environment:
       - busybox
       - ca-certificates-bundle
       - curl
+      - zstd
 pipeline:
   # Upstream ships each tag with assets named intel-igc-{core,opencl}-2_<version>+<build>_amd64.deb,
-  # where <build> is an opaque build counter that varies per release. Discover the URLs via the
-  # releases API so renovate only needs to bump package.version.
+  # where <build> is an opaque build counter that varies per release. Discover the URLs from the
+  # release's asset listing so renovate only needs to bump package.version. Use the expanded_assets
+  # HTML endpoint rather than api.github.com: the latter rate-limits unauthenticated CI runners.
   - runs: |
       set -eu
-      api="https://api.github.com/repos/intel/intel-graphics-compiler/releases/tags/v${{package.version}}"
-      release=$(curl -sfL "$api")
+      assets="https://github.com/intel/intel-graphics-compiler/releases/expanded_assets/v${{package.version}}"
+      release=$(curl -sfL "$assets")
       for asset in intel-igc-core-2 intel-igc-opencl-2; do
-        url=$(printf '%s' "$release" \
-          | busybox sed -nE "s#.*\"browser_download_url\":[[:space:]]*\"(https://[^\"]*${asset}_[^\"]*_amd64\\.deb)\".*#\\1#p" \
+        path=$(printf '%s' "$release" \
+          | busybox tr '<' '\n' \
+          | busybox sed -nE "s#.*href=\"(/intel/intel-graphics-compiler/releases/download/[^\"]*${asset}_[^\"]*_amd64\\.deb)\".*#\\1#p" \
           | busybox head -n 1)
-        [ -n "$url" ] || { echo "asset $asset not found in $api" >&2; exit 1; }
-        curl -sfL -o "${asset}.deb" "$url"
+        [ -n "$path" ] || { echo "asset $asset not found in $assets" >&2; exit 1; }
+        curl -sfL -o "${asset}.deb" "https://github.com${path}"
       done
   - runs: |
       install -d "${{targets.destdir}}/usr/lib"
       for deb in intel-igc-core-2.deb intel-igc-opencl-2.deb; do
-        ar p "$deb" data.tar.gz | tar xz -C "${{targets.destdir}}"
+        ar p "$deb" data.tar.zst | zstd -d | tar x -C "${{targets.destdir}}"
       done
       # Debian ships under /usr/local/lib — relocate to /usr/lib for Wolfi.
       mv "${{targets.destdir}}"/usr/local/lib/* "${{targets.destdir}}"/usr/lib/
