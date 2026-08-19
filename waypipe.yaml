@@ -1,7 +1,7 @@
 package:
   name: waypipe
-  version: "0.11.0"
-  epoch: 1 # rebuild for mesa-full 26.1.1 libgbm.so dev symlink (-lgbm)
+  version: "0.11.1"
+  epoch: 0
   description: Proxy for Wayland clients
   copyright:
     - license: MIT
@@ -11,15 +11,18 @@ environment:
       - build-base
       - cargo-auditable
       - clang
-      - ffmpeg-dev
+      # ffmpeg 9.0 dropped the deprecated AVVulkanDeviceContext.queue_family_*
+      # fields that waypipe's video path still sets.
+      - ffmpeg-8.1-dev
       - libclang-cpp
       - lz4-dev
-      - mesa-dev
-      - mesa-gbm
       - meson
       - rust
       - rust-bindgen
       - scdoc
+      # shaderc ships glslc for the video shaders. It cannot be co-installed
+      # with mesa-dev/mesa-gbm: those pull spirv-tools, which collides with
+      # shaderc over the spirv-* commands, so the gbm dmabuf fallback is off.
       - shaderc
       - vulkan-headers-dev
       - vulkan-loader-dev
@@ -40,7 +43,7 @@ pipeline:
       cargo fetch --locked
   - uses: meson/configure
     with:
-      opts: -Dwerror=false -Db_ndebug=true
+      opts: -Dwerror=false -Db_ndebug=true -Dwith_gbm=disabled
   - uses: meson/compile
   - uses: meson/install
   - uses: strip
