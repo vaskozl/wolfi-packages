@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: spirv-tools
-  version: "2026.2"
+  version: "2026.3"
   epoch: 0
   description: API and commands for processing SPIR-V modules
   copyright:
@@ -24,7 +24,7 @@ pipeline:
     with:
       repository: https://github.com/KhronosGroup/SPIRV-Headers
       # Must match spirv_headers_revision in SPIRV-Tools' DEPS for this tag.
-      expected-commit: ad9184e76a66b1001c29db9b0a3e87f646c64de0
+      expected-commit: 29981f65241605e08b0ede4cfeb999fe3b723c6a
       depth: -1
       destination: external/spirv-headers
   - runs: |
