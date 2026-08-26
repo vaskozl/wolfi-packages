@@ -14,6 +14,10 @@ package:
       - umount
       - util-linux-misc
 environment:
+  # Upstream's release profile sets debug = true for RPM split-debuginfo; we
+  # strip it right after, so generating it is pure build cost.
+  environment:
+    CARGO_PROFILE_RELEASE_DEBUG: "false"
   contents:
     packages:
       - build-base
