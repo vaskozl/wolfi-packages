@@ -3,7 +3,7 @@ package:
   name: linux-lts-initramfs
   # datasource: alpine-base packageName: linux-lts
   version: 6.18.42
-  epoch: 0
+  epoch: 1 # rebuild for bootc epoch 1
   description: The Linux LTS kernel initramfs
   copyright:
     - license: GPL-2.0
