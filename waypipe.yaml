@@ -1,6 +1,6 @@
 package:
   name: waypipe
-  version: "0.11.1"
+  version: "0.11.2"
   epoch: 0
   description: Proxy for Wayland clients
   copyright:
