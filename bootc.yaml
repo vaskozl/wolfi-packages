@@ -1,7 +1,7 @@
 package:
   name: bootc
   version: "1.16.11"
-  epoch: 0 # drop --apply from fetch-apply-updates.service
+  epoch: 1 # build without wasted debuginfo
   description: Boot and upgrade via container images
   copyright:
     - license: Apache-2.0-only
@@ -14,6 +14,10 @@ package:
       - umount
       - util-linux-misc
 environment:
+  # Upstream's release profile sets debug = true for RPM split-debuginfo; we
+  # strip it right after, so generating it is pure build cost.
+  environment:
+    CARGO_PROFILE_RELEASE_DEBUG: "false"
   contents:
     packages:
       - build-base
