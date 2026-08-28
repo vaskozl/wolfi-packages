@@ -1,6 +1,6 @@
 package:
   name: wireplumber
-  version: "0.5.15"
+  version: "0.5.16"
   epoch: 0
   description: Session/policy manager implementation for PipeWire
   copyright:
