@@ -42,7 +42,6 @@ pipeline:
         -Dman=false \
         -Dqt=false \
         -Dstemming=false \
-        -Dsvg-support=false \
         -Dsystemd=true \
         -Dvapi=false \
         -Dzstd-support=true
