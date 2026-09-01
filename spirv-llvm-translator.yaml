@@ -81,3 +81,4 @@ update:
   github:
     identifier: KhronosGroup/SPIRV-LLVM-Translator
     strip-prefix: v
+    tag-filter-prefix: v22.
