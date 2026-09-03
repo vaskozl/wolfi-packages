@@ -19,7 +19,10 @@ environment:
       - build-base
       - busybox
       - cargo-auditable
+      # selinux-sys runs bindgen, which dlopens libclang.
+      - clang
       - go-md2man
+      - libclang-cpp
       - ostree-dev
       - rust
 pipeline:
