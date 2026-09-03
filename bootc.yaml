@@ -1,6 +1,6 @@
 package:
   name: bootc
-  version: "1.16.10"
+  version: "1.16.11"
   epoch: 0 # drop --apply from fetch-apply-updates.service
   description: Boot and upgrade via container images
   copyright:
@@ -19,7 +19,10 @@ environment:
       - build-base
       - busybox
       - cargo-auditable
+      # selinux-sys runs bindgen, which dlopens libclang.
+      - clang
       - go-md2man
+      - libclang-cpp
       - ostree-dev
       - rust
 pipeline:
