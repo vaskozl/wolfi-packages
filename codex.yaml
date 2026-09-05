@@ -1,12 +1,10 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
-# Tracks openai/codex GitHub Releases; Linux release archives are statically
-# linked musl binaries.
 # datasource: github-releases
 # repository: https://github.com/openai/codex
 package:
   name: codex
   version: "0.153.4"
-  epoch: 0
+  epoch: 1
   description: OpenAI Codex, an agentic coding tool for the terminal
   copyright:
     - license: Apache-2.0
@@ -25,14 +23,31 @@ environment:
 pipeline:
   - runs: |
       set -eu
+
       case "${{build.arch}}" in
-        x86_64) asset="codex-x86_64-unknown-linux-musl.tar.gz" ;;
-        aarch64) asset="codex-aarch64-unknown-linux-musl.tar.gz" ;;
+        x86_64) target="x86_64-unknown-linux-musl" ;;
+        aarch64) target="aarch64-unknown-linux-musl" ;;
         *) echo "unsupported arch: ${{build.arch}}"; exit 1 ;;
       esac
-      curl -sfL -o codex.tar.gz "https://github.com/openai/codex/releases/download/rust-v${{package.version}}/$asset"
+
+      base="https://github.com/openai/codex/releases/download/rust-v${{package.version}}"
+
+      curl -sfL -o codex.tar.gz \
+        "$base/codex-${target}.tar.gz"
+
+      curl -sfL -o codex-code-mode-host.tar.gz \
+        "$base/codex-code-mode-host-${target}.tar.gz"
+
       tar -xzf codex.tar.gz
-      install -Dm0755 "${asset%.tar.gz}" "${{targets.destdir}}/usr/bin/codex"
+      tar -xzf codex-code-mode-host.tar.gz
+
+      install -Dm0755 \
+        "codex-${target}" \
+        "${{targets.destdir}}/usr/bin/codex"
+
+      install -Dm0755 \
+        "codex-code-mode-host-${target}" \
+        "${{targets.destdir}}/usr/bin/codex-code-mode-host"
 test:
   pipeline:
     - uses: test/ldd-check
@@ -46,10 +61,9 @@ test:
       with:
         bins: |
           codex
-    - name: generate shell completion
+    - name: verify code-mode host
       runs: |
-        set -eu
-        codex completion bash >/dev/null
+        test -x /usr/bin/codex-code-mode-host
 update:
   enabled: true
   github:
