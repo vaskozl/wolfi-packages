@@ -59,6 +59,8 @@ pipeline:
           --runtime linux-$_dotnet_arch \
           --configuration Release
 
+          # webpack OOMs on the RAM-limited builder with node's default heap
+          export NODE_OPTIONS="--max-old-space-size=4096"
           yarn build --env production --no-stats
 
           chmod +x "$_artifacts/ffprobe"
