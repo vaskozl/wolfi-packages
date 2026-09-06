@@ -92,6 +92,9 @@ stages: [generate, build]
 generate:
   stage: generate
   interruptible: true
+  # GitLab reports clone failures in get_sources as script_failure, so an
+  # unconditional retry is the only thing that survives a webservice hiccup.
+  retry: 1
   image: !reference [.build, image]
   script:
     # Fail MRs that edit a yaml without bumping version/epoch, or bump a
