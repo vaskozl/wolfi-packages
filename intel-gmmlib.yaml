@@ -1,6 +1,6 @@
 package:
   name: intel-gmmlib
-  version: "22.10.1"
+  version: "22.10.2"
   epoch: 0 # switch test to ldd-check
   description: Intel Graphics Memory Management Library
   copyright:
