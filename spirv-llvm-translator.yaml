@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: spirv-llvm-translator
-  version: "22.1.4"
+  version: "22.1.6"
   epoch: 0 # rebuild against local spirv-tools
   description: Khronos SPIR-V translator for the LLVM toolchain (LLVM 22)
   copyright:
@@ -32,7 +32,7 @@ pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/KhronosGroup/SPIRV-Headers
-      expected-commit: 948a3b0997e2dffea5484b3df7bd5590c5b844cc
+      expected-commit: 29981f65241605e08b0ede4cfeb999fe3b723c6a
       depth: -1
       destination: spirv-headers
   - runs: |
@@ -45,7 +45,7 @@ pipeline:
         -DLLVM_SPIRV_INCLUDE_TESTS=OFF \
         -DLLVM_DIR=/usr/lib/llvm-22/lib/cmake/llvm \
         -DLLVM_EXTERNAL_SPIRV_HEADERS_SOURCE_DIR="$PWD/spirv-headers"
-      cmake --build build
+      cmake --build build -j2
       DESTDIR="${{targets.destdir}}" cmake --install build
   - uses: strip
 subpackages:
