@@ -2,7 +2,7 @@
 package:
   name: spirv-llvm-translator
   # Must stay on the v22.x series: Wolfi ships no llvm-23/clang-23 yet.
-  version: "22.1.6"
+  version: "23.1.1"
   epoch: 0 # rebuild against local spirv-tools
   description: Khronos SPIR-V translator for the LLVM toolchain (LLVM 22)
   copyright:
