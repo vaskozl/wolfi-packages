@@ -10,7 +10,7 @@ environment:
   contents:
     packages:
       - ca-certificates-bundle
-      - go-1.26
+      - go-1.27
 data:
   - name: root-servers
     items:
@@ -30,7 +30,7 @@ pipeline:
       type-hint: gitlab
   - uses: go/build
     with:
-      go-package: go-1.26
+      go-package: go-1.27
       modroot: .
       packages: ./cmd/rekonctl
       output: rekonctl
@@ -46,7 +46,7 @@ subpackages:
     pipeline:
       - uses: go/build
         with:
-          go-package: go-1.26
+          go-package: go-1.27
           modroot: .
           packages: ./examples/${{range.key}}
           output: rekon-${{range.key}}
@@ -63,7 +63,7 @@ subpackages:
     pipeline:
       - uses: go/build
         with:
-          go-package: go-1.26
+          go-package: go-1.27
           modroot: examples/${{range.key}}
           packages: .
           output: rekon-${{range.key}}
