@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: rekon
-  version: "0.0.52"
+  version: "0.0.53"
   epoch: 0
   description: rekon framework example apps (clock, blog, dossier, saas, pkgupdate)
   copyright:
@@ -10,7 +10,7 @@ environment:
   contents:
     packages:
       - ca-certificates-bundle
-      - go-1.26
+      - go-1.27
 data:
   - name: root-servers
     items:
@@ -30,7 +30,7 @@ pipeline:
       type-hint: gitlab
   - uses: go/build
     with:
-      go-package: go-1.26
+      go-package: go-1.27
       modroot: .
       packages: ./cmd/rekonctl
       output: rekonctl
@@ -46,7 +46,7 @@ subpackages:
     pipeline:
       - uses: go/build
         with:
-          go-package: go-1.26
+          go-package: go-1.27
           modroot: .
           packages: ./examples/${{range.key}}
           output: rekon-${{range.key}}
@@ -63,7 +63,7 @@ subpackages:
     pipeline:
       - uses: go/build
         with:
-          go-package: go-1.26
+          go-package: go-1.27
           modroot: examples/${{range.key}}
           packages: .
           output: rekon-${{range.key}}
