@@ -35,9 +35,11 @@ pipeline:
       patches: fetch-apply-updates-composefs-condition.patch
   - runs: |
       # Upstream release profile enables full debuginfo, which the strip step
-      # discards anyway; keeping it OOM-kills the 8GB arm64 builders.
+      # discards anyway. Builders get a 1 CPU quota, so cargo fanning out to
+      # one rustc per visible core only multiplies peak RSS and OOM-kills the
+      # 8GB arm64 nodes.
       export CARGO_PROFILE_RELEASE_DEBUG=0
-      export CARGO_BUILD_JOBS=2
+      export CARGO_BUILD_JOBS=1
       make bin install-all \
         STORAGE_RELATIVE_PATH=/sysroot/ostree/bootc/storage \
         DESTDIR="${{targets.contextdir}}" \
