@@ -1,7 +1,7 @@
 package:
   name: bootc
   version: "1.16.13"
-  epoch: 0 # drop --apply from fetch-apply-updates.service
+  epoch: 1 # cap cargo memory on arm64
   description: Boot and upgrade via container images
   copyright:
     - license: Apache-2.0-only
@@ -34,6 +34,10 @@ pipeline:
     with:
       patches: fetch-apply-updates-composefs-condition.patch
   - runs: |
+      # Upstream release profile enables full debuginfo, which the strip step
+      # discards anyway; keeping it OOM-kills the 8GB arm64 builders.
+      export CARGO_PROFILE_RELEASE_DEBUG=0
+      export CARGO_BUILD_JOBS=2
       make bin install-all \
         STORAGE_RELATIVE_PATH=/sysroot/ostree/bootc/storage \
         DESTDIR="${{targets.contextdir}}" \
