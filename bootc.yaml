@@ -17,6 +17,9 @@ environment:
   # Upstream's release profile sets debug = true for RPM split-debuginfo; we
   # strip it right after, so generating it is pure build cost.
   environment:
+    # Cargo defaults to one job per host core; the build cgroup is RAM-limited
+    # and gets OOM-killed part-way through the dependency tree.
+    CARGO_BUILD_JOBS: "2"
     CARGO_PROFILE_RELEASE_DEBUG: "false"
   contents:
     packages:
