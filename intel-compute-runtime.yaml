@@ -4,7 +4,7 @@
 # repository: https://github.com/intel/compute-runtime
 package:
   name: intel-compute-runtime
-  version: "26.31.39395.13"
+  version: "26.35.39758.10"
   epoch: 0 # rebuild for intel-gmmlib 22.10.1
   description: Intel Graphics Compute Runtime for OpenCL (NEO, repackaged upstream binaries)
   copyright:
