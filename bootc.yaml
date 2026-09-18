@@ -1,7 +1,7 @@
 package:
   name: bootc
   version: "1.16.13"
-  epoch: 0 # drop --apply from fetch-apply-updates.service
+  epoch: 1 # build without debuginfo, cap cargo jobs
   description: Boot and upgrade via container images
   copyright:
     - license: Apache-2.0-only
@@ -14,12 +14,12 @@ package:
       - umount
       - util-linux-misc
 environment:
-  # Upstream's release profile sets debug = true for RPM split-debuginfo; we
-  # strip it right after, so generating it is pure build cost.
   environment:
     # Cargo defaults to one job per host core; the build cgroup is RAM-limited
     # and gets OOM-killed part-way through the dependency tree.
     CARGO_BUILD_JOBS: "1"
+    # Upstream's release profile sets debug = true for RPM split-debuginfo; we
+    # strip it right after, so generating it is pure build cost.
     CARGO_PROFILE_RELEASE_DEBUG: "false"
   contents:
     packages:
