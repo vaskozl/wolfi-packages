@@ -19,7 +19,7 @@ environment:
   environment:
     # Cargo defaults to one job per host core; the build cgroup is RAM-limited
     # and gets OOM-killed part-way through the dependency tree.
-    CARGO_BUILD_JOBS: "2"
+    CARGO_BUILD_JOBS: "1"
     CARGO_PROFILE_RELEASE_DEBUG: "false"
   contents:
     packages:
