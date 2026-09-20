@@ -4,7 +4,7 @@
 package:
   name: codex
   version: "0.155.1"
-  epoch: 0
+  epoch: 1
   description: OpenAI Codex, an agentic coding tool for the terminal
   copyright:
     - license: Apache-2.0
