@@ -105,7 +105,9 @@ generate:
   stage: generate
   interruptible: true
   image: !reference [.build, image]
-  retry: 1
+  # The epoch and signing-key checks below are deterministic: retrying a
+  # script_failure would only delay a red result.
+  retry: !reference [.build, retry]
   script:
     # Fail MRs that edit a yaml without bumping version/epoch, or bump a
     # yaml without propagating epoch to its reverse-deps. On main this is
