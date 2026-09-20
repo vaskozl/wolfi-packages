@@ -17,6 +17,9 @@ stages: [generate, build]
 .build:
   stage: build
   interruptible: true
+  # Heavy packages (prowlarr: yarn install + dotnet restore/publish) exceed the
+  # 30m project default and get killed mid-restore.
+  timeout: 3h
   image:
     name: ghcr.io/vaskozl/melange:0.56.0@sha256:ac0b834b9598c2456a3e4cb501b9b516eebf83b14e131dfc5f794dec45029328
     entrypoint: [""]
