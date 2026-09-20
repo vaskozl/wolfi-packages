@@ -93,6 +93,17 @@ generate:
   stage: generate
   interruptible: true
   image: !reference [.build, image]
+  # A Pending runner pod that times out kills the whole pipeline here: the
+  # child pipeline is never created, so unlike the per-package jobs (which
+  # inherit `retry: 1` from `.build`) there is nothing left to self-heal.
+  # Infrastructure reasons only -- the checks below are deterministic, so
+  # retrying a script_failure would just delay a red result.
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - scheduler_failure
+      - stuck_or_timeout_failure
   script:
     # Fail MRs that edit a yaml without bumping version/epoch, or bump a
     # yaml without propagating epoch to its reverse-deps. On main this is
