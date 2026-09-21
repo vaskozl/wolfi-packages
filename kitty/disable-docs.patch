@@ -1,6 +1,6 @@
 --- a/setup.py
 +++ b/setup.py
-@@ -1393,24 +1393,6 @@ def create_linux_bundle_gunk(ddir: str,
+@@ -1739,27 +1739,6 @@ def create_linux_bundle_gunk(ddir: str, args: Options) -> None:
      base = Path(ddir)
      in_src_launcher = base / (f'{libdir_name}/kitty/kitty/launcher/kitty')
      launcher = base / 'bin/kitty'
@@ -14,14 +14,17 @@
 -        else:
 -            if args.skip_building_kitten:
 -                skip_docs = True
--                print('WARNING: You have chosen to skip building kitten.'
--                      ' This means docs could not be generated and will not be included in the linux package.'
--                      ' You should build kitten and then re-run this build.', file=sys.stderr)
+-                print(
+-                    'WARNING: You have chosen to skip building kitten.'
+-                    ' This means docs could not be generated and will not be included in the linux package.'
+-                    ' You should build kitten and then re-run this build.',
+-                    file=sys.stderr,
+-                )
 -            else:
 -                raise SystemExit(f'kitten binary not found at: {kitten_exe}')
 -    if not skip_docs:
 -        copy_man_pages(ddir)
 -        copy_html_docs(ddir)
-     for (icdir, ext) in {'256x256': 'png', 'scalable': 'svg'}.items():
+     for icdir, ext in {'256x256': 'png', 'scalable': 'svg'}.items():
          icdir = os.path.join(ddir, 'share', 'icons', 'hicolor', icdir, 'apps')
          safe_makedirs(icdir)
