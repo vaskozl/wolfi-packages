@@ -1,6 +1,6 @@
 package:
   name: chrome-devtools-mcp
-  version: "1.10.0"
+  version: "1.10.1"
   epoch: 0
   description: Chrome DevTools MCP server plus the mcp-proxy stdio/SSE bridge
   copyright:
