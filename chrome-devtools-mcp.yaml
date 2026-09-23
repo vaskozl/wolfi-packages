@@ -25,9 +25,11 @@ pipeline:
       set -eu
       mkdir -p "${{targets.destdir}}/usr/lib/chrome-devtools-mcp"
       cd "${{targets.destdir}}/usr/lib/chrome-devtools-mcp"
+      # chrome-devtools-mcp imports pkce-challenge without declaring it.
       npm install --omit=dev --no-package-lock \
         mcp-proxy@${{vars.mcp-proxy-version}} \
-        chrome-devtools-mcp@${{package.version}}
+        chrome-devtools-mcp@${{package.version}} \
+        pkce-challenge
   - runs: |
       set -eu
       mkdir -p "${{targets.destdir}}/usr/bin"
