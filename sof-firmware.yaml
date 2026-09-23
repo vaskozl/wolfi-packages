@@ -6,7 +6,7 @@
 # repository: https://github.com/thesofproject/sof-bin
 package:
   name: sof-firmware
-  version: "2025.12.2"
+  version: "2026.09.1"
   epoch: 0
   description: Sound Open Firmware (SOF) for Intel audio DSPs
   copyright:
@@ -50,10 +50,10 @@ test:
         set -eu
         fw=/usr/lib/firmware/intel
         # IPC3 DSP firmware images (.ri) and their topologies (.tplg).
-        find "$fw/sof" -name '*.ri' | grep -q .
-        find "$fw/sof-tplg" -name '*.tplg' | grep -q .
+        test -n "$(find "$fw/sof" -name '*.ri')"
+        test -n "$(find "$fw/sof-tplg" -name '*.tplg')"
         # IPC4 firmware for Meteor Lake and newer Intel platforms.
-        find "$fw/sof-ipc4" -name '*.ri' | grep -q .
+        test -n "$(find "$fw/sof-ipc4" -name '*.ri')"
         # The sof-ace-tplg compatibility symlink must resolve to a dir.
         test -d "$fw/sof-ace-tplg"
 update:
