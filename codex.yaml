@@ -3,7 +3,7 @@
 # repository: https://github.com/openai/codex
 package:
   name: codex
-  version: "0.156.1"
+  version: "0.157.0"
   epoch: 0
   description: OpenAI Codex, an agentic coding tool for the terminal
   copyright:
