@@ -3,7 +3,7 @@ package:
   name: rekon
   version: "0.0.58"
   epoch: 0
-  description: rekon framework example apps (clock, blog, dossier, saas, pkgupdate)
+  description: rekon framework example apps (clock, blog, saas, pkgupdate, veroso)
   copyright:
     - license: Apache-2.0
 environment:
@@ -18,10 +18,10 @@ data:
       clock: ""
   - name: nested-servers
     items:
-      dossier: ""
       homeflow: ""
       pkgupdate: ""
       saas: ""
+      veroso: ""
 pipeline:
   - uses: git-checkout
     with:
