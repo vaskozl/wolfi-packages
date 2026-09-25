@@ -4,7 +4,7 @@
 package:
   name: codex
   version: "0.157.0"
-  epoch: 1 # ship full codex-package layout
+  epoch: 2 # retry app-server daemon start in test
   description: OpenAI Codex, an agentic coding tool for the terminal
   copyright:
     - license: Apache-2.0
@@ -54,7 +54,13 @@ test:
       runs: |
         set -eu
         export CODEX_HOME="$(mktemp -d)"
-        codex app-server daemon start
+        # The daemon's readiness wait is a fixed 10s and the spawned server outlives a
+        # timeout, so retrying start only extends the wait on slow arm64 runners.
+        i=0
+        until codex app-server daemon start; do
+          i=$((i + 1))
+          [ "$i" -lt 12 ]
+        done
         codex app-server daemon version
         codex app-server daemon stop
 update:
