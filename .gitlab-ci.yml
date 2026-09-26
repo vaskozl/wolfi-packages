@@ -96,6 +96,14 @@ generate:
   stage: generate
   interruptible: true
   image: !reference [.build, image]
+  # Retry only infra failures (e.g. pod stuck Pending on a full node); script
+  # failures here are deterministic guards and should fail fast.
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - scheduler_failure
+      - stuck_or_timeout_failure
   script:
     # Fail MRs that edit a yaml without bumping version/epoch, or bump a
     # yaml without propagating epoch to its reverse-deps. On main this is
