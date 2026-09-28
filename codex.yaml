@@ -3,7 +3,7 @@
 # repository: https://github.com/openai/codex
 package:
   name: codex
-  version: "0.157.1"
+  version: "0.158.0"
   epoch: 0 # retry app-server daemon start in test
   description: OpenAI Codex, an agentic coding tool for the terminal
   copyright:
