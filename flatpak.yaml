@@ -49,6 +49,8 @@ pipeline:
     with:
       repository: https://github.com/flatpak/flatpak
       tag: ${{package.version}}
+  # meson/configure runs with --wrap-mode=nodownload; fetch the wraps pinned upstream.
+  - runs: meson subprojects download libglnx variant-schema-compiler
   - uses: meson/configure
     with:
       opts: |
