@@ -31,26 +31,26 @@
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
       "matchStringsStrategy": "combination",
       "matchStrings": [
-        "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
-        "repository:\\s*https:\\/\\/codeberg\\.org\\/(?<depName>.*?)(?:\\.git)?(?=\\r?\\n|$)"
+        "version:\\s*['\"]?(?<currentValue>\\d+(?:\\.\\d+)*)['\"]?",
+        "repository:\\s*https:\\/\\/codeberg\\.org\\/(?<depName>\\S+?)(?:\\.git)?(?:\\r?\\n|$)"
       ],
       "registryUrlTemplate": "https://codeberg.org",
       "datasourceTemplate": "forgejo-tags",
       "versioningTemplate": "loose",
-      "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
+      "extractVersionTemplate": "^v?(?<version>\\d+(?:\\.\\d+)*)$"
     },
     {
       "customType": "regex",
       "managerFilePatterns": ["/.+\\.ya?ml$/"],
       "matchStringsStrategy": "combination",
       "matchStrings": [
-        "version:\\s*['\"]?\(?<currentValue>(\\d+\\.)+\\d+\)['\"]?",
-        "repository:\\s*https:\\/\\/gitlab\\.freedesktop\\.org\\/(?<depName>.*?)(?:\\.git)?(?=\\r?\\n|$)"
+        "version:\\s*['\"]?(?<currentValue>\\d+(?:\\.\\d+)*)['\"]?",
+        "repository:\\s*https:\\/\\/gitlab\\.freedesktop\\.org\\/(?<depName>\\S+?)(?:\\.git)?(?:\\r?\\n|$)"
       ],
       "registryUrlTemplate": "https://gitlab.freedesktop.org",
       "datasourceTemplate": "gitlab-tags",
       "versioningTemplate": "loose",
-      "extractVersionTemplate": "^v?(?<version>(\\d+\\.)+\\d+)$"
+      "extractVersionTemplate": "^v?(?<version>\\d+(?:\\.\\d+)*)$"
     },
     {
       // Track `# repository: https://git.kernel.org/...` annotations via
