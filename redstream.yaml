@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: redstream
+  version: "0.0.1"
+  epoch: 0
+  description: Persists a Redis with no persistence of its own to object storage
+  copyright:
+    - license: AGPL-3.0-only
+environment:
+  contents:
+    packages:
+      - ca-certificates-bundle
+      - go-1.27
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://gitlab.sko.ai/doudous/redstream
+      tag: v${{package.version}}
+      type-hint: gitlab
+  - uses: go/build
+    with:
+      go-package: go-1.27
+      packages: ./cmd/redstream
+      output: redstream
+      extra-args: -buildvcs=false
+test:
+  environment:
+    contents:
+      keyring:
+        - https://packages.cgr.dev/extras/chainguard-extras.rsa.pub
+      repositories:
+        - https://packages.cgr.dev/extras
+      packages:
+        - curl
+        - redis-8.10
+        - redis-cli-8.10
+  pipeline:
+    # Runs redstream as Redis's entrypoint on a file:// replica: a write it
+    # acks must survive a restart that starts Redis empty.
+    - runs: |
+        set -eu
+        d=$(mktemp -d)
+        start() {
+          redstream -addr 127.0.0.1:16379 -listen 127.0.0.1:16380 -health 127.0.0.1:18080 \
+            -replica "file://$d/bucket" -- redis-server --port 16379 --bind 127.0.0.1 --dir "$d" >>"$d/log" 2>&1 &
+          pid=$!
+          i=0
+          until curl -fsS -o /dev/null http://127.0.0.1:18080/; do
+            i=$((i+1))
+            [ "$i" -lt 150 ] || { cat "$d/log"; exit 1; }
+            sleep 0.2
+          done
+        }
+        start
+        redis-cli -p 16379 SET redstream persisted
+        [ "$(redis-cli -p 16379 WAIT 1 5000)" -eq 1 ]
+        kill -TERM "$pid"
+        wait "$pid"
+        start
+        [ "$(redis-cli -p 16379 GET redstream)" = persisted ]
+        kill -TERM "$pid"
+        wait "$pid"
+update:
+  enabled: true
+  git:
+    strip-prefix: v
+    tag-filter-prefix: v
