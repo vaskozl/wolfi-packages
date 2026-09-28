@@ -63,7 +63,16 @@ stages: [generate, build]
       --keyring-append=melange.rsa.pub,https://apks.sko.ai/melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
       --pipeline-dirs=./pipelines
       --env-file=common.env
-  retry: 1
+  # Retry only runner/scheduler failures: a script failure is deterministic
+  # and a timed-out 3h build should not run again.
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - scheduler_failure
+      - stuck_or_timeout_failure
+      - api_failure
+      - unknown_failure
   # MR builds write packages to $CI_PROJECT_DIR/packages (OUT_DIR).
   # Uploading that directory as an artifact lets dependent jobs (those with
   # a `needs:` edge pointing here) download it and resolve locally-built
