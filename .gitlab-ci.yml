@@ -63,7 +63,7 @@ stages: [generate, build]
       --keyring-append=melange.rsa.pub,https://apks.sko.ai/melange.rsa.pub,https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
       --pipeline-dirs=./pipelines
       --env-file=common.env
-  # Retry only runner/scheduler failures: a script failure is deterministic
+  # Retry only infrastructure failures: a script failure is deterministic
   # and a timed-out 3h build should not run again.
   retry:
     max: 2
@@ -71,6 +71,7 @@ stages: [generate, build]
       - runner_system_failure
       - scheduler_failure
       - stuck_or_timeout_failure
+      - runner_external_dependency_failure
       - api_failure
       - unknown_failure
   # MR builds write packages to $CI_PROJECT_DIR/packages (OUT_DIR).
@@ -105,7 +106,9 @@ generate:
   stage: generate
   interruptible: true
   image: !reference [.build, image]
-  retry: 1
+  # The epoch and signing-key checks below are deterministic: retrying a
+  # script_failure would only delay a red result.
+  retry: !reference [.build, retry]
   script:
     # Fail MRs that edit a yaml without bumping version/epoch, or bump a
     # yaml without propagating epoch to its reverse-deps. On main this is
@@ -163,3 +166,18 @@ build:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       variables:
         IS_MAIN: "false"
+
+# A broken renovate.json5 otherwise only surfaces once renovate refuses to run
+# and every bump MR has already stopped. Same image as the renovate cronjob:
+# its re2 native module is what rejects RE2-incompatible matchStrings.
+renovate-config:
+  stage: generate
+  interruptible: true
+  image:
+    name: ghcr.io/vaskozl/renovate:43.233.2@sha256:4f179c1a5b47ae6a4bb351b4dde0fd975c6d50d6f117436eab97e5ad8456bc3f
+    entrypoint: [""]
+  script:
+    - renovate-config-validator --strict --no-global renovate.json5
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: [renovate.json5]

@@ -1,6 +1,6 @@
 package:
   name: appstream
-  version: "1.2.0"
+  version: "1.2.1"
   epoch: 0
   description: Software component metadata catalog library and tools
   copyright:
