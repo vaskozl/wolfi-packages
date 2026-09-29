@@ -145,13 +145,13 @@
       "allowedVersions": "/^[0-9]{4}\\.[0-9]+$/"
     },
     {
-      // Track libclc against Wolfi's llvm-19 apk (its ABI peer); strip the
-      // apk -rN suffix and cap to the 19.x line so it stays matched to
-      // mesa-full's llvm-ver: 19 and the spirv-llvm-translator.
+      // Track libclc against Wolfi's llvm-22 apk (its ABI peer); strip the
+      // apk -rN suffix and cap to the 22.x line so it stays matched to the
+      // spirv-llvm-translator 22.x rule above.
       "matchDatasources": ["custom.wolfi-base"],
-      "matchPackageNames": ["llvm-19"],
+      "matchPackageNames": ["llvm-22"],
       "extractVersion": "^(?<version>\\d+(?:\\.\\d+)*)",
-      "allowedVersions": "/^19\\./"
+      "allowedVersions": "/^22\\./"
     }
   ]
 }
