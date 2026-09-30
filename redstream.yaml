@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: redstream
-  version: "0.0.1"
+  version: "0.0.2"
   epoch: 0
   description: Persists a Redis with no persistence of its own to object storage
   copyright:
@@ -22,6 +22,7 @@ pipeline:
       go-package: go-1.27
       packages: ./cmd/redstream
       output: redstream
+      ldflags: -X main.version=v${{package.version}}
       extra-args: -buildvcs=false
 test:
   environment:
@@ -35,14 +36,15 @@ test:
         - redis-8.10
         - redis-cli-8.10
   pipeline:
+    - runs: redstream version | grep -F "redstream v${{package.version}} "
     # Runs redstream as Redis's entrypoint on a file:// replica: a write it
     # acks must survive a restart that starts Redis empty.
     - runs: |
         set -eu
         d=$(mktemp -d)
         start() {
-          redstream -addr 127.0.0.1:16379 -listen 127.0.0.1:16380 -health 127.0.0.1:18080 \
-            -replica "file://$d/bucket" -- redis-server --port 16379 --bind 127.0.0.1 --dir "$d" >>"$d/log" 2>&1 &
+          redstream run --redis-addr=127.0.0.1:16379 --replication-addr=127.0.0.1:16380 \
+            --health-addr=127.0.0.1:18080 --replica="file://$d/bucket" -- --port 16379 --bind 127.0.0.1 --dir "$d" >>"$d/log" 2>&1 &
           pid=$!
           i=0
           until curl -fsS -o /dev/null http://127.0.0.1:18080/; do
