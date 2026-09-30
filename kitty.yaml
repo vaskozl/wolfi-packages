@@ -36,6 +36,7 @@ environment:
       - openssl-dev
       - py3-setuptools
       - python3-dev
+      - shader-slang
       - wayland-dev
       - wayland-protocols
       - wayland-protocols-dev
