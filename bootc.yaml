@@ -40,6 +40,9 @@ pipeline:
       # 8GB arm64 nodes.
       export CARGO_PROFILE_RELEASE_DEBUG=0
       export CARGO_BUILD_JOBS=1
+      # Thin LTO serialises codegen of the whole program into the final bootc
+      # crate, which alone overruns the 3h job on a single arm64 core.
+      export CARGO_PROFILE_RELEASE_LTO=false
       # xtask manpages only builds in release mode once target/release/bootc
       # exists; otherwise it compiles the whole tree a second time in the dev
       # profile, pushing the arm64 job past its timeout. With docgen enabled
