@@ -40,7 +40,13 @@ pipeline:
       # 8GB arm64 nodes.
       export CARGO_PROFILE_RELEASE_DEBUG=0
       export CARGO_BUILD_JOBS=1
+      # xtask manpages only builds in release mode once target/release/bootc
+      # exists; otherwise it compiles the whole tree a second time in the dev
+      # profile, pushing the arm64 job past its timeout. With docgen enabled
+      # here, the manpages and make bin cargo runs are no-ops.
+      cargo build --release --features docgen --bins
       make bin install-all \
+        CARGO_FEATURES=docgen \
         STORAGE_RELATIVE_PATH=/sysroot/ostree/bootc/storage \
         DESTDIR="${{targets.contextdir}}" \
         V=1
