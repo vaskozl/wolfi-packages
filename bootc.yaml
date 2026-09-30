@@ -1,7 +1,7 @@
 package:
   name: bootc
   version: "1.16.13"
-  epoch: 1 # build without debuginfo, cap cargo jobs
+  epoch: 1 # build without debuginfo or docgen rebuild, cap cargo jobs
   description: Boot and upgrade via container images
   copyright:
     - license: Apache-2.0-only
@@ -39,7 +39,9 @@ pipeline:
       tag: v${{package.version}}
   - uses: patch
     with:
-      patches: fetch-apply-updates-composefs-condition.patch
+      patches: |
+        fetch-apply-updates-composefs-condition.patch
+        skip-manpage-cli-sync.patch
   - runs: |
       make bin install-all \
         STORAGE_RELATIVE_PATH=/sysroot/ostree/bootc/storage \
