@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: minilb
-  version: 0.2.2
-  epoch: 1 # pin go-1.26 + go-package, trim build env
+  version: "0.2.3"
+  epoch: 0 # pin go-1.26 + go-package, trim build env
   description: Lightweight DNS based load balancer for Kubernetes
   copyright:
     - license: Apache-2.0
