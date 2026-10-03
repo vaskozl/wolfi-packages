@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: maddy
-  version: "0.9.5"
+  version: "0.9.6"
   epoch: 0 # pin go-1.25, real tests, go-package
   description: All-in-one mail server (MTA, MDA, IMAP)
   copyright:
