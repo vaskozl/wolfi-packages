@@ -118,12 +118,16 @@ sub normalize_yaml {
     # Drop full-line comments and normalise whitespace so comment/formatting-only
     # edits don't read as content changes. Trailing (end-of-line) comments are
     # deliberately left alone: a '#' inside a quoted string or a runs: shell block
-    # is content, and stripping it would hide real edits.
+    # is content, and stripping it would hide real edits. The top-level update:
+    # block only steers version bots and never reaches the built apk.
     my ($text) = @_;
     return '' unless defined $text;
     my @keep;
+    my $in_update = 0;
     for my $line (split /\n/, $text, -1) {
         next if $line =~ /^\s*#/;
+        $in_update = $line =~ /^update:/ if $line =~ /^\S/;
+        next if $in_update;
         $line =~ s/[ \t]+$//;
         push @keep, $line;
     }
