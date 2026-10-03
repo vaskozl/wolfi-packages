@@ -130,11 +130,11 @@
       "extractVersion": "^(?<version>\\d+(?:\\.\\d+)*(?:_p\\d+)?)"
     },
     {
-      // Pin SPIRV-LLVM-Translator to the LLVM 22 release line: its major
-      // tracks the LLVM major, and Wolfi only ships up to llvm-22.
+      // Pin SPIRV-LLVM-Translator to the LLVM 23 release line: its major
+      // tracks the LLVM major, and Wolfi only ships up to llvm-23.
       "matchDatasources": ["github-tags"],
       "matchPackageNames": ["KhronosGroup/SPIRV-LLVM-Translator"],
-      "allowedVersions": "/^22\\./"
+      "allowedVersions": "/^23\\./"
     },
     {
       // SPIRV-Tools uses date-based tags (vYYYY.N). Track only stable date
