@@ -102,12 +102,16 @@
   },
   "packageRules": [
     {
-      // On an upstream version bump: reset the bumped yaml's epoch to 0
-      // and bump epoch on every reverse-dep so CI rebuilds them against
-      // the new apk. --base-ref HEAD because renovate hasn't committed yet
-      // -- bump-epochs diffs working tree vs HEAD to find renovate's edits.
-      // Resulting yaml changes are picked up via fileFilters: **/*.yaml.
-      "matchDatasources": ["github-tags","github-releases","gitlab-tags","forgejo-tags","git-tags","custom.alpine-base"],
+      // Fires on every custom-regex-managed bump (github, codeberg,
+      // freedesktop, kernel.org, alpine-base, wolfi-base, go-toolchain):
+      // all of them edit package yamls. On a version bump, reset the bumped
+      // yaml's epoch to 0; on a content-only edit (go-toolchain), bump it by
+      // 1. Either way, bump epoch on every reverse-dep so CI rebuilds them
+      // against the new apk. --base-ref HEAD because renovate hasn't
+      // committed yet -- bump-epochs diffs working tree vs HEAD to find
+      // renovate's edits. Resulting yaml changes are picked up via
+      // fileFilters: **/*.yaml.
+      "matchManagers": ["custom.regex"],
       "postUpgradeTasks": {
         "commands": [
           ".gitlab/bump-epochs.pl --base-ref HEAD",
