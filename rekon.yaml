@@ -2,8 +2,8 @@
 package:
   name: rekon
   version: "0.0.63"
-  epoch: 0
-  description: rekon framework example apps (clock, blog, saas, pkgupdate, veroso)
+  epoch: 1 # drop rekonctl, saas and homeflow, deleted upstream
+  description: rekon framework example apps (clock, blog, pkgupdate, veroso)
   copyright:
     - license: Apache-2.0
 environment:
@@ -18,9 +18,7 @@ data:
       clock: ""
   - name: nested-servers
     items:
-      homeflow: ""
       pkgupdate: ""
-      saas: ""
       veroso: ""
 pipeline:
   - uses: git-checkout
@@ -28,13 +26,6 @@ pipeline:
       repository: https://gitlab.sko.ai/doudous/rekon
       tag: v${{package.version}}
       type-hint: gitlab
-  - uses: go/build
-    with:
-      go-package: go-1.27
-      modroot: .
-      packages: ./cmd/rekonctl
-      output: rekonctl
-      extra-args: -buildvcs=false
   - runs: |
       set -eu
       mkdir -p "${{targets.destdir}}/usr/share/doc/rekon"
@@ -76,10 +67,6 @@ subpackages:
               rekon-${{range.key}}
 test:
   pipeline:
-    - uses: test/help-check
-      with:
-        bins: |
-          rekonctl
     - runs: |
         set -eu
         stat /usr/share/doc/rekon/README.md
