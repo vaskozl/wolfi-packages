@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: mesa-full
-  version: "26.2.3"
-  epoch: 1 # rebuild for spirv-llvm-translator 23.1.1
+  version: "26.2.4"
+  epoch: 0 # rebuild for spirv-llvm-translator 23.1.1
   description: Mesa DRI OpenGL/Vulkan, single unsplit package with Intel drivers (x86_64)
   copyright:
     - license: MIT AND SGI-B-2.0 AND BSL-1.0
