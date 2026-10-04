@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: maddy
-  version: "0.9.5"
-  epoch: 0 # pin go-1.25, real tests, go-package
+  version: "0.9.6"
+  epoch: 0 # pin go-1.26, real tests, go-package
   description: All-in-one mail server (MTA, MDA, IMAP)
   copyright:
     - license: GPL-3.0-or-later
@@ -18,7 +18,7 @@ environment:
       - build-base
       - busybox
       - ca-certificates-bundle
-      - go-1.25
+      - go-1.26
       - scdoc
 pipeline:
   - uses: git-checkout
@@ -27,7 +27,7 @@ pipeline:
       tag: v${{package.version}}
   - uses: go/build
     with:
-      go-package: go-1.25
+      go-package: go-1.26
       packages: ./cmd/maddy
       output: maddy
       ldflags: |
