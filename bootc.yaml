@@ -1,7 +1,7 @@
 package:
   name: bootc
   version: "1.16.13"
-  epoch: 0 # drop --apply from fetch-apply-updates.service
+  epoch: 1 # cut arm64 build memory and time
   description: Boot and upgrade via container images
   copyright:
     - license: Apache-2.0-only
@@ -34,7 +34,13 @@ pipeline:
     with:
       patches: fetch-apply-updates-composefs-condition.patch
   - runs: |
+      export CARGO_PROFILE_RELEASE_DEBUG=0
+      export CARGO_BUILD_JOBS=1
+      export CARGO_PROFILE_RELEASE_LTO=false
+      # Without target/release/bootc, `make manpages` rebuilds in the dev profile.
+      cargo build --release --features docgen --bins
       make bin install-all \
+        CARGO_FEATURES=docgen \
         STORAGE_RELATIVE_PATH=/sysroot/ostree/bootc/storage \
         DESTDIR="${{targets.contextdir}}" \
         V=1
