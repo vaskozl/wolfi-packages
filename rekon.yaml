@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: rekon
-  version: "0.0.65"
+  version: "0.0.66"
   epoch: 0 # drop rekonctl, saas and homeflow, deleted upstream
   description: rekon framework example apps (clock, blog, pkgupdate, veroso)
   copyright:
