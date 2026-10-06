@@ -1,7 +1,7 @@
 package:
   name: bootc
-  version: "1.16.13"
-  epoch: 1 # cut arm64 build memory and time
+  version: "1.17.0"
+  epoch: 0 # cut arm64 build memory and time
   description: Boot and upgrade via container images
   copyright:
     - license: Apache-2.0-only
