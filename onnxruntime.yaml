@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Repackages the upstream CPU release tarball rather than building from source.
+# datasource: github-releases
+# repository: https://github.com/microsoft/onnxruntime
+package:
+  name: onnxruntime
+  version: "1.30.0"
+  epoch: 0
+  description: ONNX Runtime, a cross-platform inference engine for ONNX models (C library)
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - busybox
+      - ca-certificates-bundle
+      - curl
+pipeline:
+  - runs: |
+      set -eu
+
+      case "${{build.arch}}" in
+        x86_64) arch=x64 ;;
+        aarch64) arch=aarch64 ;;
+        *) echo "unsupported arch: ${{build.arch}}"; exit 1 ;;
+      esac
+
+      curl -sfL -o ort.tgz \
+        "https://github.com/microsoft/onnxruntime/releases/download/v${{package.version}}/onnxruntime-linux-${arch}-${{package.version}}.tgz"
+      tar -xzf ort.tgz --strip-components=1
+
+      install -d "${{targets.destdir}}/usr/lib" "${{targets.destdir}}/usr/share/licenses/onnxruntime"
+      # Consumers dlopen the unversioned name, so it stays in the main package.
+      cp -P lib/libonnxruntime.so* "${{targets.destdir}}/usr/lib/"
+      install -m644 LICENSE ThirdPartyNotices.txt "${{targets.destdir}}/usr/share/licenses/onnxruntime/"
+
+      install -d "${{targets.destdir}}/usr/include/onnxruntime" "${{targets.destdir}}/usr/lib/pkgconfig"
+      cp -r include/* "${{targets.destdir}}/usr/include/onnxruntime/"
+      sed -e 's|^prefix=.*|prefix=/usr|' -e 's|^libdir=.*|libdir=${prefix}/lib|' \
+        lib/pkgconfig/libonnxruntime.pc > "${{targets.destdir}}/usr/lib/pkgconfig/libonnxruntime.pc"
+subpackages:
+  - name: onnxruntime-dev
+    description: ONNX Runtime C and C++ headers
+    pipeline:
+      - runs: |
+          set -eu
+          install -d "${{targets.contextdir}}/usr/lib"
+          mv "${{targets.destdir}}/usr/include" "${{targets.contextdir}}/usr/"
+          mv "${{targets.destdir}}/usr/lib/pkgconfig" "${{targets.contextdir}}/usr/lib/"
+    dependencies:
+      runtime:
+        - onnxruntime
+    test:
+      pipeline:
+        - uses: test/pkgconf
+        - runs: |
+            set -eu
+            test -f "$(pkg-config --variable=includedir libonnxruntime)/onnxruntime_c_api.h"
+test:
+  environment:
+    contents:
+      packages:
+        - build-base
+        - onnxruntime-dev
+        - pkgconf
+  pipeline:
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
+    - name: dlopen by name and create an environment
+      runs: |
+        set -eu
+        cd "$(mktemp -d)"
+        cat > t.c <<'EOF'
+        #include <dlfcn.h>
+        #include <stdio.h>
+        #include <onnxruntime_c_api.h>
+
+        int main(void) {
+          void *h = dlopen("libonnxruntime.so", RTLD_NOW);
+          if (!h) { fprintf(stderr, "%s\n", dlerror()); return 1; }
+          const OrtApiBase *(*base)(void) = (const OrtApiBase *(*)(void))dlsym(h, "OrtGetApiBase");
+          if (!base) { fprintf(stderr, "%s\n", dlerror()); return 1; }
+          const OrtApi *api = base()->GetApi(ORT_API_VERSION);
+          if (!api) { fprintf(stderr, "API version %d unsupported\n", ORT_API_VERSION); return 1; }
+          OrtEnv *env;
+          OrtStatus *st = api->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "test", &env);
+          if (st) { fprintf(stderr, "%s\n", api->GetErrorMessage(st)); return 1; }
+          printf("onnxruntime %s\n", base()->GetVersionString());
+          api->ReleaseEnv(env);
+          return 0;
+        }
+        EOF
+        cc $(pkg-config --cflags libonnxruntime) -o t t.c -ldl
+        ./t
+update:
+  enabled: true
+  github:
+    identifier: microsoft/onnxruntime
+    strip-prefix: v
