@@ -3,12 +3,13 @@
 # with `needs:` set so dependent packages wait for their dependencies.
 #
 # The graph is derived purely from melange yaml introspection. For each yaml
-# we union build-time deps (environment.contents.packages) and runtime deps
-# (package.dependencies.runtime), strip version constraints, and resolve each
-# remaining name against a map of locally-provided packages (package name,
-# subpackage names, and author-declared `provides:` virtuals). Cross-yaml deps
-# become `needs:` edges; everything else is fetched from the published apk
-# repository at build time.
+# we union build-time deps (environment.contents.packages), runtime deps
+# (package.dependencies.runtime) and test-env deps (test.environment of the
+# package and its subpackages, which melange test installs), strip version
+# constraints, and resolve each remaining name against a map of locally-provided
+# packages (package name, subpackage names, and author-declared `provides:`
+# virtuals). Cross-yaml deps become `needs:` edges; everything else is fetched
+# from the published apk repository at build time.
 
 set -eu
 
@@ -19,11 +20,12 @@ trap 'rm -rf "$WORK"' EXIT
 
 # Per-yaml row: <base>|<provided-csv>|<target-arches-csv>|<deps-csv>
 # where <provided> = package name + subpackage names + author-declared virtual
-# provides (package- and subpackage-level), and <deps> = build deps concatenated
-# with runtime deps (constraints stripped later). Including `provides:` lets the
-# graph resolve override packages (e.g. mesa-full-gbm provides mesa-gbm at
-# priority 10) so their consumers get a proper `needs:` edge to the local build.
-QUERY='{{ .Package.Name }}{{ range .Subpackages }},{{ .Name }}{{ end }}{{ range .Package.Dependencies.Provides }},{{ . }}{{ end }}{{ range .Subpackages }}{{ range .Dependencies.Provides }},{{ . }}{{ end }}{{ end }}|{{ range $i,$a := .Package.TargetArchitecture }}{{ if $i }},{{ end }}{{ $a }}{{ end }}|{{ range $i,$d := .Environment.Contents.Packages }}{{ if $i }},{{ end }}{{ $d }}{{ end }}{{ range .Package.Dependencies.Runtime }},{{ . }}{{ end }}'
+# provides (package- and subpackage-level), and <deps> = build, runtime and
+# test-env deps concatenated (constraints stripped later). Including `provides:`
+# lets the graph resolve override packages (e.g. mesa-full-gbm provides mesa-gbm
+# at priority 10) so their consumers get a proper `needs:` edge to the local
+# build.
+QUERY='{{ .Package.Name }}{{ range .Subpackages }},{{ .Name }}{{ end }}{{ range .Package.Dependencies.Provides }},{{ . }}{{ end }}{{ range .Subpackages }}{{ range .Dependencies.Provides }},{{ . }}{{ end }}{{ end }}|{{ range $i,$a := .Package.TargetArchitecture }}{{ if $i }},{{ end }}{{ $a }}{{ end }}|{{ range $i,$d := .Environment.Contents.Packages }}{{ if $i }},{{ end }}{{ $d }}{{ end }}{{ range .Package.Dependencies.Runtime }},{{ . }}{{ end }}{{ with .Test }}{{ range .Environment.Contents.Packages }},{{ . }}{{ end }}{{ end }}{{ range .Subpackages }}{{ with .Test }}{{ range .Environment.Contents.Packages }},{{ . }}{{ end }}{{ end }}{{ end }}'
 
 for y in *.yaml; do
     printf '%s|%s\n' "${y%.yaml}" "$(melange query "$y" "$QUERY")"
