@@ -9,6 +9,7 @@ package:
 environment:
   contents:
     packages:
+      - build-base
       - ca-certificates-bundle
       - go-1.27
 data:
