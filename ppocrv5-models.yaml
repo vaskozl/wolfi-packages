@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# PP-OCRv5 mobile models in ONNX form, as RapidOCR publishes them on ModelScope.
+# Version is the RapidOCR model repo revision. Not tracked by renovate on purpose:
+# rekon's veroso pins these exact models, so a bump is a deliberate change.
+package:
+  name: ppocrv5-models
+  version: "3.9.2"
+  epoch: 0
+  description: PP-OCRv5 mobile text detector and Latin-script recogniser (ONNX)
+  copyright:
+    - license: Apache-2.0
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - uses: fetch
+    with:
+      uri: https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v${{package.version}}/onnx/PP-OCRv5/det/ch_PP-OCRv5_det_mobile.onnx
+      expected-sha256: 4d97c44a20d30a81aad087d6a396b08f786c4635742afc391f6621f5c6ae78ae
+      extract: false
+  - uses: fetch
+    with:
+      uri: https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v${{package.version}}/onnx/PP-OCRv5/rec/latin_PP-OCRv5_rec_mobile.onnx
+      expected-sha256: b20bd37c168a570f583afbc8cd7925603890efbcdc000a59e22c269d160b5f5a
+      extract: false
+  - runs: |
+      set -eu
+      install -d "${{targets.destdir}}/usr/share/ppocrv5"
+      install -m644 ch_PP-OCRv5_det_mobile.onnx "${{targets.destdir}}/usr/share/ppocrv5/det.onnx"
+      install -m644 latin_PP-OCRv5_rec_mobile.onnx "${{targets.destdir}}/usr/share/ppocrv5/rec.onnx"
+test:
+  environment:
+    contents:
+      packages:
+        - build-base
+        - onnxruntime-dev
+        - pkgconf
+  pipeline:
+    - name: ONNX Runtime loads both models and finds the recogniser's character list
+      runs: |
+        set -eu
+        cd "$(mktemp -d)"
+        cat > t.c <<'EOF'
+        #include <stdio.h>
+        #include <stdlib.h>
+        #include <onnxruntime_c_api.h>
+
+        static const OrtApi *api;
+
+        static void check(OrtStatus *st) {
+          if (st) { fprintf(stderr, "%s\n", api->GetErrorMessage(st)); exit(1); }
+        }
+
+        int main(void) {
+          api = OrtGetApiBase()->GetApi(ORT_API_VERSION);
+          OrtEnv *env;
+          OrtSessionOptions *opts;
+          OrtSession *det, *rec;
+          OrtModelMetadata *md;
+          OrtAllocator *alloc;
+          char *chars = NULL;
+          check(api->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "test", &env));
+          check(api->CreateSessionOptions(&opts));
+          check(api->CreateSession(env, "/usr/share/ppocrv5/det.onnx", opts, &det));
+          check(api->CreateSession(env, "/usr/share/ppocrv5/rec.onnx", opts, &rec));
+          check(api->GetAllocatorWithDefaultOptions(&alloc));
+          check(api->SessionGetModelMetadata(rec, &md));
+          check(api->ModelMetadataLookupCustomMetadataMap(md, alloc, "character", &chars));
+          if (!chars || !*chars) { fprintf(stderr, "rec.onnx: no character list\n"); return 1; }
+          return 0;
+        }
+        EOF
+        cc $(pkg-config --cflags libonnxruntime) -o t t.c $(pkg-config --libs libonnxruntime)
+        ./t
