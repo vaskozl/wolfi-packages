@@ -1,5 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/anubis/APKBUILD
+# datasource: github-releases
+# repository: https://github.com/TecharoHQ/anubis
 package:
   name: anubis
   version: "1.28.0"
@@ -10,27 +12,21 @@ package:
 environment:
   contents:
     packages:
-      - bash
-      - brotli
-      - build-base
       - busybox
       - ca-certificates-bundle
-      - esbuild
+      - curl
       - go-1.26
-      - nodejs
-      - npm
-      - zstd
 pipeline:
-  - uses: git-checkout
-    with:
-      repository: https://github.com/TecharoHQ/anubis
-      tag: v${{package.version}}
-  - uses: autoconf/make
-    with:
-      opts: assets
+  # The vendor-npm release tarball ships the prebuilt web assets and wasm
+  # modules; building those from git needs a rust wasm32 toolchain.
+  - runs: |
+      set -eu
+      curl -sfL "https://github.com/TecharoHQ/anubis/releases/download/v${{package.version}}/anubis-src-vendor-npm-${{package.version}}.tar.gz" |
+        tar -xz --strip-components=1
   - uses: go/build
     with:
       go-package: go-1.26
+      ldflags: -X github.com/TecharoHQ/anubis.Version=${{package.version}}
       packages: ./cmd/anubis
       output: anubis
       tags: limitedsupportability
