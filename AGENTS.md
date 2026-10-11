@@ -158,7 +158,9 @@ Sections to check (in order): `main`, `community`, `testing`
 
 Renovate bumps `version:` when it sees a paired `repository: https://github.com/OWNER/REPO` (or codeberg/gitlab.freedesktop.org/git.kernel.org). `uses: git-checkout` provides it naturally; otherwise add a `# repository: ...` comment. **Never add a `# repository:` comment when `git-checkout` already has a `repository:` field — it is redundant and should be omitted.**
 
-**Prefer `uses: git-checkout` over `curl` tarball fetches.** If upstream publishes a tagged git repo (github, codeberg, freedesktop, kernel.org, ...), use `git-checkout`: it pins the SHA via the tag, gives renovate a `repository:` to track natively, and avoids dragging `curl` + `ca-certificates-bundle` into the build env. Reach for `curl` only when the git checkout is not self-contained (e.g. the release tarball bundles vendored sources or sibling repos that the bare git tree omits) or when upstream ships no corresponding tag (binary-only releases). Never pin `expected-sha256` on a tarball URL — renovate can't update hashes.
+**Prefer `uses: git-checkout` over `curl` tarball fetches.** If upstream publishes a tagged git repo (github, codeberg, freedesktop, kernel.org, ...), use `git-checkout`: it pins the SHA via the tag, gives renovate a `repository:` to track natively, and avoids dragging `curl` + `ca-certificates-bundle` into the build env. Reach for a tarball only when the git checkout is not self-contained (e.g. the release tarball bundles vendored sources or sibling repos that the bare git tree omits) or when upstream ships no corresponding tag (binary-only releases).
+
+**Tarballs and release binaries: `uses: fetch` with `expected-sha256`, not a bare `curl`.** The `bump/<pkg>` update MRs run `melange bump`, which refreshes the hash on every `fetch` step, including per-arch `if:`-gated ones. It only substitutes `${{package.version}}` in the URI, so never interpolate `${{build.arch}}` or other vars there: write one `if:`-gated `fetch` per arch with a literal URI instead. A plain renovate MR without the bump bot leaves the hash stale and fails CI until it is refreshed.
 
 GitHub packages default to the `github-tags` datasource. If a package tracks **GitHub Releases** rather than tags (e.g. pre-built binaries distributed via releases, not source archives), add a `# datasource: github-releases` comment on the line immediately above `# repository:`:
 
@@ -341,7 +343,8 @@ The build cgroup (local bubblewrap and CI alike) is RAM-limited but exposes all 
 - Forgetting to bump `epoch:` after a content change.
 - Forgetting to reset `epoch: 0` when bumping `version:`.
 - Bare `go` in `environment.contents.packages` instead of `go-1.X`.
-- Pinning `expected-sha256` on `fetch:` URIs that renovate manages — renovate can't update hashes, so the bump MR breaks. Use `git-checkout` (which resolves SHAs naturally) or omit the hash.
+- Interpolating `${{build.arch}}` (or anything but `${{package.version}}`) in a `fetch` URI: `melange bump` can't substitute it, so the bump MR leaves `expected-sha256` stale. Use one `if:`-gated `fetch` per arch with a literal URI.
+- Dropping `expected-sha256` or falling back to a bare `curl` to avoid hash churn: the bump MRs refresh `fetch` hashes, so keep the integrity check.
 - Putting `resources:` / `test-resources:` anywhere except as a direct child of `package:`.
 
 ## Search Similar Packages First
