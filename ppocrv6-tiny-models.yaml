@@ -1,12 +1,12 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
-# PP-OCRv5 mobile models in ONNX form, as RapidOCR publishes them on ModelScope.
+# PP-OCRv6 tiny models in ONNX form, as RapidOCR publishes them on ModelScope.
 # Version is the RapidOCR model repo revision. Not tracked by renovate on purpose:
 # rekon's veroso pins these exact models, so a bump is a deliberate change.
 package:
-  name: ppocrv5-models
+  name: ppocrv6-tiny-models
   version: "3.9.2"
   epoch: 0
-  description: PP-OCRv5 mobile text detector and Latin-script recogniser (ONNX)
+  description: PP-OCRv6 tiny text detector and multilingual recogniser (ONNX)
   copyright:
     - license: Apache-2.0
 environment:
@@ -16,19 +16,19 @@ environment:
 pipeline:
   - uses: fetch
     with:
-      uri: https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v${{package.version}}/onnx/PP-OCRv5/det/ch_PP-OCRv5_det_mobile.onnx
-      expected-sha256: 4d97c44a20d30a81aad087d6a396b08f786c4635742afc391f6621f5c6ae78ae
+      uri: https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v${{package.version}}/onnx/PP-OCRv6/det/PP-OCRv6_det_tiny.onnx
+      expected-sha256: f42c0fbd294d95eac1a550e131b277dac97462c8025fa4b6c3cec1b7894bd3d5
       extract: false
   - uses: fetch
     with:
-      uri: https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v${{package.version}}/onnx/PP-OCRv5/rec/latin_PP-OCRv5_rec_mobile.onnx
-      expected-sha256: b20bd37c168a570f583afbc8cd7925603890efbcdc000a59e22c269d160b5f5a
+      uri: https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v${{package.version}}/onnx/PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx
+      expected-sha256: e16e242de5937ad92609223f19bc2aff3727ee40b095f996907c24749bad251b
       extract: false
   - runs: |
       set -eu
-      install -d "${{targets.destdir}}/usr/share/ppocrv5"
-      install -m644 ch_PP-OCRv5_det_mobile.onnx "${{targets.destdir}}/usr/share/ppocrv5/det.onnx"
-      install -m644 latin_PP-OCRv5_rec_mobile.onnx "${{targets.destdir}}/usr/share/ppocrv5/rec.onnx"
+      install -d "${{targets.destdir}}/usr/share/ppocr"
+      install -m644 PP-OCRv6_det_tiny.onnx "${{targets.destdir}}/usr/share/ppocr/det.onnx"
+      install -m644 PP-OCRv6_rec_tiny.onnx "${{targets.destdir}}/usr/share/ppocr/rec.onnx"
 test:
   environment:
     contents:
@@ -62,8 +62,8 @@ test:
           char *chars = NULL;
           check(api->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "test", &env));
           check(api->CreateSessionOptions(&opts));
-          check(api->CreateSession(env, "/usr/share/ppocrv5/det.onnx", opts, &det));
-          check(api->CreateSession(env, "/usr/share/ppocrv5/rec.onnx", opts, &rec));
+          check(api->CreateSession(env, "/usr/share/ppocr/det.onnx", opts, &det));
+          check(api->CreateSession(env, "/usr/share/ppocr/rec.onnx", opts, &rec));
           check(api->GetAllocatorWithDefaultOptions(&alloc));
           check(api->SessionGetModelMetadata(rec, &md));
           check(api->ModelMetadataLookupCustomMetadataMap(md, alloc, "character", &chars));
