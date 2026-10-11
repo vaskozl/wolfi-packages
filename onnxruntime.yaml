@@ -5,7 +5,7 @@
 package:
   name: onnxruntime
   version: "1.31.0"
-  epoch: 0
+  epoch: 1 # verify release tarball sha256
   description: ONNX Runtime, a cross-platform inference engine for ONNX models (C library)
   copyright:
     - license: MIT
@@ -13,22 +13,21 @@ environment:
   contents:
     packages:
       - busybox
-      - ca-certificates-bundle
-      - curl
 pipeline:
+  # Literal per-arch URIs: the update bot substitutes only package.version when
+  # it refreshes expected-sha256, so ${{build.arch}} would break it.
+  - if: ${{build.arch}} == 'x86_64'
+    uses: fetch
+    with:
+      uri: https://github.com/microsoft/onnxruntime/releases/download/v${{package.version}}/onnxruntime-linux-x64-${{package.version}}.tgz
+      expected-sha256: cc5c72baf5ae5c8238a6841f0897227be2d02826b9cf98eaf02fdefaeeb03a57
+  - if: ${{build.arch}} == 'aarch64'
+    uses: fetch
+    with:
+      uri: https://github.com/microsoft/onnxruntime/releases/download/v${{package.version}}/onnxruntime-linux-aarch64-${{package.version}}.tgz
+      expected-sha256: c5b8b3cca31f3d643a3b313b8f42e2d0f16a4fcefd02cda343d97bd5306afaab
   - runs: |
       set -eu
-
-      case "${{build.arch}}" in
-        x86_64) arch=x64 ;;
-        aarch64) arch=aarch64 ;;
-        *) echo "unsupported arch: ${{build.arch}}"; exit 1 ;;
-      esac
-
-      curl -sfL -o ort.tgz \
-        "https://github.com/microsoft/onnxruntime/releases/download/v${{package.version}}/onnxruntime-linux-${arch}-${{package.version}}.tgz"
-      tar -xzf ort.tgz --strip-components=1
-
       install -d "${{targets.destdir}}/usr/lib" "${{targets.destdir}}/usr/share/licenses/onnxruntime"
       # Consumers dlopen the unversioned name, so it stays in the main package.
       cp -P lib/libonnxruntime.so* "${{targets.destdir}}/usr/lib/"
