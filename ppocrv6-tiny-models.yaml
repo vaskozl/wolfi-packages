@@ -3,7 +3,7 @@
 # Version is the RapidOCR model repo revision. Not tracked by renovate on purpose:
 # rekon's veroso pins these exact models, so a bump is a deliberate change.
 package:
-  name: ppocr-models
+  name: ppocrv6-tiny-models
   version: "3.9.2"
   epoch: 0
   description: PP-OCRv6 tiny text detector and multilingual recogniser (ONNX)
