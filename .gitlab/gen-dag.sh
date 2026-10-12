@@ -90,6 +90,7 @@ noop:
   stage: build
   image: busybox
   script: ["true"]
+  retry: !reference [.build, retry]
   rules:
     - if: $IS_MAIN == "true"
     - if: $IS_MAIN == "false"
