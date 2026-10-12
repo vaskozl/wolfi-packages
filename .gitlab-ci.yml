@@ -74,6 +74,8 @@ stages: [generate, build]
       - runner_external_dependency_failure
       - api_failure
       - unknown_failure
+      - runner_interrupted
+      - no_updates_running
   # MR builds write packages to $CI_PROJECT_DIR/packages (OUT_DIR).
   # Uploading that directory as an artifact lets dependent jobs (those with
   # a `needs:` edge pointing here) download it and resolve locally-built
