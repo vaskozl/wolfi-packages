@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: tsidp
-  version: "0.0.15"
-  epoch: 0 # add go-package, drop build-base, improve tests
+  version: "0.0.16"
+  epoch: 0
   description: A simple OIDC / OAuth Identity Provider (IdP) server for your tailnet.
   copyright:
     - license: BSD-3-Clause
@@ -11,7 +11,7 @@ environment:
     packages:
       - busybox
       - ca-certificates-bundle
-      - go-1.26
+      - go-1.27
 pipeline:
   - uses: git-checkout
     with:
@@ -19,7 +19,7 @@ pipeline:
       tag: v${{package.version}}
   - uses: go/build
     with:
-      go-package: go-1.26
+      go-package: go-1.27
       packages: ./
       output: tsidp-server
   - uses: strip
