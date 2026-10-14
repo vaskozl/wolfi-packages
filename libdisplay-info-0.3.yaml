@@ -1,7 +1,8 @@
+# niri's libdisplay-info-sys crate requires < 0.4 (0.4 changed the ABI).
 package:
-  name: libdisplay-info
-  version: "0.4.0"
-  epoch: 0 # add ldd-check test
+  name: libdisplay-info-0.3
+  version: "0.3.0"
+  epoch: 0
   description: EDID and DisplayID library
   copyright:
     - license: MIT
@@ -27,6 +28,15 @@ subpackages:
     pipeline:
       - uses: split/dev
     description: ${{package.name}} headers and pkg-config files
+    test:
+      environment:
+        contents:
+          packages:
+            - pkgconf
+      pipeline:
+        - runs: |
+            set -eu
+            pkgconf --libs --cflags 'libdisplay-info >= 0.3.0' 'libdisplay-info < 0.4.0'
 test:
   pipeline:
     - uses: test/ldd-check
@@ -34,4 +44,5 @@ test:
         packages: ${{package.name}}
 update:
   enabled: true
-  git: {}
+  git:
+    tag-filter-prefix: "0.3."

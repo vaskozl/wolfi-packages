@@ -156,6 +156,12 @@
       "matchPackageNames": ["llvm-22"],
       "extractVersion": "^(?<version>\\d+(?:\\.\\d+)*)",
       "allowedVersions": "/^22\\./"
+    },
+    {
+      // niri's libdisplay-info-sys crate caps the native lib at < 0.4 (0.4
+      // changed the ABI); keep this stream on 0.3.x until the crate supports 0.4.
+      "matchFileNames": ["libdisplay-info-0.3.yaml"],
+      "allowedVersions": "/^0\\.3\\./"
     }
   ]
 }
