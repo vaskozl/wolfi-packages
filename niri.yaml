@@ -1,7 +1,7 @@
 package:
   name: niri
   version: "26.04"
-  epoch: 3 # rebuild for mesa-full 26.1.1 libgbm.so dev symlink (-lgbm)
+  epoch: 4
   description: A scrollable-tiling Wayland compositor
   copyright:
     - license: GPL-3.0-only
@@ -37,7 +37,7 @@ pipeline:
   - runs: |
       cargo auditable build --release --jobs $(nproc)
   - runs: |
-      sed -i 's/alacritty/foot/g' resources/default-config.kdl
+      sed -i 's/alacritty/kitty/g' resources/default-config.kdl
   - runs: |
       install -Dm755 target/release/niri "${{targets.destdir}}/usr/bin/niri"
       install -Dm755 resources/niri-session "${{targets.destdir}}/usr/bin/niri-session"
@@ -110,7 +110,7 @@ test:
         set -eu
         niri validate -c /usr/share/doc/niri/default-config.kdl
         ! grep -q alacritty /usr/share/doc/niri/default-config.kdl
-        grep -q foot /usr/share/doc/niri/default-config.kdl
+        grep -q kitty /usr/share/doc/niri/default-config.kdl
 update:
   enabled: true
   github:
