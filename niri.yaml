@@ -35,6 +35,10 @@ pipeline:
       repository: https://github.com/YaLTeR/niri
       tag: v${{package.version}}
   - runs: |
+      # Upstream's thin LTO + debuginfo push the arm64 (Pi 4) build past the
+      # CI timeout; the binary is stripped anyway.
+      export CARGO_PROFILE_RELEASE_DEBUG=0
+      export CARGO_PROFILE_RELEASE_LTO=false
       cargo auditable build --release --jobs $(nproc)
   - runs: |
       sed -i 's/alacritty/kitty/g' resources/default-config.kdl
