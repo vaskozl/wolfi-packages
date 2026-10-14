@@ -2,7 +2,7 @@
 package:
   name: systemd-network-wifi-default
   version: "1"
-  epoch: 0
+  epoch: 1
   description: Configure systemd-networkd to DHCP on default wireless interfaces
   copyright:
     - license: MIT
@@ -21,6 +21,6 @@ test:
   pipeline:
     - runs: |
         set -eu
-        stat /etc/systemd/network/25-wlan.network
-        grep -F 'DHCP=yes' /etc/systemd/network/25-wlan.network
-        grep -F 'wlan*' /etc/systemd/network/25-wlan.network
+        stat /usr/lib/systemd/network/25-wlan.network
+        grep -F 'DHCP=yes' /usr/lib/systemd/network/25-wlan.network
+        grep -Fx 'Type=wlan' /usr/lib/systemd/network/25-wlan.network
