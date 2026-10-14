@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
-  name: systemd-network-wifi-default
+  name: systemd-default-wlan
   version: "1"
   epoch: 1
   description: Configure systemd-networkd to DHCP on default wireless interfaces
