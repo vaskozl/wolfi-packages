@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: bootc-kargs-zswap
+  version: "1"
+  epoch: 0
+  description: Enable zswap with the shrinker and zstd compression on bootc systems
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime:
+      - bootc
+      - systemd
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - runs: |
+      set -eu
+      install -Dm644 10-zswap.toml \
+        "${{targets.destdir}}/usr/lib/bootc/kargs.d/10-zswap.toml"
+      install -Dm644 zswap.conf \
+        "${{targets.destdir}}/usr/lib/tmpfiles.d/zswap.conf"
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        grep -F '"zswap.enabled=1"' /usr/lib/bootc/kargs.d/10-zswap.toml
+        grep -F '"zswap.shrinker_enabled=1"' /usr/lib/bootc/kargs.d/10-zswap.toml
+        grep -F '/sys/module/zswap/parameters/compressor - - - - zstd' /usr/lib/tmpfiles.d/zswap.conf
+update:
+  enabled: false # no upstream monitor
