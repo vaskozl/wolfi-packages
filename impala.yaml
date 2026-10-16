@@ -1,0 +1,45 @@
+package:
+  name: impala
+  version: "0.9.0"
+  epoch: 0
+  description: TUI for managing wifi via iwd
+  copyright:
+    - license: GPL-3.0-only
+  dependencies:
+    runtime:
+      - iwd
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - cargo-auditable
+      - rust
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/pythops/impala
+      tag: v${{package.version}}
+  - runs: |
+      # Upstream's fat LTO with codegen-units=1 is slow and memory-hungry.
+      export CARGO_PROFILE_RELEASE_LTO=thin
+      cargo auditable build --release --locked --jobs 2
+      install -Dm755 target/release/impala "${{targets.destdir}}/usr/bin/impala"
+  - uses: strip
+test:
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          impala
+    - uses: test/help-check
+      with:
+        bins: |
+          impala
+update:
+  enabled: true
+  github:
+    identifier: pythops/impala
+    strip-prefix: v
+    use-tag: true
+    tag-filter-prefix: v

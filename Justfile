@@ -74,6 +74,7 @@ test pkg: setup
     echo "Testing {{pkg}} for {{arch}}..."
     mkdir -p {{out_dir}}/{{arch}}
     ln -sfn {{out_dir}}/{{arch}} {{justfile_directory()}}/{{arch}}
+    trap 'rm -f {{justfile_directory()}}/{{arch}}' EXIT
     {{unshare}} melange test "{{pkg}}" \
         --workspace-dir="{{justfile_directory()}}" \
         --arch="{{arch}}" \
@@ -84,7 +85,6 @@ test pkg: setup
         --env-file=common.env \
         --test-package-append=busybox \
         --ignore-signatures
-    rm -f {{justfile_directory()}}/{{arch}}
 
 # Lint yamls: format with yam + structural checks. No args = all *.yaml.
 lint *files:
