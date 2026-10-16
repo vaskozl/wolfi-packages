@@ -1,0 +1,11 @@
+[Unit]
+Description=Create swap file /var/swap/swapfile
+DefaultDependencies=no
+RequiresMountsFor=/var/swap
+ConditionPathExists=!/var/swap/swapfile
+Before=var-swap-swapfile.swap shutdown.target
+Conflicts=shutdown.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/mkswapfile /var/swap/swapfile

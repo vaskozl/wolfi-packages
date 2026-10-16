@@ -1,0 +1,11 @@
+[Unit]
+Description=Swap file /var/swap/swapfile
+Requires=swapfile-setup.service
+After=swapfile-setup.service
+ConditionPathExists=/var/swap/swapfile
+
+[Swap]
+What=/var/swap/swapfile
+
+[Install]
+WantedBy=swap.target
