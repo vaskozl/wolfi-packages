@@ -1,0 +1,13 @@
+#!/bin/sh
+# Usage: mkswapfile FILE [SIZE]
+# SIZE defaults to RAM rounded up to a whole GiB, enough to hibernate.
+set -eu
+file=$1
+size=${2:-$(awk '/^MemTotal:/ { print int(($2 + 1048575) / 1048576) "G" }' /proc/meminfo)}
+
+install -d -m 0700 "$(dirname "$file")"
+rm -f "$file.tmp"
+fallocate -l "$size" "$file.tmp"
+chmod 0600 "$file.tmp"
+mkswap "$file.tmp"
+mv "$file.tmp" "$file"
