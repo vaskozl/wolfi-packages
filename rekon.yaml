@@ -2,8 +2,8 @@
 package:
   name: rekon
   version: "0.0.74"
-  epoch: 0 # drop rekonctl, saas and homeflow, deleted upstream
-  description: rekon framework example apps (clock, blog, pkgupdate, veroso)
+  epoch: 1 # use apps layout
+  description: rekon framework apps (clock, blog, pkgupdate, veroso)
   copyright:
     - license: Apache-2.0
 environment:
@@ -34,13 +34,13 @@ pipeline:
 subpackages:
   - range: root-servers
     name: rekon-${{range.key}}
-    description: rekon ${{range.key}} example app
+    description: rekon ${{range.key}} app
     pipeline:
       - uses: go/build
         with:
           go-package: go-1.27
           modroot: .
-          packages: ./examples/${{range.key}}
+          packages: ./apps/${{range.key}}
           output: rekon-${{range.key}}
           extra-args: -buildvcs=false
     test:
@@ -51,12 +51,12 @@ subpackages:
               rekon-${{range.key}}
   - range: nested-servers
     name: rekon-${{range.key}}
-    description: rekon ${{range.key}} example app
+    description: rekon ${{range.key}} app
     pipeline:
       - uses: go/build
         with:
           go-package: go-1.27
-          modroot: examples/${{range.key}}
+          modroot: apps/${{range.key}}
           packages: .
           output: rekon-${{range.key}}
           extra-args: -buildvcs=false -mod=mod
