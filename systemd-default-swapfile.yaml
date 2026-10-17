@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: systemd-default-swapfile
-  version: "1"
+  version: "2"
   epoch: 0
-  description: Create and enable a RAM-sized swap file at /var/swap/swapfile on first boot, for hibernation
+  description: Create a RAM-sized swap file at /var/swap/swapfile on first boot, for hibernation
   copyright:
     - license: MIT
   dependencies:
@@ -22,14 +22,11 @@ pipeline:
       install -Dm644 swapfile-setup.service "$unitdir/swapfile-setup.service"
       install -Dm644 var-swap-swapfile.swap "$unitdir/var-swap-swapfile.swap"
       install -Dm755 mkswapfile "${{targets.destdir}}/usr/libexec/mkswapfile"
-      install -d "$unitdir/swap.target.wants"
-      ln -sf ../var-swap-swapfile.swap "$unitdir/swap.target.wants/var-swap-swapfile.swap"
 test:
   pipeline:
     - uses: test/verify-service
     - runs: |
         set -eu
-        test -L /usr/lib/systemd/system/swap.target.wants/var-swap-swapfile.swap
         /usr/libexec/mkswapfile /tmp/swap/swapfile 64M
         test "$(stat -c %s /tmp/swap/swapfile)" -eq $((64 * 1024 * 1024))
         test "$(stat -c %a /tmp/swap/swapfile)" = 600
