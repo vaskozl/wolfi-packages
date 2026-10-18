@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: rekon
-  version: "0.0.74"
-  epoch: 1 # use apps layout
+  version: "0.0.75"
+  epoch: 0 # use apps layout
   description: rekon framework apps (clock, blog, pkgupdate, veroso)
   copyright:
     - license: Apache-2.0
