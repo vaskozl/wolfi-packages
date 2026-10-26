@@ -2,7 +2,7 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/prowlarr/APKBUILD
 package:
   name: prowlarr
-  version: "2.6.5.5623"
+  version: "2.6.6.5717"
   epoch: 0 # disable NuGetAudit (MailKit advisory)
   description: TV download automation for usenet and torrents.
   copyright:
@@ -59,6 +59,8 @@ pipeline:
           --runtime linux-$_dotnet_arch \
           --configuration Release
 
+          # webpack OOMs on the RAM-limited builder with node's default heap
+          export NODE_OPTIONS="--max-old-space-size=4096"
           yarn build --env production --no-stats
 
           # cleanup
