@@ -2,8 +2,8 @@
 # Generated from https://raw.githubusercontent.com/alpinelinux/aports/refs/heads/master/testing/sonarr/APKBUILD
 package:
   name: sonarr
-  version: 5.0.0_alpha
-  epoch: 3 # alphabetize build env, fix test style
+  version: 5.0.0.2838
+  epoch: 0
   description: TV download automation for usenet and torrents.
   copyright:
     - license: GPL-3.0-only
@@ -25,17 +25,12 @@ environment:
       - nodejs
       - sqlite-libs
       - yarn
-var-transforms:
-  # Transform 1.0.0_beta55 -> 1.0.0-beta.55
-  - from: ${{package.version}}
-    match: ^(\d+\.\d+\.\d+)_alpha$
-    replace: $1
-    to: simple-version
 pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/Sonarr/Sonarr
-      branch: v5-develop
+      tag: v${{package.version}}
+      expected-commit: 58fe69664800283237cbca06ace87766dfc66615
   - pipeline:
       - runs: |
           export BROWSERSLIST_IGNORE_OLD_DATA=true
@@ -57,7 +52,7 @@ pipeline:
 
           dotnet publish src \
           -p:AssemblyConfiguration="master" \
-          -p:AssemblyVersion="${{vars.simple-version}}" \
+          -p:AssemblyVersion="${{package.version}}" \
           -p:TreatWarningsAsErrors=false \
           --framework "$_framework" \
           --no-self-contained \
@@ -65,7 +60,7 @@ pipeline:
           --configuration Release
 
           export NODE_OPTIONS="--max-old-space-size=4096"
-          yarn build --env production --no-stats
+          yarn build
 
           chmod +x "$_artifacts/ffprobe"
 
