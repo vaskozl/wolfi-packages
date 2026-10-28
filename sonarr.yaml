@@ -3,7 +3,7 @@
 package:
   name: sonarr
   version: 5.0.0.2838
-  epoch: 0
+  epoch: 1 # serialize yarn fetch for arm64 builders
   description: TV download automation for usenet and torrents.
   copyright:
     - license: GPL-3.0-only
@@ -34,7 +34,8 @@ pipeline:
   - pipeline:
       - runs: |
           export BROWSERSLIST_IGNORE_OLD_DATA=true
-          yarn install --frozen-lockfile --network-timeout 120000
+          # lucide-react's ~4k-file tarball stalls yarn's socket past the timeout while unpacking on the arm64 builders
+          yarn install --frozen-lockfile --network-concurrency 1 --network-timeout 600000
 
           # remove upstream dotnet version
           rm global.json
