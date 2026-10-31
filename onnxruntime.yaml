@@ -4,8 +4,8 @@
 # repository: https://github.com/microsoft/onnxruntime
 package:
   name: onnxruntime
-  version: "1.31.0"
-  epoch: 1 # verify release tarball sha256
+  version: "1.31.1"
+  epoch: 0
   description: ONNX Runtime, a cross-platform inference engine for ONNX models (C library)
   copyright:
     - license: MIT
