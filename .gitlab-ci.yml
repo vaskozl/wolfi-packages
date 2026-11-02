@@ -176,7 +176,7 @@ renovate-config:
   stage: generate
   interruptible: true
   image:
-    name: ghcr.io/vaskozl/renovate:44.198.3@sha256:af14c66185d65a7c49af9ecf80f89bb589d8fb24de39deeb1978e0e939120268
+    name: ghcr.io/vaskozl/renovate:44.198.3@sha256:5f067ff0146ca0f30a593007cd5514974fbb7b14b9967e3f953412a8e6fc233d
     entrypoint: [""]
   script:
     - renovate-config-validator --strict --no-global renovate.json5
