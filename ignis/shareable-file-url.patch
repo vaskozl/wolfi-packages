@@ -1,0 +1,112 @@
+diff --git a/packages/shim/src/integrations/open-file-param.js b/packages/shim/src/integrations/open-file-param.js
+index fc88f4e..b1021cc 100644
+--- a/packages/shim/src/integrations/open-file-param.js
++++ b/packages/shim/src/integrations/open-file-param.js
+@@ -1,33 +1,39 @@
+-// Opens the note named by the ?file= URL param once the workspace is ready.
++// Opens the note named by the ?file= URL param once the workspace is ready,
++// then keeps ?file= pointing at the active note so the address bar is a shareable link.
+ 
+ export function installOpenFileParam(app) {
+-  app.workspace.onLayoutReady(() => {
++  app.workspace.onLayoutReady(async () => {
+     const raw = new URLSearchParams(window.location.search).get("file");
+ 
+-    if (!raw) {
+-      return;
++    if (raw) {
++      try {
++        await openFileParam(app, raw);
++      } catch (e) {
++        console.error("[ignis] Failed to open ?file= note:", e);
++      }
+     }
+ 
+-    // Strip param so a reload after navigating away does not reopen this note.
+-    stripFileParam();
++    installUrlSync(app);
++  });
++}
+ 
+-    const hashIndex = raw.indexOf("#");
+-    const path = hashIndex >= 0 ? raw.slice(0, hashIndex) : raw;
++async function openFileParam(app, raw) {
++  const hashIndex = raw.indexOf("#");
++  const path = hashIndex >= 0 ? raw.slice(0, hashIndex) : raw;
+ 
+-    if (!path) {
+-      return;
+-    }
++  if (!path) {
++    return;
++  }
+ 
+-    const file = resolveFile(app, path);
++  const file = resolveFile(app, path);
+ 
+-    if (!file) {
+-      new window.__ignis.obsidian.Notice(`Ignis: note not found: ${path}`);
+-      return;
+-    }
++  if (!file) {
++    new window.__ignis.obsidian.Notice(`Ignis: note not found: ${path}`);
++    return;
++  }
+ 
+-    const anchor = hashIndex >= 0 ? raw.slice(hashIndex) : "";
+-    app.workspace.openLinkText(file.path + anchor, "", false);
+-  });
++  const anchor = hashIndex >= 0 ? raw.slice(hashIndex) : "";
++  await app.workspace.openLinkText(file.path + anchor, "", false);
+ }
+ 
+ function resolveFile(app, path) {
+@@ -48,8 +54,45 @@ function resolveFile(app, path) {
+   return app.metadataCache.getFirstLinkpathDest(path, "");
+ }
+ 
+-function stripFileParam() {
++function installUrlSync(app) {
++  const sync = () => syncFileParam(app.workspace.getActiveFile());
++
++  app.workspace.on("file-open", sync);
++  app.workspace.on("active-leaf-change", sync);
++  app.vault.on("rename", (file) => {
++    if (file === app.workspace.getActiveFile()) {
++      sync();
++    }
++  });
++  // back-navigation.js traverses forward after a back press; resync once it lands.
++  window.addEventListener("popstate", sync);
++  sync();
++}
++
++function syncFileParam(file) {
+   const url = new URL(window.location.href);
+-  url.searchParams.delete("file");
+-  history.replaceState(history.state, "", url.toString());
++  const params = url.searchParams;
++
++  if (window.__currentVaultId) {
++    params.set("vault", window.__currentVaultId);
++  }
++
++  if (file) {
++    params.set("file", file.path);
++  } else {
++    params.delete("file");
++  }
++
++  // Keep "/" literal and spaces as %20 so links stay readable; URLSearchParams.get still decodes both.
++  url.search = params.toString().replace(/%2F/gi, "/").replace(/\+/g, "%20");
++
++  if (url.href === window.location.href) {
++    return;
++  }
++
++  // Obsidian patches history methods; call the original, as back-navigation.js does.
++  const state = Object.getOwnPropertyDescriptor(History.prototype, "state").get.call(
++    history,
++  );
++  History.prototype.replaceState.call(history, state, "", url.href);
+ }
