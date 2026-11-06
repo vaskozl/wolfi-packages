@@ -53,6 +53,8 @@ pipeline:
       npm ci
       IGNIS_BUILD=r${{package.epoch}} npm run build
       npm prune --omit=dev
+      # Native addons for the Bare runtime (tar-stream's imports.fs.bare); Node never loads them.
+      rm -rf node_modules/bare-*/prebuilds
       find node_modules -type d -empty -delete
   - name: Install
     runs: |
