@@ -83,6 +83,10 @@ pipeline:
       EOF
       chmod 755 ${{targets.destdir}}/usr/bin/ignis
 test:
+  environment:
+    contents:
+      packages:
+        - curl
   pipeline:
     - uses: test/daemon-check-output
       with:
@@ -93,9 +97,9 @@ test:
         post: |
           set -eu
           base=http://127.0.0.1:38791
-          wget -qO- "$base/" | grep -F shim-loader
-          wget -qO /dev/null "$base/app.js"
-          wget -qO- "$base/api/vault/list" | grep -F '"My Vault"'
+          curl -sf "$base/" | grep -F shim-loader
+          curl -sf -o /dev/null "$base/app.js"
+          curl -sf "$base/api/vault/list" | grep -F '"My Vault"'
 update:
   enabled: true
   github:
