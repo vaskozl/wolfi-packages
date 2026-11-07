@@ -1,0 +1,109 @@
+package:
+  name: ignis
+  version: "0.9.0"
+  epoch: 0
+  description: Run Obsidian in a browser, served by a self-hosted Node server
+  copyright:
+    - license: AGPL-3.0-or-later
+    - license: LicenseRef-Obsidian
+  dependencies:
+    runtime:
+      - nodejs-${{vars.node-version}}
+vars:
+  node-version: 22
+  obsidian-version: 1.14.4
+environment:
+  contents:
+    packages:
+      - busybox
+      - ca-certificates-bundle
+      - nodejs-${{vars.node-version}}
+      - npm
+pipeline:
+  # Upstream tags embed the Obsidian release they pin. If a bump fails because
+  # the tag is missing, the release changed the pin: update vars.obsidian-version
+  # and the Obsidian fetch URI and hash to match.
+  - uses: git-checkout
+    with:
+      repository: https://github.com/Nystik-gh/ignis
+      tag: v${{package.version}}+obsidian.${{vars.obsidian-version}}
+  - uses: fetch
+    with:
+      uri: https://github.com/obsidianmd/obsidian-releases/releases/download/v1.14.4/obsidian-1.14.4.asar.gz
+      expected-sha256: d1ed428c363968774f0f3906e67d8a53a058ece0b6cdd924b07865977b2ada21
+      extract: false
+  - uses: patch
+    with:
+      patches: shareable-file-url.patch
+  - name: Extract Obsidian
+    runs: |
+      set -eu
+      gunzip obsidian-${{vars.obsidian-version}}.asar.gz
+      npx --yes @electron/asar@4.3.1 extract obsidian-${{vars.obsidian-version}}.asar obsidian-app
+      version=$(node -p 'require("./obsidian-app/package.json").version')
+      if [ "$version" != "${{vars.obsidian-version}}" ]; then
+        echo "obsidian asar is $version, tag pins ${{vars.obsidian-version}}" >&2
+        exit 1
+      fi
+  - name: Build
+    runs: |
+      set -eu
+      # The Astro docs site is a workspace too; dropping it keeps its native deps out of node_modules.
+      rm -rf apps/docs
+      npm ci
+      IGNIS_BUILD=r${{package.epoch}} npm run build
+      npm prune --omit=dev
+      # Native addons for the Bare runtime (tar-stream's imports.fs.bare); Node never loads them.
+      rm -rf node_modules/bare-*/prebuilds
+      find node_modules -type d -empty -delete
+  - name: Install
+    runs: |
+      set -eu
+      root=${{targets.destdir}}/usr/lib/ignis
+      mkdir -p "$root"/apps/ignis-server "$root"/packages
+      cp package.json "$root"/
+      cp -a node_modules images obsidian-app "$root"/
+      for p in packages/*/; do
+        mkdir -p "$root/$p"
+        cp "$p"package.json "$root/$p"
+      done
+      cp -a packages/server-core/src "$root"/packages/server-core/
+      mkdir -p "$root"/packages/shim/dist "$root"/packages/ui/dist
+      cp packages/shim/dist/shim-loader.js "$root"/packages/shim/dist/
+      cp packages/ui/dist/ignis-ui.js "$root"/packages/ui/dist/
+      cp apps/ignis-server/package.json "$root"/apps/ignis-server/
+      cp -a apps/ignis-server/server "$root"/apps/ignis-server/
+      find "$root"/apps/ignis-server/server -name '*.test.mjs' -delete
+      mkdir -p ${{targets.destdir}}/usr/bin
+      cat > ${{targets.destdir}}/usr/bin/ignis <<'EOF'
+      #!/bin/sh
+      : "${OBSIDIAN_ASSETS_PATH:=/usr/lib/ignis/obsidian-app}"
+      : "${VAULT_ROOT:=/var/lib/ignis/vaults}"
+      : "${DATA_ROOT:=/var/lib/ignis/data}"
+      export OBSIDIAN_ASSETS_PATH VAULT_ROOT DATA_ROOT
+      exec node /usr/lib/ignis/apps/ignis-server/server/index.js "$@"
+      EOF
+      chmod 755 ${{targets.destdir}}/usr/bin/ignis
+test:
+  environment:
+    contents:
+      packages:
+        - curl
+  pipeline:
+    - uses: test/daemon-check-output
+      with:
+        setup: |
+          mkdir -p /tmp/ignis-test
+        start: env VAULT_ROOT=/tmp/ignis-test/vaults DATA_ROOT=/tmp/ignis-test/data AUTO_CREATE_DEFAULT=true PORT=38791 ignis
+        expected_output: Server running
+        post: |
+          set -eu
+          base=http://127.0.0.1:38791
+          curl -sf "$base/" | grep -F shim-loader
+          curl -sf -o /dev/null "$base/app.js"
+          curl -sf "$base/api/vault/list" | grep -F '"My Vault"'
+update:
+  enabled: true
+  github:
+    identifier: Nystik-gh/ignis
+    strip-prefix: v
