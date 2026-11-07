@@ -1,7 +1,7 @@
 package:
   name: ignis
   version: "0.9.0"
-  epoch: 0
+  epoch: 1
   description: Run Obsidian in a browser, served by a self-hosted Node server
   copyright:
     - license: AGPL-3.0-or-later
@@ -11,40 +11,43 @@ package:
       - nodejs-${{vars.node-version}}
 vars:
   node-version: 22
-  obsidian-version: 1.14.4
 environment:
   contents:
     packages:
       - busybox
       - ca-certificates-bundle
+      - curl
+      - git
       - nodejs-${{vars.node-version}}
       - npm
 pipeline:
-  # Upstream tags embed the Obsidian release they pin. If a bump fails because
-  # the tag is missing, the release changed the pin: update vars.obsidian-version
-  # and the Obsidian fetch URI and hash to match.
-  - uses: git-checkout
-    with:
-      repository: https://github.com/Nystik-gh/ignis
-      tag: v${{package.version}}+obsidian.${{vars.obsidian-version}}
-  - uses: fetch
-    with:
-      uri: https://github.com/obsidianmd/obsidian-releases/releases/download/v1.14.4/obsidian-1.14.4.asar.gz
-      expected-sha256: d1ed428c363968774f0f3906e67d8a53a058ece0b6cdd924b07865977b2ada21
-      extract: false
+  # Upstream tags are v<version>+obsidian.<pin>; follow whatever Obsidian
+  # release the tag pins (IGNIS_OBSIDIAN_PIN in its Dockerfile).
+  # repository: https://github.com/Nystik-gh/ignis
+  - name: Checkout
+    runs: |
+      set -eu
+      repo=https://github.com/Nystik-gh/ignis
+      tag=$(git ls-remote --tags --refs "$repo" "refs/tags/v${{package.version}}+*" | sed 's|.*refs/tags/||')
+      [ "$(echo "$tag" | wc -w)" = 1 ] || { echo "want one tag for v${{package.version}}, got: $tag" >&2; exit 1; }
+      git init -q
+      git fetch -q --depth 1 "$repo" "refs/tags/$tag"
+      git checkout -q FETCH_HEAD
+      node_major=$(cut -d. -f1 .nvmrc)
+      [ "$node_major" = "${{vars.node-version}}" ] || { echo "ignis wants node $(cat .nvmrc), vars.node-version is ${{vars.node-version}}" >&2; exit 1; }
   - uses: patch
     with:
       patches: shareable-file-url.patch
-  - name: Extract Obsidian
+  - name: Fetch Obsidian
     runs: |
       set -eu
-      gunzip obsidian-${{vars.obsidian-version}}.asar.gz
-      npx --yes @electron/asar@4.3.1 extract obsidian-${{vars.obsidian-version}}.asar obsidian-app
-      version=$(node -p 'require("./obsidian-app/package.json").version')
-      if [ "$version" != "${{vars.obsidian-version}}" ]; then
-        echo "obsidian asar is $version, tag pins ${{vars.obsidian-version}}" >&2
-        exit 1
-      fi
+      v=$(sed -n 's/^ENV IGNIS_OBSIDIAN_PIN=//p' apps/ignis-server/Dockerfile)
+      [ -n "$v" ] || { echo "no IGNIS_OBSIDIAN_PIN in Dockerfile" >&2; exit 1; }
+      curl -fsSL "https://github.com/obsidianmd/obsidian-releases/releases/download/v$v/obsidian-$v.asar.gz" | gunzip > obsidian.asar
+      npx --yes @electron/asar@4.3.1 extract obsidian.asar obsidian-app
+      rm obsidian.asar
+      got=$(node -p 'require("./obsidian-app/package.json").version')
+      [ "$got" = "$v" ] || { echo "obsidian asar is $got, ignis pins $v" >&2; exit 1; }
   - name: Build
     runs: |
       set -eu
