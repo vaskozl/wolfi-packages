@@ -1,0 +1,110 @@
+package:
+  name: mcpvault
+  version: "0.18.3"
+  epoch: 0
+  description: On-disk Obsidian vault MCP server plus the mcp-proxy Streamable HTTP bridge
+  copyright:
+    - license: MIT # mcpvault
+    - license: MIT # mcp-proxy
+  dependencies:
+    runtime:
+      - nodejs-${{vars.node-version}}
+vars:
+  node-version: "22"
+  mcp-proxy-version: "6.9.1"
+environment:
+  contents:
+    packages:
+      - busybox
+      - ca-certificates-bundle
+      - nodejs-${{vars.node-version}}
+      - npm
+pipeline:
+  - runs: |
+      set -eu
+      mkdir -p "${{targets.destdir}}/usr/lib/mcpvault"
+      cd "${{targets.destdir}}/usr/lib/mcpvault"
+      npm install --omit=dev --no-package-lock \
+        @bitbonsai/mcpvault@${{package.version}} \
+        mcp-proxy@${{vars.mcp-proxy-version}}
+  - runs: |
+      set -eu
+      mkdir -p "${{targets.destdir}}/usr/bin"
+      # Not /usr/bin/mcp-proxy: chrome-devtools-mcp owns that path.
+      printf '#!/bin/sh\nexec node /usr/lib/mcpvault/node_modules/mcp-proxy/dist/bin/mcp-proxy.mjs "$@"\n' > "${{targets.destdir}}/usr/bin/mcpvault-proxy"
+      chmod 755 "${{targets.destdir}}/usr/bin/mcpvault-proxy"
+      printf '#!/bin/sh\nexec node /usr/lib/mcpvault/node_modules/@bitbonsai/mcpvault/dist/server.js "$@"\n' > "${{targets.destdir}}/usr/bin/mcpvault"
+      chmod 755 "${{targets.destdir}}/usr/bin/mcpvault"
+test:
+  environment:
+    contents:
+      packages:
+        - curl
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          mcpvault
+    - uses: test/help-check
+      with:
+        bins: |
+          mcpvault
+          mcpvault-proxy
+    - name: dot paths are refused over Streamable HTTP
+      runs: |
+        set -eu
+        [ ! -e /usr/bin/mcp-proxy ]
+        v=$(mktemp -d)
+        mkdir -p "$v/.obsidian" "$v/.git"
+        echo '{}' > "$v/.obsidian/app.json"
+        printf '[core]\n\tbare = false\n' > "$v/.git/config"
+        printf -- '---\ntitle: Hello\n---\nvault body text #tag\n' > "$v/note.md"
+
+        mcpvault-proxy --port 18081 --server stream --stateless -- mcpvault "$v" &
+        pid=$!
+        trap 'kill $pid 2>/dev/null || true' EXIT
+        i=0
+        until [ "$(curl -s http://127.0.0.1:18081/ping)" = pong ]; do
+          i=$((i + 1))
+          [ "$i" -lt 60 ]
+          sleep 1
+        done
+
+        rpc() {
+          curl -sS -X POST http://127.0.0.1:18081/mcp \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json, text/event-stream' \
+            -d "$1"
+        }
+        call() {
+          rpc "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"$1\",\"arguments\":$2}}"
+        }
+
+        rpc '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"melange-test","version":"0"}}}' | grep -F '"serverInfo"'
+
+        tools=$(rpc '{"jsonrpc":"2.0","id":2,"method":"tools/list"}')
+        for t in read_note write_note search_notes; do
+          echo "$tools" | grep -F "\"name\":\"$t\""
+        done
+
+        out=$(call read_note '{"path":"note.md"}')
+        echo "$out" | grep -F 'vault body text'
+        if echo "$out" | grep -qF '"isError":true'; then exit 1; fi
+
+        out=$(call write_note '{"path":"new.md","content":"fresh note"}')
+        if echo "$out" | grep -qF '"isError":true'; then exit 1; fi
+        grep -F 'fresh note' "$v/new.md"
+
+        call write_note '{"path":".git/hooks/post-commit","content":"#!/bin/sh\necho pwned\n"}' | grep -F '"isError":true'
+        [ ! -e "$v/.git/hooks/post-commit" ]
+        call write_note '{"path":".obsidian/plugins/x/main.js","content":"alert(1)"}' | grep -F '"isError":true'
+        [ ! -e "$v/.obsidian/plugins/x/main.js" ]
+
+        out=$(call read_note '{"path":".git/config"}')
+        echo "$out" | grep -F '"isError":true'
+        if echo "$out" | grep -qF 'bare'; then exit 1; fi
+update:
+  enabled: true
+  github:
+    identifier: bitbonsai/mcpvault
+    strip-prefix: v
