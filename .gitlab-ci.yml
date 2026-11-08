@@ -21,7 +21,7 @@ stages: [generate, build]
   # 30m project default and get killed mid-restore.
   timeout: 3h
   image:
-    name: ghcr.io/vaskozl/melange:0.64.0@sha256:e92d0015ea1a66d1f8fb982719ddf66abff7175eb928fe8a9e93a95a543e33b4
+    name: ghcr.io/vaskozl/melange:0.64.0@sha256:195b8ee2be01d27e9808bc66c8250fe07f091045eccb8a81ccedef3c654c32c1
     entrypoint: [""]
   before_script:
     - |
