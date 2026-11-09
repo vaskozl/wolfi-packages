@@ -34,6 +34,8 @@ pipeline:
       uv venv --relocatable --python /usr/bin/python3.13 "$lib"
       VIRTUAL_ENV="$lib" uv pip install --require-hashes --no-deps --no-cache \
         --index-strategy unsafe-best-match --compile-bytecode -r requirements.txt
+      # uv leaves a world-writable lock file in the venv root.
+      rm -f "$lib/.lock"
       install -m644 decide_export.py ov_gdn.py "$lib/"
       install -d "${{targets.destdir}}/usr/bin"
       cat > "${{targets.destdir}}/usr/bin/decide-export" <<'SH'
