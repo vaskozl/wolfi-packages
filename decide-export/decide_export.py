@@ -308,6 +308,10 @@ def convert(lm, out: Path) -> None:
         port.get_tensor().set_names({name})
     for port, name in zip(model.outputs, ["slot_logits", "lse"] + ["present" + n[len("past"):] for n, _ in specs]):
         port.get_tensor().set_names({name})
+    # The OpenVINO C API rejects rank-0 tensors, so no port of the contract may be a scalar.
+    scalars = [p.get_any_name() for p in [*model.inputs, *model.outputs] if p.get_partial_shape().rank.get_length() == 0]
+    if scalars:
+        fail(f"rank-0 ports, unusable from the C API: {scalars}")
 
     lm_head = [op for op in model.get_ops() if op.get_type_name() == "Constant"
                and list(op.get_output_shape(0)) == [tc.vocab_size, tc.hidden_size]]

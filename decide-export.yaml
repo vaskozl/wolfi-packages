@@ -13,9 +13,6 @@ package:
     - license: Apache-2.0
   target-architecture:
     - x86_64
-  dependencies:
-    runtime:
-      - python-3.13
   options:
     # The venv bundles libopenvino, libgomp, libtbb etc.; publishing them as so:
     # providers would compete with the real apks.
