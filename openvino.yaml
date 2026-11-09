@@ -12,6 +12,7 @@ package:
   description: OpenVINO inference runtime (C/C++ API, CPU plugin, IR frontend)
   copyright:
     - license: LicenseRef-Intel-OpenVINO-Distribution-License
+      license-path: docs/licensing/EULA.txt
     - license: Apache-2.0
   target-architecture:
     - x86_64
@@ -87,6 +88,9 @@ subpackages:
           packages:
             - pkgconf
       pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: openvino-dev
         - uses: test/pkgconf
         - name: openvino-c resolves to the C API headers
           runs: |
