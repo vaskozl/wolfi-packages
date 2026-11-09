@@ -1,0 +1,298 @@
+name: decide-model
+
+needs:
+  packages:
+    - build-base
+    - go-1.27
+    - openvino-dev
+    - pkgconf
+
+inputs:
+  model-dir:
+    description: Installed decide model directory (format 1) to load.
+    required: true
+
+pipeline:
+  - name: Go cgo smoke test of the decide model
+    runs: |
+      set -eu
+      work=$(mktemp -d)
+      export GOTOOLCHAIN=local GOFLAGS= GOCACHE="$work/cache" GOPATH="$work/gopath"
+      mkdir "$work/src"
+      cd "$work/src"
+      cat > go.mod <<'GOEOF'
+      module decide-smoke
+
+      go 1.27
+      GOEOF
+      cat > main.go <<'GOEOF'
+      // Command decide-smoke loads a decide model (format 1) through the OpenVINO C API:
+      // tokenizer IR, then one prefix call of fork.xml.
+      package main
+
+      /*
+      #cgo pkg-config: openvino-c
+      #include <stdlib.h>
+      #include <openvino/c/openvino.h>
+
+      static ov_status_e compile_cpu(ov_core_t *core, const ov_model_t *model, ov_compiled_model_t **out) {
+      	return ov_core_compile_model(core, model, "CPU", 0, out);
+      }
+      */
+      import "C"
+
+      import (
+      	"encoding/json"
+      	"fmt"
+      	"math"
+      	"os"
+      	"path/filepath"
+      	"slices"
+      	"strings"
+      	"unsafe"
+      )
+
+      const probe = "<|im_start|>user\nhi<|im_end|>"
+
+      var probeIDs = []int64{248045, 846, 198, 5834, 248046}
+
+      type meta struct {
+      	Format  int     `json:"format"`
+      	SlotIDs []int64 `json:"slot_ids"`
+      	Past    []struct {
+      		Name  string  `json:"name"`
+      		Shape []int64 `json:"shape"`
+      	} `json:"past"`
+      }
+
+      func check(what string, st C.ov_status_e) {
+      	if st != C.OK {
+      		fmt.Fprintf(os.Stderr, "%s: %s\n", what, C.GoString(C.ov_get_last_err_msg()))
+      		os.Exit(1)
+      	}
+      }
+
+      func fail(format string, args ...any) {
+      	fmt.Fprintf(os.Stderr, format+"\n", args...)
+      	os.Exit(1)
+      }
+
+      func shapeOf(dims []int64) C.ov_shape_t {
+      	var s C.ov_shape_t
+      	check("ov_shape_create", C.ov_shape_create(C.int64_t(len(dims)), (*C.int64_t)(unsafe.Pointer(&dims[0])), &s))
+      	return s
+      }
+
+      // newTensor copies data into a tensor that OpenVINO owns. ov_tensor_create does not
+      // zero its memory, so data must cover every element.
+      func newTensor[T int64 | float32](et C.ov_element_type_e, dims []int64, data []T) *C.ov_tensor_t {
+      	s := shapeOf(dims)
+      	defer C.ov_shape_free(&s)
+      	var t *C.ov_tensor_t
+      	check("ov_tensor_create", C.ov_tensor_create(et, s, &t))
+      	if len(data) > 0 {
+      		var p unsafe.Pointer
+      		check("ov_tensor_data", C.ov_tensor_data(t, &p))
+      		copy(unsafe.Slice((*T)(p), len(data)), data)
+      	}
+      	return t
+      }
+
+      func tensorDims(t *C.ov_tensor_t) []int64 {
+      	var s C.ov_shape_t
+      	check("ov_tensor_get_shape", C.ov_tensor_get_shape(t, &s))
+      	defer C.ov_shape_free(&s)
+      	return slices.Clone(unsafe.Slice((*int64)(unsafe.Pointer(s.dims)), int(s.rank)))
+      }
+
+      func tensorData[T int64 | float32](t *C.ov_tensor_t) []T {
+      	var n C.size_t
+      	check("ov_tensor_get_size", C.ov_tensor_get_size(t, &n))
+      	var p unsafe.Pointer
+      	check("ov_tensor_data", C.ov_tensor_data(t, &p))
+      	return slices.Clone(unsafe.Slice((*T)(p), int(n)))
+      }
+
+      func compile(core *C.ov_core_t, path string) *C.ov_compiled_model_t {
+      	cpath := C.CString(path)
+      	defer C.free(unsafe.Pointer(cpath))
+      	var model *C.ov_model_t
+      	check("read "+path, C.ov_core_read_model(core, cpath, nil, &model))
+      	defer C.ov_model_free(model)
+      	var cm *C.ov_compiled_model_t
+      	check("compile "+path, C.compile_cpu(core, model, &cm))
+      	return cm
+      }
+
+      func setTensor(req *C.ov_infer_request_t, name string, t *C.ov_tensor_t) {
+      	cname := C.CString(name)
+      	defer C.free(unsafe.Pointer(cname))
+      	check("set "+name, C.ov_infer_request_set_tensor(req, cname, t))
+      }
+
+      func getTensor(req *C.ov_infer_request_t, name string) *C.ov_tensor_t {
+      	cname := C.CString(name)
+      	defer C.free(unsafe.Pointer(cname))
+      	var t *C.ov_tensor_t
+      	check("get "+name, C.ov_infer_request_get_tensor(req, cname, &t))
+      	return t
+      }
+
+      func finite(xs []float32) bool {
+      	for _, x := range xs {
+      		if math.IsNaN(float64(x)) || math.IsInf(float64(x), 0) {
+      			return false
+      		}
+      	}
+      	return true
+      }
+
+      func tokenize(core *C.ov_core_t, dir string) []int64 {
+      	cm := compile(core, filepath.Join(dir, "openvino_tokenizer.xml"))
+      	defer C.ov_compiled_model_free(cm)
+      	var req *C.ov_infer_request_t
+      	check("tokenizer request", C.ov_compiled_model_create_infer_request(cm, &req))
+      	defer C.ov_infer_request_free(req)
+
+      	cstr := C.CString(probe)
+      	defer C.free(unsafe.Pointer(cstr))
+      	strs := (**C.char)(C.malloc(C.size_t(unsafe.Sizeof(uintptr(0)))))
+      	defer C.free(unsafe.Pointer(strs))
+      	*strs = cstr
+      	s := shapeOf([]int64{1})
+      	defer C.ov_shape_free(&s)
+      	var in *C.ov_tensor_t
+      	check("string tensor", C.ov_tensor_create_from_string_array(strs, 1, s, &in))
+      	defer C.ov_tensor_free(in)
+      	check("tokenizer input", C.ov_infer_request_set_input_tensor_by_index(req, 0, in))
+      	check("tokenizer infer", C.ov_infer_request_infer(req))
+      	out := getTensor(req, "input_ids")
+      	defer C.ov_tensor_free(out)
+      	return tensorData[int64](out)
+      }
+
+      func main() {
+      	if len(os.Args) != 2 {
+      		fail("usage: decide-smoke <model-dir>")
+      	}
+      	dir := os.Args[1]
+      	raw, err := os.ReadFile(filepath.Join(dir, "decide.json"))
+      	if err != nil {
+      		fail("%v", err)
+      	}
+      	var m meta
+      	if err := json.Unmarshal(raw, &m); err != nil {
+      		fail("decide.json: %v", err)
+      	}
+      	if m.Format != 1 || len(m.SlotIDs) < 2 || len(m.Past) == 0 {
+      		fail("decide.json: format %d, %d slots, %d past", m.Format, len(m.SlotIDs), len(m.Past))
+      	}
+
+      	var core *C.ov_core_t
+      	check("ov_core_create", C.ov_core_create(&core))
+      	defer C.ov_core_free(core)
+      	ext := C.CString("/usr/lib/libopenvino_tokenizers.so")
+      	defer C.free(unsafe.Pointer(ext))
+      	check("add tokenizers extension", C.ov_core_add_extension(core, ext))
+
+      	ids := tokenize(core, dir)
+      	if !slices.Equal(ids, probeIDs) {
+      		fail("tokenizer: %q -> %v, want %v", probe, ids, probeIDs)
+      	}
+      	fmt.Printf("tokenizer: %v\n", ids)
+
+      	cm := compile(core, filepath.Join(dir, "fork.xml"))
+      	defer C.ov_compiled_model_free(cm)
+      	key := C.CString("INFERENCE_PRECISION_HINT")
+      	defer C.free(unsafe.Pointer(key))
+      	var prec *C.char
+      	check("get INFERENCE_PRECISION_HINT", C.ov_compiled_model_get_property(cm, key, &prec))
+      	hint := C.GoString(prec)
+      	C.ov_free(prec)
+      	fmt.Printf("INFERENCE_PRECISION_HINT: %s\n", hint)
+      	if hint != "f32" && hint != "bf16" {
+      		fail("unexpected inference precision %q", hint)
+      	}
+
+      	var req *C.ov_infer_request_t
+      	check("fork request", C.ov_compiled_model_create_infer_request(cm, &req))
+      	defer C.ov_infer_request_free(req)
+
+      	t := int64(len(ids))
+      	var inputs []*C.ov_tensor_t
+      	defer func() {
+      		for _, in := range inputs {
+      			C.ov_tensor_free(in)
+      		}
+      	}()
+      	set := func(name string, in *C.ov_tensor_t) {
+      		inputs = append(inputs, in)
+      		setTensor(req, name, in)
+      	}
+      	set("input_ids", newTensor(C.I64, []int64{1, t}, ids))
+      	set("lengths", newTensor(C.I64, []int64{1}, []int64{t}))
+      	set("offset", newTensor(C.I64, []int64{1}, []int64{0}))
+      	set("read_index", newTensor(C.I64, []int64{1}, []int64{t - 1}))
+      	set("slot_ids", newTensor(C.I64, []int64{2}, m.SlotIDs[:2]))
+      	for _, p := range m.Past {
+      		dims := slices.Clone(p.Shape)
+      		n := int64(1)
+      		for i, d := range dims {
+      			if d == -1 {
+      				dims[i] = 0
+      			}
+      			n *= dims[i]
+      		}
+      		set(p.Name, newTensor(C.F32, dims, make([]float32, n)))
+      	}
+      	check("fork infer", C.ov_infer_request_infer(req))
+
+      	slots := getTensor(req, "slot_logits")
+      	defer C.ov_tensor_free(slots)
+      	if d := tensorDims(slots); !slices.Equal(d, []int64{1, 2}) {
+      		fail("slot_logits shape %v, want [1 2]", d)
+      	}
+      	logits := tensorData[float32](slots)
+      	lseT := getTensor(req, "lse")
+      	defer C.ov_tensor_free(lseT)
+      	lse := tensorData[float32](lseT)
+      	if d := tensorDims(lseT); !slices.Equal(d, []int64{1}) {
+      		fail("lse shape %v, want [1]", d)
+      	}
+      	if !finite(logits) || !finite(lse) {
+      		fail("non-finite outputs: slot_logits %v lse %v", logits, lse)
+      	}
+      	fmt.Printf("slot_logits %v lse %v\n", logits, lse)
+
+      	for _, p := range m.Past {
+      		name := "present" + strings.TrimPrefix(p.Name, "past")
+      		pt := getTensor(req, name)
+      		got := tensorDims(pt)
+      		C.ov_tensor_free(pt)
+      		want := slices.Clone(p.Shape)
+      		for i, d := range want {
+      			if d == -1 {
+      				want[i] = t
+      			}
+      		}
+      		if !slices.Equal(got, want) {
+      			fail("%s shape %v, want %v", name, got, want)
+      		}
+      	}
+      	fmt.Printf("%d present tensors ok\n", len(m.Past))
+
+      	status, err := os.ReadFile("/proc/self/status")
+      	if err == nil {
+      		for _, line := range strings.Split(string(status), "\n") {
+      			if strings.HasPrefix(line, "VmHWM:") {
+      				fmt.Printf("peak RSS: %s\n", strings.TrimSpace(strings.TrimPrefix(line, "VmHWM:")))
+      			}
+      		}
+      	}
+      }
+      GOEOF
+      test -z "$(gofmt -l .)"
+      go vet .
+      go build -o decide-smoke .
+      ./decide-smoke "${{inputs.model-dir}}"
+      rm -rf "$work"
