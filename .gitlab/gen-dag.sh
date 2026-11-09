@@ -115,9 +115,18 @@ noop:
 
 YAML
 
+# On MRs, jobs pass built apks to their dependents through the packages/
+# artifact. A job nothing depends on skips the upload: multi-GB model apks
+# exceed the instance artifact size limit (413).
+while IFS='|' read -r base _ _ deps _; do
+    resolve_deps "$base" "$deps"
+done <"$WORK/rows" | sort -u >"$WORK/needed"
+
 while IFS='|' read -r base _ _ deps cpu memory; do
     local_deps=$(resolve_deps "$base" "$deps")
     limits=$(job_limits "$cpu" "$memory")
+    artifacts=
+    grep -qxF "$base" "$WORK/needed" || artifacts="  artifacts: null"
 
     for arch in amd64 arm64; do
         arch_supported "$base" "$arch" || continue
@@ -130,6 +139,7 @@ $base-$arch:
     PKG: $base.yaml
     ARCH: $arch
 $limits
+$artifacts
   rules:
     # Main branch publishes packages to NFS -- don't let auto_cancel drop the
     # build mid-flight when a later commit lands. Mirrors the override on the
