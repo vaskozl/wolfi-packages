@@ -1,0 +1,240 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Repackages Intel's official OpenVINO 2026.4.0 build 22959 release archive and
+# the matching openvino_tokenizers archive, CPU inference only.
+# Not tracked by renovate on purpose: rekon's models are exported against this
+# exact build, and the URIs embed a build number and commit hash that a version
+# bump can't refresh.
+# oneTBB comes from Wolfi's libtbb (so:libtbb.so.12), not the bundled copy.
+package:
+  name: openvino
+  version: "2026.4.0"
+  epoch: 0
+  description: OpenVINO inference runtime (C/C++ API, CPU plugin, IR frontend)
+  copyright:
+    - license: LicenseRef-Intel-OpenVINO-Distribution-License
+      license-path: docs/licensing/EULA.txt
+    - license: Apache-2.0
+  target-architecture:
+    - x86_64
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - uses: fetch
+    with:
+      uri: https://storage.openvinotoolkit.org/repositories/openvino/packages/2026.4/linux/openvino_toolkit_ubuntu24_2026.4.0.22959.99c81491cc3_x86_64.tgz
+      expected-sha256: 0bd86d578beb1e8805655f593315c69bf909008e212f801ed76e3a350927736f
+      delete: true
+  - runs: |
+      set -eu
+      lib="${{targets.destdir}}/usr/lib"
+      install -d "$lib/pkgconfig" "${{targets.destdir}}/usr/include" \
+        "${{targets.destdir}}/usr/share/licenses/openvino"
+      # Flat in /usr/lib: OpenVINO finds the CPU plugin and IR frontend next to
+      # libopenvino.so, so no plugins.xml or env var is needed.
+      cd runtime/lib/intel64
+      for f in libopenvino.so.${{package.version}} libopenvino_c.so.${{package.version}} \
+        libopenvino_ir_frontend.so.${{package.version}} libopenvino_intel_cpu_plugin.so; do
+        install -m755 "$f" "$lib/"
+      done
+      cp -P libopenvino.so.2640 libopenvino.so libopenvino_c.so.2640 libopenvino_c.so \
+        libopenvino_ir_frontend.so.2640 "$lib/"
+      cd -
+      cp -r runtime/include/openvino "${{targets.destdir}}/usr/include/"
+      cd docs/licensing
+      install -m644 EULA.txt redist.txt readme.txt Apache_license.txt \
+        runtime-third-party-programs.txt onednn_third-party-programs.txt \
+        "${{targets.destdir}}/usr/share/licenses/openvino/"
+      cd -
+
+      # Upstream's openvino.pc has a relative prefix and links frontends and a
+      # bundled tbb we don't ship.
+      cat > "$lib/pkgconfig/openvino-c.pc" <<'EOF'
+      prefix=/usr
+      libdir=${prefix}/lib
+      includedir=${prefix}/include
+
+      Name: OpenVINO C API
+      Description: OpenVINO Toolkit C API
+      URL: https://docs.openvino.ai/
+      Version: ${{package.version}}
+      Libs: -L${libdir} -lopenvino_c
+      Cflags: -I${includedir}
+      EOF
+      cat > "$lib/pkgconfig/openvino.pc" <<'EOF'
+      prefix=/usr
+      libdir=${prefix}/lib
+      includedir=${prefix}/include
+
+      Name: OpenVINO
+      Description: OpenVINO Toolkit
+      URL: https://docs.openvino.ai/
+      Version: ${{package.version}}
+      Libs: -L${libdir} -lopenvino
+      Cflags: -I${includedir} -D_GLIBCXX_USE_CXX11_ABI=1 -DOV_THREAD=OV_THREAD_TBB_ADAPTIVE
+      EOF
+subpackages:
+  - name: openvino-dev
+    description: OpenVINO C and C++ headers and pkg-config files
+    pipeline:
+      - uses: split/dev
+    dependencies:
+      runtime:
+        - openvino=${{package.full-version}}
+    test:
+      environment:
+        contents:
+          packages:
+            - pkgconf
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: openvino-dev
+        - uses: test/pkgconf
+        - name: openvino-c resolves to the C API headers
+          runs: |
+            set -eu
+            pkg-config --cflags --libs openvino-c
+            test -f "$(pkg-config --variable=includedir openvino-c)/openvino/c/openvino.h"
+  - name: openvino-tokenizers
+    description: OpenVINO Tokenizers extension library
+    pipeline:
+      - runs: mkdir -p tokenizers
+      - uses: fetch
+        with:
+          uri: https://storage.openvinotoolkit.org/repositories/openvino_tokenizers/packages/2026.4.0.0/openvino_tokenizers_ubuntu24_2026.4.0.0_x86_64.tar.gz
+          expected-sha256: 7a5fd99b8fe8da22342c58bca83072db2b53020a58a84c56c16a18ad2649ea2d
+          strip-components: 0
+          directory: tokenizers
+          delete: true
+      - runs: |
+          set -eu
+          install -Dm755 tokenizers/runtime/lib/intel64/libopenvino_tokenizers.so \
+            "${{targets.contextdir}}/usr/lib/libopenvino_tokenizers.so"
+          install -d "${{targets.contextdir}}/usr/share/licenses/openvino-tokenizers"
+          install -m644 tokenizers/docs/openvino_tokenizers/LICENSE \
+            tokenizers/docs/openvino_tokenizers/third-party-programs.txt \
+            "${{targets.contextdir}}/usr/share/licenses/openvino-tokenizers/"
+    dependencies:
+      runtime:
+        - openvino=${{package.full-version}}
+    test:
+      environment:
+        contents:
+          packages:
+            - build-base
+            - openvino-dev
+            - pkgconf
+      pipeline:
+        - uses: test/ldd-check
+          with:
+            packages: openvino-tokenizers
+        - name: depends on exactly this openvino build
+          runs: |
+            set -eu
+            db=/usr/lib/apk/db/installed
+            [ -f "$db" ] || db=/lib/apk/db/installed
+            sed -n '/^P:openvino-tokenizers$/,/^$/p' "$db" \
+              | sed -n 's/^D://p' | tr ' ' '\n' | grep -Fx 'openvino=${{package.full-version}}'
+        - name: core loads the tokenizers extension
+          runs: |
+            set -eu
+            cd "$(mktemp -d)"
+            cat > t.c <<'EOF'
+            #include <stdio.h>
+            #include <openvino/c/openvino.h>
+
+            int main(void) {
+              ov_core_t *core;
+              if (ov_core_create(&core) != OK ||
+                  ov_core_add_extension(core, "/usr/lib/libopenvino_tokenizers.so") != OK) {
+                fprintf(stderr, "%s\n", ov_get_last_err_msg());
+                return 1;
+              }
+              ov_core_free(core);
+              return 0;
+            }
+            EOF
+            cc $(pkg-config --cflags openvino-c) -o t t.c $(pkg-config --libs openvino-c)
+            ./t
+test:
+  environment:
+    contents:
+      packages:
+        - build-base
+        - openvino-dev
+        - pkgconf
+  pipeline:
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
+    - name: C API reports this build and runs a Relu IR on the CPU plugin
+      runs: |
+        set -eu
+        cd "$(mktemp -d)"
+        cat > t.c <<'EOF'
+        #include <stdio.h>
+        #include <string.h>
+        #include <openvino/c/openvino.h>
+
+        #define CHECK(x) do { if ((x) != OK) { fprintf(stderr, "%s: %s\n", #x, ov_get_last_err_msg()); return 1; } } while (0)
+
+        static const char ir[] =
+          "<?xml version=\"1.0\"?>"
+          "<net name=\"relu\" version=\"11\"><layers>"
+          "<layer id=\"0\" name=\"x\" type=\"Parameter\" version=\"opset1\">"
+          "<data shape=\"1,4\" element_type=\"f32\"/>"
+          "<output><port id=\"0\" precision=\"FP32\"><dim>1</dim><dim>4</dim></port></output></layer>"
+          "<layer id=\"1\" name=\"relu\" type=\"ReLU\" version=\"opset1\">"
+          "<input><port id=\"0\" precision=\"FP32\"><dim>1</dim><dim>4</dim></port></input>"
+          "<output><port id=\"1\" precision=\"FP32\"><dim>1</dim><dim>4</dim></port></output></layer>"
+          "<layer id=\"2\" name=\"y\" type=\"Result\" version=\"opset1\">"
+          "<input><port id=\"0\" precision=\"FP32\"><dim>1</dim><dim>4</dim></port></input></layer>"
+          "</layers><edges>"
+          "<edge from-layer=\"0\" from-port=\"0\" to-layer=\"1\" to-port=\"0\"/>"
+          "<edge from-layer=\"1\" from-port=\"1\" to-layer=\"2\" to-port=\"0\"/>"
+          "</edges></net>";
+
+        int main(int argc, char **argv) {
+          ov_version_t ver;
+          CHECK(ov_get_openvino_version(&ver));
+          printf("%s\n", ver.buildNumber);
+          if (argc < 2 || strncmp(ver.buildNumber, argv[1], strlen(argv[1])) != 0) {
+            fprintf(stderr, "buildNumber does not start with %s\n", argc < 2 ? "?" : argv[1]);
+            return 1;
+          }
+          ov_version_free(&ver);
+
+          ov_core_t *core;
+          ov_core_version_list_t vers;
+          CHECK(ov_core_create(&core));
+          CHECK(ov_core_get_versions_by_device_name(core, "CPU", &vers));
+          if (vers.size != 1) { fprintf(stderr, "CPU: %zu versions\n", vers.size); return 1; }
+          ov_core_versions_free(&vers);
+
+          ov_model_t *model;
+          ov_compiled_model_t *cm;
+          ov_infer_request_t *req;
+          CHECK(ov_core_read_model_from_memory_buffer(core, ir, strlen(ir), NULL, &model));
+          CHECK(ov_core_compile_model(core, model, "CPU", 0, &cm));
+          CHECK(ov_compiled_model_create_infer_request(cm, &req));
+
+          float in[4] = {-1, 2, -3, 4}, want[4] = {0, 2, 0, 4};
+          int64_t dims[2] = {1, 4};
+          ov_shape_t shape;
+          ov_tensor_t *x, *y;
+          float *out;
+          CHECK(ov_shape_create(2, dims, &shape));
+          CHECK(ov_tensor_create_from_host_ptr(F32, shape, in, &x));
+          CHECK(ov_infer_request_set_input_tensor(req, x));
+          CHECK(ov_infer_request_infer(req));
+          CHECK(ov_infer_request_get_output_tensor(req, &y));
+          CHECK(ov_tensor_data(y, (void **)&out));
+          for (int i = 0; i < 4; i++)
+            if (out[i] != want[i]) { fprintf(stderr, "out[%d] = %f, want %f\n", i, out[i], want[i]); return 1; }
+          return 0;
+        }
+        EOF
+        cc $(pkg-config --cflags openvino-c) -o t t.c $(pkg-config --libs openvino-c)
+        ./t '${{package.version}}-'
