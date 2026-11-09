@@ -1,19 +1,22 @@
 name: pkgconf
-
 needs:
   packages:
+    - apk-tools
     - pkgconf
-
 pipeline:
   - name: pkgconf build dependency check
     runs: |
+      set -eu
       # Get our dev package name, which is possibly a sub package
       dev_pkg=$(basename ${{targets.contextdir}})
       # Find all pc files installed by this dev_pkg
       cd /
-      pc_files=false
-      for pc_file in $(apk info -L "$dev_pkg" 2>/dev/null | grep "\.pc$"); do
-        pc_files=true
+      pc_list=$(apk info -qL "$dev_pkg" | grep "\.pc$" || true)
+      if [ -z "$pc_list" ]; then
+        echo "No .pc files found in $dev_pkg please remove the pkgconf test"
+        exit 1
+      fi
+      for pc_file in $pc_list; do
         # Ensure this is a pkgconf .pc file
         if grep -q "^Name:" $pc_file; then
           lib_name=$(basename "$pc_file" ".pc")
@@ -38,6 +41,3 @@ pipeline:
           fi
         fi
       done
-      if [ $pc_files = "false" ]; then
-        echo "No .pc files found in $dev_pkg please remove the pkgconf test"
-      fi
