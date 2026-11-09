@@ -39,7 +39,11 @@ environment:
     packages:
       - busybox
       - decide-export
+  environment:
+    # wget's default dot progress for multi-GB weights overflows the 4 MiB CI job log.
+    WGETRC: /home/build/.wgetrc
 pipeline:
+  - runs: echo 'progress = dot:giga' > /home/build/.wgetrc
   - uses: fetch
     with:
       uri: https://huggingface.co/baselabs/joey-1/resolve/${{vars.revision}}/model.safetensors
