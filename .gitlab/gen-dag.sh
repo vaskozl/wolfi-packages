@@ -127,6 +127,12 @@ while IFS='|' read -r base _ _ deps cpu memory; do
     limits=$(job_limits "$cpu" "$memory")
     artifacts=
     grep -qxF "$base" "$WORK/needed" || artifacts="  artifacts: null"
+    # Our own apps are tested in their own repos' CI: MR pipelines skip them
+    # (main still builds and publishes), so their bump MRs pass right away.
+    mr_skip=
+    grep -q "repository: https://gitlab.sko.ai/" "$base.yaml" &&
+        mr_skip='    - if: $IS_MAIN == "false"
+      when: never'
 
     for arch in amd64 arm64; do
         arch_supported "$base" "$arch" || continue
@@ -149,6 +155,7 @@ $artifacts
       changes:
         - $base.yaml
         - $base/**/*
+$mr_skip
     - if: \$IS_MAIN == "false"
       changes:
         - $base.yaml
