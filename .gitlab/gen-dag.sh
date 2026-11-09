@@ -18,14 +18,14 @@ cd "$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
-# Per-yaml row: <base>|<provided-csv>|<target-arches-csv>|<deps-csv>
+# Per-yaml row: <base>|<provided-csv>|<target-arches-csv>|<deps-csv>|<cpu>|<memory>
 # where <provided> = package name + subpackage names + author-declared virtual
 # provides (package- and subpackage-level), and <deps> = build, runtime and
 # test-env deps concatenated (constraints stripped later). Including `provides:`
 # lets the graph resolve override packages (e.g. mesa-full-gbm provides mesa-gbm
 # at priority 10) so their consumers get a proper `needs:` edge to the local
 # build.
-QUERY='{{ .Package.Name }}{{ range .Subpackages }},{{ .Name }}{{ end }}{{ range .Package.Dependencies.Provides }},{{ . }}{{ end }}{{ range .Subpackages }}{{ range .Dependencies.Provides }},{{ . }}{{ end }}{{ end }}|{{ range $i,$a := .Package.TargetArchitecture }}{{ if $i }},{{ end }}{{ $a }}{{ end }}|{{ range $i,$d := .Environment.Contents.Packages }}{{ if $i }},{{ end }}{{ $d }}{{ end }}{{ range .Package.Dependencies.Runtime }},{{ . }}{{ end }}{{ with .Test }}{{ range .Environment.Contents.Packages }},{{ . }}{{ end }}{{ end }}{{ range .Subpackages }}{{ with .Test }}{{ range .Environment.Contents.Packages }},{{ . }}{{ end }}{{ end }}{{ end }}'
+QUERY='{{ .Package.Name }}{{ range .Subpackages }},{{ .Name }}{{ end }}{{ range .Package.Dependencies.Provides }},{{ . }}{{ end }}{{ range .Subpackages }}{{ range .Dependencies.Provides }},{{ . }}{{ end }}{{ end }}|{{ range $i,$a := .Package.TargetArchitecture }}{{ if $i }},{{ end }}{{ $a }}{{ end }}|{{ range $i,$d := .Environment.Contents.Packages }}{{ if $i }},{{ end }}{{ $d }}{{ end }}{{ range .Package.Dependencies.Runtime }},{{ . }}{{ end }}{{ with .Test }}{{ range .Environment.Contents.Packages }},{{ . }}{{ end }}{{ end }}{{ range .Subpackages }}{{ with .Test }}{{ range .Environment.Contents.Packages }},{{ . }}{{ end }}{{ end }}{{ end }}|{{ with .Package.Resources }}{{ .CPU }}|{{ .Memory }}{{ else }}|{{ end }}'
 
 for y in *.yaml; do
     printf '%s|%s\n' "${y%.yaml}" "$(melange query "$y" "$QUERY")"
@@ -55,6 +55,24 @@ awk -F'|' '
 ' "$WORK/rows" | sort -u >"$WORK/supports"
 
 arch_supported() { grep -qxF "$1 $2" "$WORK/supports"; }
+
+# package.resources as job variables, but only above the runner defaults (1 CPU,
+# 4Gi): a smaller declaration (ntfy: 2Gi) must not lower the limit.
+job_limits() {
+    awk -v cpu="$1" -v mem="$2" '
+        function mib(v) {
+            if (v ~ /Gi$/) return v * 1024
+            if (v ~ /Mi$/) return v + 0
+            if (v ~ /G$/) return v * 1000 * 1000 * 1000 / 1048576
+            if (v ~ /M$/) return v * 1000 * 1000 / 1048576
+            return v / 1048576
+        }
+        BEGIN {
+            c = (cpu ~ /m$/) ? cpu / 1000 : cpu + 0
+            if (c > 1) printf "    KUBERNETES_CPU_LIMIT: \"%s\"\n", cpu
+            if (mem != "" && mib(mem) > 4096) printf "    KUBERNETES_MEMORY_LIMIT: \"%s\"\n", mem
+        }'
+}
 
 # Resolve a yaml's deps to other local yamls it depends on.
 # All lookups happen in one awk pass against $WORK/providers (busybox lacks `join`).
@@ -97,8 +115,18 @@ noop:
 
 YAML
 
-while IFS='|' read -r base _ _ deps; do
+# On MRs, jobs pass built apks to their dependents through the packages/
+# artifact. A job nothing depends on skips the upload: multi-GB model apks
+# exceed the instance artifact size limit (413).
+while IFS='|' read -r base _ _ deps _; do
+    resolve_deps "$base" "$deps"
+done <"$WORK/rows" | sort -u >"$WORK/needed"
+
+while IFS='|' read -r base _ _ deps cpu memory; do
     local_deps=$(resolve_deps "$base" "$deps")
+    limits=$(job_limits "$cpu" "$memory")
+    artifacts=
+    grep -qxF "$base" "$WORK/needed" || artifacts="  artifacts: null"
 
     for arch in amd64 arm64; do
         arch_supported "$base" "$arch" || continue
@@ -110,6 +138,8 @@ $base-$arch:
   variables:
     PKG: $base.yaml
     ARCH: $arch
+$limits
+$artifacts
   rules:
     # Main branch publishes packages to NFS -- don't let auto_cancel drop the
     # build mid-flight when a later commit lands. Mirrors the override on the

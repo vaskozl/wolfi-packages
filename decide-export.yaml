@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# Build-time exporter for the baselabs-* decide model packages: HF checkpoint ->
+# OpenVINO fork graph (decide model format 1, see decide_export.py).
+# Not tracked by renovate on purpose: requirements.txt pins openvino to the exact
+# openvino apk build and transformers/tokenizers to the models' training stack.
+# Regenerate it from requirements.in with the command in its header.
+package:
+  name: decide-export
+  version: "1.0.0"
+  epoch: 0
+  description: Export Base Labs decide models to an OpenVINO fork graph
+  copyright:
+    - license: Apache-2.0
+  target-architecture:
+    - x86_64
+  options:
+    # The venv bundles libopenvino, libgomp, libtbb etc.; publishing them as so:
+    # providers would compete with the real apks.
+    no-provides: true
+environment:
+  contents:
+    packages:
+      - busybox
+      - ca-certificates-bundle
+      - python-3.13
+      - uv
+pipeline:
+  - runs: |
+      set -eu
+      lib="${{targets.destdir}}/usr/lib/${{package.name}}"
+      uv venv --relocatable --python /usr/bin/python3.13 "$lib"
+      VIRTUAL_ENV="$lib" uv pip install --require-hashes --no-deps --no-cache \
+        --index-strategy unsafe-best-match --compile-bytecode -r requirements.txt
+      # uv leaves a world-writable lock file in the venv root.
+      rm -f "$lib/.lock"
+      install -m644 decide_export.py ov_gdn.py "$lib/"
+      install -d "${{targets.destdir}}/usr/bin"
+      cat > "${{targets.destdir}}/usr/bin/decide-export" <<'SH'
+      #!/bin/sh
+      exec /usr/lib/decide-export/bin/python /usr/lib/decide-export/decide_export.py "$@"
+      SH
+      chmod 755 "${{targets.destdir}}/usr/bin/decide-export"
+test:
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          decide-export
+    - uses: test/help-check
+      with:
+        bins: |
+          decide-export
+    - name: export a tiny random model and check it against transformers
+      runs: |
+        set -eu
+        decide-export selftest

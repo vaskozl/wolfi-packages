@@ -1,0 +1,129 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# joey-1 decide model (Qwen3.5-2B finetune), exported at build time to an OpenVINO
+# fork graph by decide-export. The weights are pinned by HF commit (vars.revision),
+# so there is no renovate tracking and no bump bot; that is also why the fetch URIs
+# interpolate ${{vars.revision}}. Re-exporting the same weights bumps epoch.
+# Siblings (elephant-1, mammoth-1): copy this file and edit only name, version,
+# description, vars.revision and the fetch list.
+package:
+  name: baselabs-joey-1-bf16
+  version: "20261029"
+  epoch: 0
+  description: joey-1 decide model (2B) as an OpenVINO fork graph, bf16 weights
+  copyright:
+    - license: MIT
+    - license: Apache-2.0
+  # The content is arch-independent, but melange has no noarch and the openvino
+  # runtime exists only on x86_64.
+  target-architecture:
+    - x86_64
+  resources:
+    cpu: "4"
+    memory: 14Gi
+  dependencies:
+    provides:
+      # Unversioned so models co-install; consumers depend on it and pick a model.
+      - decide-model-format-1
+    runtime:
+      - openvino-tokenizers
+      - openvino~2026.4
+vars:
+  revision: 9efbe485efbed9598dfca5294cbbe8da00e21908
+var-transforms:
+  - from: ${{package.name}}
+    match: ^baselabs-
+    replace: ""
+    to: model-dir
+environment:
+  contents:
+    packages:
+      - busybox
+      - decide-export
+  environment:
+    # wget's default dot progress for multi-GB weights overflows the 4 MiB CI job log.
+    WGETRC: /home/build/.wgetrc
+pipeline:
+  - runs: echo 'progress = dot:giga' > /home/build/.wgetrc
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/joey-1/resolve/${{vars.revision}}/model.safetensors
+      expected-sha256: 4c503aded23bae311dff80a63326503fb720572c178f07a2142332d55f5f3afc
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/joey-1/resolve/${{vars.revision}}/tokenizer.json
+      expected-sha256: a5cd9732badce41de57e6efce8302930ded1c1188c5f81feb2bd6c24c4a1941f
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/joey-1/resolve/${{vars.revision}}/config.json
+      expected-sha256: 7c7ebc3322308391787aac279c7cbd4c3a38bba85e270b5f5568ad07467673e1
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/joey-1/resolve/${{vars.revision}}/tokenizer_config.json
+      expected-sha256: 2984c03425a28d242744e234a5003786fd289b3713db79fe0958c65eb59d85b2
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/joey-1/resolve/${{vars.revision}}/chat_template.jinja
+      expected-sha256: 273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/joey-1/resolve/${{vars.revision}}/readout.json
+      expected-sha256: 96ea8a5c6ecfc30c20cdd369762db5997c5f4fb9821ce0a0318941343eb5e8ba
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/joey-1/resolve/${{vars.revision}}/generation_config.json
+      expected-sha256: 290866a6d7d4a4442fe83ba2434a31517446f40a01de500ff97b4354e7e5d082
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/joey-1/resolve/${{vars.revision}}/README.md
+      expected-sha256: dd6a8e4489b231f665ef561737638608e1c8af018d721c92cc9f017f91c5125a
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/Qwen/Qwen3.5-2B/resolve/15852e8c16360a2fea060d615a32b45270f8a8fc/LICENSE
+      expected-sha256: bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a
+      extract: false
+      timeout: 120
+  - runs: |
+      set -eu
+      decide-export export --src . --out "${{targets.destdir}}/usr/share/decide/models/${{vars.model-dir}}"
+      lic="${{targets.destdir}}/usr/share/licenses/${{package.name}}"
+      # The model card is baselabs' only licence grant (MIT in its metadata).
+      install -Dm644 README.md "$lic/MODEL_CARD.md"
+      install -Dm644 LICENSE "$lic/LICENSE.Qwen3.5"
+test:
+  environment:
+    contents:
+      packages:
+        - build-base
+        - go-1.27
+        - openvino-dev
+        - pkgconf
+  pipeline:
+    - name: model directory holds the IR, the tokenizer IR and the HF metadata
+      runs: |
+        set -eu
+        cd "/usr/share/decide/models/${{vars.model-dir}}"
+        for f in fork.xml fork.bin openvino_tokenizer.xml openvino_tokenizer.bin decide.json \
+          config.json tokenizer.json tokenizer_config.json chat_template.jinja readout.json generation_config.json; do
+          test -s "$f"
+        done
+        test -s "/usr/share/licenses/${{package.name}}/MODEL_CARD.md"
+        test -s "/usr/share/licenses/${{package.name}}/LICENSE.Qwen3.5"
+    - uses: test/decide-model
+      with:
+        model-dir: /usr/share/decide/models/${{vars.model-dir}}
