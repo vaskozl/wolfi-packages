@@ -132,7 +132,7 @@ subpackages:
             db=/usr/lib/apk/db/installed
             [ -f "$db" ] || db=/lib/apk/db/installed
             sed -n '/^P:openvino-tokenizers$/,/^$/p' "$db" \
-              | grep '^D:' | tr ' ' '\n' | grep -Fx 'openvino=${{package.full-version}}'
+              | sed -n 's/^D://p' | tr ' ' '\n' | grep -Fx 'openvino=${{package.full-version}}'
         - name: core loads the tokenizers extension
           runs: |
             set -eu
