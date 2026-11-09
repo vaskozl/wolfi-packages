@@ -409,10 +409,11 @@ def run_check(model_dir: Path, ref_path: Path, tolerance: float, tokenizer: bool
 
     ref = json.loads(ref_path.read_text())
     meta = json.loads((model_dir / "decide.json").read_text())
+    if tokenizer:
+        # Importing it registers the tokenizer ops with Cores created afterwards.
+        import openvino_tokenizers  # noqa: F401
     core = ov.Core()
     if tokenizer:
-        import openvino_tokenizers  # noqa: F401  registers the extension with the core
-
         tok = core.compile_model(model_dir / "openvino_tokenizer.xml", "CPU")
         ids = tok([TOKENIZER_PROBE])["input_ids"].reshape(-1).tolist()
         if ids != TOKENIZER_PROBE_IDS:
