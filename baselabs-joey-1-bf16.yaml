@@ -19,7 +19,7 @@ package:
     - x86_64
   resources:
     cpu: "4"
-    memory: 8Gi
+    memory: 14Gi
   dependencies:
     provides:
       # Unversioned so models co-install; consumers depend on it and pick a model.
