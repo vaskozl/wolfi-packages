@@ -9,7 +9,7 @@ needs:
 
 inputs:
   model-dir:
-    description: Installed decide model directory (format 1) to load.
+    description: Installed decide model directory (format 2) to load.
     required: true
 
 pipeline:
@@ -26,8 +26,8 @@ pipeline:
       go 1.27
       GOEOF
       cat > main.go <<'GOEOF'
-      // Command decide-smoke loads a decide model (format 1) through the OpenVINO C API:
-      // tokenizer IR, then one prefix call of fork.xml.
+      // Command decide-smoke loads a decide model (format 2) through the OpenVINO C API:
+      // tokenizer IR, vision.xml, then a text and an image prefix call of fork.xml.
       package main
 
       /*
@@ -57,9 +57,18 @@ pipeline:
       var probeIDs = []int64{248045, 846, 198, 5834, 248046}
 
       type meta struct {
-      	Format  int     `json:"format"`
-      	SlotIDs []int64 `json:"slot_ids"`
-      	Past    []struct {
+      	Format             int     `json:"format"`
+      	SlotIDs            []int64 `json:"slot_ids"`
+      	HiddenSize         int64   `json:"hidden_size"`
+      	ImageTokenID       int64   `json:"image_token_id"`
+      	VisionStartTokenID int64   `json:"vision_start_token_id"`
+      	VisionEndTokenID   int64   `json:"vision_end_token_id"`
+      	Vision             struct {
+      		PatchSize         int64 `json:"patch_size"`
+      		TemporalPatchSize int64 `json:"temporal_patch_size"`
+      		MergeSize         int64 `json:"merge_size"`
+      	} `json:"vision"`
+      	Past []struct {
       		Name  string  `json:"name"`
       		Shape []int64 `json:"shape"`
       	} `json:"past"`
@@ -171,54 +180,8 @@ pipeline:
       	return tensorData[int64](out)
       }
 
-      func main() {
-      	if len(os.Args) != 2 {
-      		fail("usage: decide-smoke <model-dir>")
-      	}
-      	dir := os.Args[1]
-      	raw, err := os.ReadFile(filepath.Join(dir, "decide.json"))
-      	if err != nil {
-      		fail("%v", err)
-      	}
-      	var m meta
-      	if err := json.Unmarshal(raw, &m); err != nil {
-      		fail("decide.json: %v", err)
-      	}
-      	if m.Format != 1 || len(m.SlotIDs) < 2 || len(m.Past) == 0 {
-      		fail("decide.json: format %d, %d slots, %d past", m.Format, len(m.SlotIDs), len(m.Past))
-      	}
-
-      	var core *C.ov_core_t
-      	check("ov_core_create", C.ov_core_create(&core))
-      	defer C.ov_core_free(core)
-      	ext := C.CString("/usr/lib/libopenvino_tokenizers.so")
-      	defer C.free(unsafe.Pointer(ext))
-      	check("add tokenizers extension", C.ov_core_add_extension(core, ext))
-
-      	ids := tokenize(core, dir)
-      	if !slices.Equal(ids, probeIDs) {
-      		fail("tokenizer: %q -> %v, want %v", probe, ids, probeIDs)
-      	}
-      	fmt.Printf("tokenizer: %v\n", ids)
-
-      	cm := compile(core, filepath.Join(dir, "fork.xml"))
-      	defer C.ov_compiled_model_free(cm)
-      	key := C.CString("INFERENCE_PRECISION_HINT")
-      	defer C.free(unsafe.Pointer(key))
-      	var prec *C.char
-      	check("get INFERENCE_PRECISION_HINT", C.ov_compiled_model_get_property(cm, key, &prec))
-      	hint := C.GoString(prec)
-      	C.ov_free(prec)
-      	fmt.Printf("INFERENCE_PRECISION_HINT: %s\n", hint)
-      	if hint != "f32" && hint != "bf16" {
-      		fail("unexpected inference precision %q", hint)
-      	}
-
-      	var req *C.ov_infer_request_t
-      	check("fork request", C.ov_compiled_model_create_infer_request(cm, &req))
-      	defer C.ov_infer_request_free(req)
-
-      	t := int64(len(ids))
+      // fork runs one fork.xml call of a single row with empty caches and checks its outputs.
+      func fork(req *C.ov_infer_request_t, m meta, ids []int64, pos [3][]int64, embeds []float32, index []int64) {
       	var inputs []*C.ov_tensor_t
       	defer func() {
       		for _, in := range inputs {
@@ -229,9 +192,13 @@ pipeline:
       		inputs = append(inputs, in)
       		setTensor(req, name, in)
       	}
+      	t := int64(len(ids))
       	set("input_ids", newTensor(C.I64, []int64{1, t}, ids))
       	set("lengths", newTensor(C.I64, []int64{1}, []int64{t}))
       	set("offset", newTensor(C.I64, []int64{1}, []int64{0}))
+      	set("position_ids", newTensor(C.I64, []int64{3, 1, t}, slices.Concat(pos[:]...)))
+      	set("image_embeds", newTensor(C.F32, []int64{int64(len(index)), m.HiddenSize}, embeds))
+      	set("image_index", newTensor(C.I64, []int64{int64(len(index))}, index))
       	set("read_index", newTensor(C.I64, []int64{1}, []int64{t - 1}))
       	set("slot_ids", newTensor(C.I64, []int64{2}, m.SlotIDs[:2]))
       	for _, p := range m.Past {
@@ -280,6 +247,108 @@ pipeline:
       		}
       	}
       	fmt.Printf("%d present tensors ok\n", len(m.Past))
+      }
+
+      // vision encodes one synthetic image of (2M x 2M) patches, so 4 image tokens.
+      func vision(core *C.ov_core_t, dir string, m meta) []float32 {
+      	cm := compile(core, filepath.Join(dir, "vision.xml"))
+      	defer C.ov_compiled_model_free(cm)
+      	var req *C.ov_infer_request_t
+      	check("vision request", C.ov_compiled_model_create_infer_request(cm, &req))
+      	defer C.ov_infer_request_free(req)
+
+      	v := m.Vision
+      	side := 2 * v.MergeSize
+      	patch := 3 * v.TemporalPatchSize * v.PatchSize * v.PatchSize
+      	pixels := make([]float32, side*side*patch)
+      	for i := range pixels {
+      		pixels[i] = float32(i%17)/8 - 1
+      	}
+      	pv := newTensor(C.F32, []int64{side * side, patch}, pixels)
+      	defer C.ov_tensor_free(pv)
+      	grid := newTensor(C.I64, []int64{1, 3}, []int64{1, side, side})
+      	defer C.ov_tensor_free(grid)
+      	setTensor(req, "pixel_values", pv)
+      	setTensor(req, "image_grid_thw", grid)
+      	check("vision infer", C.ov_infer_request_infer(req))
+
+      	out := getTensor(req, "image_embeds")
+      	defer C.ov_tensor_free(out)
+      	if d := tensorDims(out); !slices.Equal(d, []int64{4, m.HiddenSize}) {
+      		fail("image_embeds shape %v, want [4 %d]", d, m.HiddenSize)
+      	}
+      	embeds := tensorData[float32](out)
+      	if !finite(embeds) {
+      		fail("non-finite image_embeds")
+      	}
+      	fmt.Printf("image_embeds: %d x %d\n", 4, m.HiddenSize)
+      	return embeds
+      }
+
+      func main() {
+      	if len(os.Args) != 2 {
+      		fail("usage: decide-smoke <model-dir>")
+      	}
+      	dir := os.Args[1]
+      	raw, err := os.ReadFile(filepath.Join(dir, "decide.json"))
+      	if err != nil {
+      		fail("%v", err)
+      	}
+      	var m meta
+      	if err := json.Unmarshal(raw, &m); err != nil {
+      		fail("decide.json: %v", err)
+      	}
+      	if m.Format != 2 || len(m.SlotIDs) < 2 || len(m.Past) == 0 || m.HiddenSize == 0 || m.Vision.MergeSize == 0 {
+      		fail("decide.json: format %d, %d slots, %d past, hidden %d, merge %d",
+      			m.Format, len(m.SlotIDs), len(m.Past), m.HiddenSize, m.Vision.MergeSize)
+      	}
+
+      	var core *C.ov_core_t
+      	check("ov_core_create", C.ov_core_create(&core))
+      	defer C.ov_core_free(core)
+      	ext := C.CString("/usr/lib/libopenvino_tokenizers.so")
+      	defer C.free(unsafe.Pointer(ext))
+      	check("add tokenizers extension", C.ov_core_add_extension(core, ext))
+
+      	ids := tokenize(core, dir)
+      	if !slices.Equal(ids, probeIDs) {
+      		fail("tokenizer: %q -> %v, want %v", probe, ids, probeIDs)
+      	}
+      	fmt.Printf("tokenizer: %v\n", ids)
+
+      	embeds := vision(core, dir, m)
+
+      	cm := compile(core, filepath.Join(dir, "fork.xml"))
+      	defer C.ov_compiled_model_free(cm)
+      	key := C.CString("INFERENCE_PRECISION_HINT")
+      	defer C.free(unsafe.Pointer(key))
+      	var prec *C.char
+      	check("get INFERENCE_PRECISION_HINT", C.ov_compiled_model_get_property(cm, key, &prec))
+      	hint := C.GoString(prec)
+      	C.ov_free(prec)
+      	fmt.Printf("INFERENCE_PRECISION_HINT: %s\n", hint)
+      	if hint != "f32" && hint != "bf16" {
+      		fail("unexpected inference precision %q", hint)
+      	}
+
+      	var req *C.ov_infer_request_t
+      	check("fork request", C.ov_compiled_model_create_infer_request(cm, &req))
+      	defer C.ov_infer_request_free(req)
+
+      	var pos [3][]int64
+      	for i := range ids {
+      		for a := range pos {
+      			pos[a] = append(pos[a], int64(i))
+      		}
+      	}
+      	fork(req, m, ids, pos, nil, nil)
+
+      	// The 2x2 merged image after vision_start at position 0: tokens at (1, 1+i, 1+j),
+      	// then vision_end at 1 + max(2, 2).
+      	img := []int64{m.VisionStartTokenID, m.ImageTokenID, m.ImageTokenID, m.ImageTokenID, m.ImageTokenID,
+      		m.VisionEndTokenID}
+      	pos = [3][]int64{{0, 1, 1, 1, 1, 3}, {0, 1, 1, 2, 2, 3}, {0, 1, 2, 1, 2, 3}}
+      	fork(req, m, img, pos, embeds, []int64{1, 2, 3, 4})
 
       	status, err := os.ReadFile("/proc/self/status")
       	if err == nil {
