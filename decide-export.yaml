@@ -1,14 +1,14 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 # Build-time exporter for the baselabs-* decide model packages: HF checkpoint ->
-# OpenVINO fork graph (decide model format 1, see decide_export.py).
+# OpenVINO fork graph and vision encoder (decide model format 2, see decide_export.py).
 # Not tracked by renovate on purpose: requirements.txt pins openvino to the exact
 # openvino apk build and transformers/tokenizers to the models' training stack.
 # Regenerate it from requirements.in with the command in its header.
 package:
   name: decide-export
-  version: "1.0.0"
+  version: "2.0.0"
   epoch: 0
-  description: Export Base Labs decide models to an OpenVINO fork graph
+  description: Export Base Labs decide models to an OpenVINO fork graph and vision encoder
   copyright:
     - license: Apache-2.0
   target-architecture:

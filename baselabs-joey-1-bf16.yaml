@@ -1,15 +1,15 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 # joey-1 decide model (Qwen3.5-2B finetune), exported at build time to an OpenVINO
-# fork graph by decide-export. The weights are pinned by HF commit (vars.revision),
-# so there is no renovate tracking and no bump bot; that is also why the fetch URIs
-# interpolate ${{vars.revision}}. Re-exporting the same weights bumps epoch.
+# fork graph and vision encoder by decide-export. The weights are pinned by HF commit
+# (vars.revision), so there is no renovate tracking and no bump bot; that is also why
+# the fetch URIs interpolate ${{vars.revision}}. Re-exporting the same weights bumps epoch.
 # Siblings (elephant-1, mammoth-1): copy this file and edit only name, version,
 # description, vars.revision and the fetch list.
 package:
   name: baselabs-joey-1-bf16
   version: "20261029"
-  epoch: 0
-  description: joey-1 decide model (2B) as an OpenVINO fork graph, bf16 weights
+  epoch: 1 # add the vision encoder (decide model format 2)
+  description: joey-1 decide model (2B) as an OpenVINO fork graph and vision encoder, bf16 weights
   copyright:
     - license: MIT
     - license: Apache-2.0
@@ -23,7 +23,7 @@ package:
   dependencies:
     provides:
       # Unversioned so models co-install; consumers depend on it and pick a model.
-      - decide-model-format-1
+      - decide-model-format-2
     runtime:
       - openvino-tokenizers
       - openvino~2026.4
@@ -88,6 +88,12 @@ pipeline:
       timeout: 120
   - uses: fetch
     with:
+      uri: https://huggingface.co/baselabs/joey-1/resolve/${{vars.revision}}/processor_config.json
+      expected-sha256: bfbc24af59a3e73a9cd0653b8d4ae758dfaec4e3e6c15dfb1c6c8ee8d5683c85
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
       uri: https://huggingface.co/baselabs/joey-1/resolve/${{vars.revision}}/README.md
       expected-sha256: dd6a8e4489b231f665ef561737638608e1c8af018d721c92cc9f017f91c5125a
       extract: false
@@ -118,8 +124,9 @@ test:
       runs: |
         set -eu
         cd "/usr/share/decide/models/${{vars.model-dir}}"
-        for f in fork.xml fork.bin openvino_tokenizer.xml openvino_tokenizer.bin decide.json \
-          config.json tokenizer.json tokenizer_config.json chat_template.jinja readout.json generation_config.json; do
+        for f in fork.xml fork.bin vision.xml vision.bin openvino_tokenizer.xml openvino_tokenizer.bin decide.json \
+          config.json tokenizer.json tokenizer_config.json chat_template.jinja readout.json generation_config.json \
+          processor_config.json; do
           test -s "$f"
         done
         test -s "/usr/share/licenses/${{package.name}}/MODEL_CARD.md"
