@@ -787,7 +787,7 @@ def compress(src: Path, out: Path) -> None:
     (out / "decide.json").write_text(json.dumps(meta) + "\n")
 
 
-def cmd_export(src: Path, out: Path, reference: Path | None) -> None:
+def cmd_export(src: Path, out: Path, reference_out: Path | None) -> None:
     from transformers import AutoTokenizer
 
     config = validate_source(src)
@@ -825,8 +825,8 @@ def cmd_export(src: Path, out: Path, reference: Path | None) -> None:
     for name in METADATA:
         shutil.move(src / name, out / name)
     spawn_check(out, cases, REAL_TOLERANCE, tokenizer=True)
-    if reference:
-        reference.write_text(json.dumps(cases))
+    if reference_out:
+        reference_out.write_text(json.dumps(cases))
 
 
 def cmd_compress(src: Path, out: Path, reference: Path) -> None:
