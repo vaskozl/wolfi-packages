@@ -5,10 +5,12 @@
 # the fetch URIs interpolate ${{vars.revision}}. Re-exporting the same weights bumps epoch.
 # Siblings (elephant-1, mammoth-1): copy this file and edit only name, version,
 # description, vars.revision and the fetch list.
+# The int8 subpackage is CI's copy: int8 weight-only compression of the bf16 export
+# keeps the compiled weights 8-bit on CPUs without bf16, where bf16 ones expand to f32.
 package:
   name: baselabs-joey-1-bf16
   version: "20261029"
-  epoch: 1 # add the vision encoder (decide model format 2)
+  epoch: 2 # add the int8 subpackage, record the weight format
   description: joey-1 decide model (2B) as an OpenVINO fork graph and vision encoder, bf16 weights
   copyright:
     - license: MIT
@@ -34,6 +36,14 @@ var-transforms:
     match: ^baselabs-
     replace: ""
     to: model-dir
+  - from: ${{package.name}}
+    match: -bf16$
+    replace: -int8
+    to: int8-package
+  - from: ${{package.name}}
+    match: ^baselabs-(.*)-bf16$
+    replace: $1-int8
+    to: int8-model-dir
 environment:
   contents:
     packages:
@@ -106,11 +116,54 @@ pipeline:
       timeout: 120
   - runs: |
       set -eu
-      decide-export export --src . --out "${{targets.destdir}}/usr/share/decide/models/${{vars.model-dir}}"
+      decide-export export --src . --out "${{targets.destdir}}/usr/share/decide/models/${{vars.model-dir}}" \
+        --reference check-reference.json
       lic="${{targets.destdir}}/usr/share/licenses/${{package.name}}"
       # The model card is baselabs' only licence grant (MIT in its metadata).
       install -Dm644 README.md "$lic/MODEL_CARD.md"
       install -Dm644 LICENSE "$lic/LICENSE.Qwen3.5"
+subpackages:
+  - name: ${{vars.int8-package}}
+    description: The decide model with int8 weight-only compressed weights, for CI
+    dependencies:
+      provides:
+        - decide-model-format-2
+      runtime:
+        - openvino-tokenizers
+        - openvino~2026.4
+    pipeline:
+      - runs: |
+          set -eu
+          decide-export compress --model "${{targets.destdir}}/usr/share/decide/models/${{vars.model-dir}}" \
+            --out "${{targets.contextdir}}/usr/share/decide/models/${{vars.int8-model-dir}}" \
+            --reference check-reference.json
+          lic="${{targets.contextdir}}/usr/share/licenses/${{vars.int8-package}}"
+          install -Dm644 README.md "$lic/MODEL_CARD.md"
+          install -Dm644 LICENSE "$lic/LICENSE.Qwen3.5"
+    test:
+      environment:
+        contents:
+          packages:
+            - build-base
+            - go-1.27
+            - openvino-dev
+            - pkgconf
+      pipeline:
+        - name: model directory holds the int8 IR, the tokenizer IR and the HF metadata
+          runs: |
+            set -eu
+            cd "/usr/share/decide/models/${{vars.int8-model-dir}}"
+            for f in fork.xml fork.bin vision.xml vision.bin openvino_tokenizer.xml openvino_tokenizer.bin decide.json \
+              config.json tokenizer.json tokenizer_config.json chat_template.jinja readout.json generation_config.json \
+              processor_config.json; do
+              test -s "$f"
+            done
+            grep -qF '"weights": "int8"' decide.json
+            test -s "/usr/share/licenses/${{vars.int8-package}}/MODEL_CARD.md"
+            test -s "/usr/share/licenses/${{vars.int8-package}}/LICENSE.Qwen3.5"
+        - uses: test/decide-model
+          with:
+            model-dir: /usr/share/decide/models/${{vars.int8-model-dir}}
 test:
   environment:
     contents:
@@ -131,6 +184,7 @@ test:
         done
         test -s "/usr/share/licenses/${{package.name}}/MODEL_CARD.md"
         test -s "/usr/share/licenses/${{package.name}}/LICENSE.Qwen3.5"
+        grep -qF '"weights": "bf16"' decide.json
     - uses: test/decide-model
       with:
         model-dir: /usr/share/decide/models/${{vars.model-dir}}

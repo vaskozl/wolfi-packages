@@ -6,7 +6,7 @@
 # Regenerate it from requirements.in with the command in its header.
 package:
   name: decide-export
-  version: "2.0.0"
+  version: "2.1.0"
   epoch: 0
   description: Export Base Labs decide models to an OpenVINO fork graph and vision encoder
   copyright:
