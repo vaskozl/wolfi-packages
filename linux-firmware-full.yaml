@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: linux-firmware-full
+  version: "20261019"
+  epoch: 0
+  description: Firmware files for Linux, single unsplit package with zstd-compressed, deduplicated blobs
+  copyright:
+    - license: LicenseRef-linux-firmware
+      license-path: WHENCE
+  dependencies:
+    provider-priority: "10"
+    provides:
+      - linux-firmware=${{package.full-version}}
+environment:
+  contents:
+    packages:
+      - busybox
+      - coreutils
+      - findutils
+      - make
+      - parallel
+      - python3
+      - rdfind
+      - zstd
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://gitlab.com/kernel-firmware/linux-firmware
+      tag: ${{package.version}}
+      expected-commit: a2dcb924f0897368b0b4f305cbf9808cdda90ce0
+  - runs: |
+      set -eux
+      export ZSTD_NBTHREADS=4 ZSTD_CLEVEL=19
+      make DESTDIR="${{targets.destdir}}" FIRMWAREDIR=/usr/lib/firmware install-zst
+      # De-duplicate (explicit since 20241017): replaces dup blobs with symlinks.
+      make DESTDIR="${{targets.destdir}}" FIRMWAREDIR=/usr/lib/firmware dedup
+
+      # make install ships only the blobs; WHENCE carries the per-file licence terms.
+      licdir="${{targets.destdir}}/usr/share/licenses/${{package.name}}"
+      install -d "$licdir"
+      install -m644 WHENCE "$licdir/"
+      cp -a LICENSES/. "$licdir/"
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        fw=/usr/lib/firmware
+        # Spot-check the GPU families this previously shipped split packages for:
+        # AMD Navi 32 (RX 7900 GRE) and Intel Gen12 (Tiger/Alder Lake) microcode.
+        test -n "$(find "$fw/amdgpu" -name 'gc_11_0_3_*.bin.zst' -size +0)"
+        test -n "$(find "$fw/i915" -name 'tgl_guc_*.bin.zst' -size +0)"
+        test -n "$(find "$fw/i915" -name 'adlp_guc_*.bin.zst' -size +0)"
+        # Top-level iwlwifi compatibility links must resolve into intel/iwlwifi/.
+        n=0
+        for f in "$fw"/iwlwifi-*.ucode.zst; do
+          test -L "$f"
+          test -s "$f"
+          n=$((n + 1))
+        done
+        [ "$n" -gt 0 ]
+        test -s /usr/share/licenses/linux-firmware-full/WHENCE
+    - uses: test/tw/symlink-check
+update:
+  enabled: true
+  git: {}
