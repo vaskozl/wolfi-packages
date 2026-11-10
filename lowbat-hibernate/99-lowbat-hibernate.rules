@@ -1,0 +1,2 @@
+# systemd-battery-check refuses to boot at <=5% on battery, so this never fires during early boot.
+SUBSYSTEM=="power_supply", KERNEL=="BAT0", ACTION=="change", ATTR{status}=="Discharging", ATTR{capacity}=="[0-5]", RUN+="/usr/bin/systemctl hibernate"

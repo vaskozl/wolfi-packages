@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: lowbat-hibernate
+  version: "1"
+  epoch: 0
+  description: udev rule that hibernates when the battery drops to 5% while discharging
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime:
+      - systemd
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - runs: |
+      set -eu
+      install -Dm644 99-lowbat-hibernate.rules \
+        "${{targets.destdir}}/usr/lib/udev/rules.d/99-lowbat-hibernate.rules"
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        udevadm verify /usr/lib/udev/rules.d/99-lowbat-hibernate.rules
+        grep -F 'RUN+="/usr/bin/systemctl hibernate"' \
+          /usr/lib/udev/rules.d/99-lowbat-hibernate.rules
+update:
+  enabled: false # no upstream monitor
