@@ -69,10 +69,14 @@ decide.json: {"format": 2, "slot_ids": [...256 ids, slot label order...],
               "past": [{"name": "past.0.conv", "shape": [1, C, W]}, ...],
               "hidden_size": H, "image_token_id": ..., "vision_start_token_id": ...,
               "vision_end_token_id": ...,
+              "weights": "bf16" or "int8",
               "vision": {"patch_size": Ps, "temporal_patch_size": Tp, "merge_size": M,
                          "min_pixels": ..., "max_pixels": ..., "resample": "bicubic",
                          "rescale_factor": ..., "image_mean": [...], "image_std": [...]}}
 with B=1 and -1 only for P in past.
+weights is the storage type of the fork and vision weights. int8 is NNCF's INT8_ASYM
+weight-only compression of a bf16 export (decide-export compress); activations keep the
+runtime's inference precision.
 """
 from __future__ import annotations
 
@@ -88,7 +92,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 FORMAT = 2
 
 LINEAR, FULL = "linear_attention", "full_attention"
@@ -126,6 +130,8 @@ CHECK_IMAGE = {"height": 256, "width": 320, "seed": 0}
 REAL_TOLERANCE = 2e-2
 # Selftest compares against an f32 torch reference of the same bf16 weights.
 SELFTEST_TOLERANCE = 1e-3
+# int8 is for CI only: its check requires the reference's top slot, not a |dp| bound.
+INT8_TOLERANCE = float("inf")
 
 
 def log(msg: str) -> None:
@@ -753,11 +759,35 @@ def export(model, out: Path, slot_ids: list[int], vp: dict) -> None:
     meta = {"format": FORMAT, "slot_ids": slot_ids, "past": [{"name": n, "shape": s} for n, s in past_specs(tc)],
             "hidden_size": tc.hidden_size, "image_token_id": model.config.image_token_id,
             "vision_start_token_id": model.config.vision_start_token_id,
-            "vision_end_token_id": model.config.vision_end_token_id, "vision": vp}
+            "vision_end_token_id": model.config.vision_end_token_id, "vision": vp, "weights": "bf16"}
     (out / "decide.json").write_text(json.dumps(meta) + "\n")
 
 
-def cmd_export(src: Path, out: Path) -> None:
+def compress(src: Path, out: Path) -> None:
+    """src's bf16 model directory with int8 fork and vision weights, into out."""
+    import nncf
+    import openvino as ov
+
+    meta = json.loads((src / "decide.json").read_text())
+    if meta.get("weights") != "bf16":
+        fail(f"{src} has {meta.get('weights')!r} weights, not bf16")
+    graphs = ("fork", "vision")
+    out.mkdir(parents=True, exist_ok=True)
+    for f in src.iterdir():
+        if f.stem not in graphs and f.name != "decide.json":
+            shutil.copy2(f, out / f.name)
+    core = ov.Core()
+    for name in graphs:
+        model = nncf.compress_weights(core.read_model(src / f"{name}.xml"), mode=nncf.CompressWeightsMode.INT8_ASYM)
+        ov.save_model(model, out / f"{name}.xml", compress_to_fp16=False)
+        del model
+        gc.collect()
+        log(f"{name}.bin: {(out / f'{name}.bin').stat().st_size / 2**30:.2f} GiB int8")
+    meta["weights"] = "int8"
+    (out / "decide.json").write_text(json.dumps(meta) + "\n")
+
+
+def cmd_export(src: Path, out: Path, reference: Path | None) -> None:
     from transformers import AutoTokenizer
 
     config = validate_source(src)
@@ -795,6 +825,14 @@ def cmd_export(src: Path, out: Path) -> None:
     for name in METADATA:
         shutil.move(src / name, out / name)
     spawn_check(out, cases, REAL_TOLERANCE, tokenizer=True)
+    if reference:
+        reference.write_text(json.dumps(cases))
+
+
+def cmd_compress(src: Path, out: Path, reference: Path) -> None:
+    compress(src, out)
+    log_peak("compress")
+    spawn_check(out, json.loads(reference.read_text()), INT8_TOLERANCE, tokenizer=True)
 
 
 def cmd_selftest() -> None:
@@ -859,10 +897,12 @@ def cmd_selftest() -> None:
     model = finish_model(model.to(torch.bfloat16))
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp)
-        export(model, out, slot_ids, vp)
+        export(model, out / "bf16", slot_ids, vp)
         del model, reference_model
         gc.collect()
-        spawn_check(out, cases, SELFTEST_TOLERANCE, tokenizer=False)
+        spawn_check(out / "bf16", cases, SELFTEST_TOLERANCE, tokenizer=False)
+        compress(out / "bf16", out / "int8")
+        spawn_check(out / "int8", cases, INT8_TOLERANCE, tokenizer=False)
     log("selftest ok")
 
 
@@ -874,6 +914,11 @@ def main() -> None:
     ex = sub.add_parser("export", help="export a HF checkpoint directory to a decide model directory")
     ex.add_argument("--src", type=Path, required=True)
     ex.add_argument("--out", type=Path, required=True)
+    ex.add_argument("--reference", type=Path, help="also write the self-check's torch reference here, for compress")
+    co = sub.add_parser("compress", help="compress an exported model directory's weights to int8")
+    co.add_argument("--model", type=Path, required=True)
+    co.add_argument("--out", type=Path, required=True)
+    co.add_argument("--reference", type=Path, required=True, help="export --reference of the model")
     sub.add_parser("selftest", help="export a tiny random model and check it against transformers")
     ck = sub.add_parser("check")
     ck.add_argument("--model", type=Path, required=True)
@@ -882,7 +927,9 @@ def main() -> None:
     ck.add_argument("--no-tokenizer", action="store_true")
     args = ap.parse_args()
     if args.cmd == "export":
-        cmd_export(args.src, args.out)
+        cmd_export(args.src, args.out, args.reference)
+    elif args.cmd == "compress":
+        cmd_compress(args.model, args.out, args.reference)
     elif args.cmd == "selftest":
         cmd_selftest()
     else:

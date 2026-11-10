@@ -6,3 +6,4 @@ huggingface_hub==2.2.0
 openvino==2026.4.0
 openvino-tokenizers==2026.4.0.0
 numpy<2.6
+nncf==3.4.0
