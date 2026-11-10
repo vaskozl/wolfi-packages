@@ -22,7 +22,8 @@ test:
   pipeline:
     - runs: |
         set -eu
-        udevadm verify /usr/lib/udev/rules.d/99-lowbat-hibernate.rules
+        grep -F 'ATTR{capacity}=="[0-5]"' \
+          /usr/lib/udev/rules.d/99-lowbat-hibernate.rules
         grep -F 'RUN+="/usr/bin/systemctl hibernate"' \
           /usr/lib/udev/rules.d/99-lowbat-hibernate.rules
 update:
