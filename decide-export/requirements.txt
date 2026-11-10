@@ -396,7 +396,7 @@ openvino-telemetry==2025.2.0 \
     # via
     #   nncf
     #   openvino
-openvino-tokenizers==2026.4.0.0 \
+openvino-tokenizers==2026.4.1.0 \
     --hash=sha256:3a44cbc3d5f0004f3d17e9facfc268955bdfb7c4a676646dc49a65d19e95227c \
     --hash=sha256:6a8f9576e063e505449944fc349135815b8db624de3ec46a8d3c72956afb21db \
     --hash=sha256:9dee980553ea67561c0f176fe52cc8a80245a346232168092ed26ab02a7e7876 \
