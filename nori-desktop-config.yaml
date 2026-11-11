@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: nori-desktop-config
+  version: "1"
+  epoch: 0
+  description: nori's desktop config as system-wide defaults (niri, kitty, nvim, zsh, xkb, git, browser)
+  copyright:
+    - license: MIT
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - runs: |
+      cp -a vendor/. "${{targets.destdir}}"/
+      find "${{targets.destdir}}" -type f -exec chmod 644 {} +
+test:
+  environment:
+    contents:
+      packages:
+        - libxkbcommon
+        - xkeyboard-config
+  pipeline:
+    - runs: |
+        set -eu
+        stat /etc/niri/config.kdl /etc/xdg/kitty/kitty.conf /etc/xdg/kitty/current-theme.conf \
+          /etc/xdg/nvim/sysinit.vim /etc/xdg/mimeapps.list /etc/gitconfig /etc/gitignore \
+          /usr/share/applications/chromium.desktop
+        grep -F 'layout "colemak-nori"' /etc/niri/config.kdl
+        grep -Fx 'TERMINAL=kitty' /usr/lib/environment.d/10-nori.conf
+        grep -Fx 'x-scheme-handler/https=chromium.desktop' /etc/xdg/mimeapps.list
+        grep -F 'excludesFile = /etc/gitignore' /etc/gitconfig
+        grep -F 'source <(fzf --zsh)' /etc/zsh/zshrc.d/nori.zsh
+    - name: colemak-nori layout compiles
+      runs: |
+        set -eu
+        xkbcli compile-keymap --layout colemak-nori --variant basic --options ctrl:swap_lalt_lctl > /dev/null
+update:
+  enabled: false # no upstream monitor

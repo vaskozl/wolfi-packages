@@ -1,10 +1,13 @@
 package:
   name: nori-user
-  version: "3"
+  version: "4"
   epoch: 0
   description: nori setup user
   copyright:
     - license: MIT
+  dependencies:
+    runtime:
+      - zsh
 environment:
   contents:
     packages:
@@ -20,6 +23,8 @@ test:
         stat /etc/sudoers.d/nori-user
         stat /etc/ssh/sshd_config.d/nori-user.conf
         stat /usr/lib/sysusers.d/nori-user.conf
+        grep -E "^u nori 1000 .* /bin/zsh\$" /usr/lib/sysusers.d/nori-user.conf
+        test -x /bin/zsh
         stat /usr/lib/tmpfiles.d/nori-user.conf
         stat /usr/lib/systemd/system/systemd-sysusers.service.d/nori-user.conf
 update:

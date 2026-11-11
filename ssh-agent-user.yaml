@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: ssh-agent-user
+  version: "1"
+  epoch: 0
+  description: ssh-agent as a systemd user service with SSH_AUTH_SOCK exported to the session
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime:
+      - openssh-client
+      - systemd
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - runs: |
+      cp -a vendor/. "${{targets.destdir}}"/
+      find "${{targets.destdir}}" -type f -exec chmod 644 {} +
+      install -d "${{targets.destdir}}/usr/lib/systemd/user/default.target.wants"
+      ln -s ../ssh-agent.service "${{targets.destdir}}/usr/lib/systemd/user/default.target.wants/ssh-agent.service"
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        grep -F 'ExecStart=/usr/bin/ssh-agent -D -a $SSH_AUTH_SOCK' /usr/lib/systemd/user/ssh-agent.service
+        [ "$(readlink /usr/lib/systemd/user/default.target.wants/ssh-agent.service)" = ../ssh-agent.service ]
+        grep -Fx 'SSH_AUTH_SOCK=${XDG_RUNTIME_DIR}/ssh-agent.socket' /usr/lib/environment.d/10-ssh-agent.conf
+update:
+  enabled: false # no upstream monitor

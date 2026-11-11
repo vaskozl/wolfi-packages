@@ -1,0 +1,38 @@
+// /etc/xkb/symbols/colemak-nori
+// Colemak (ISO) with the bottom alpha row slid one key left, and two extra Shifts.
+//
+// Bottom row, physical left -> right:
+//   <LSGT>  ISO < > key   -> z
+//   <AB01>  Z key         -> x
+//   <AB02>  X key         -> c
+//   <AB03>  C key         -> v
+//   <AB04>  V key         -> b
+//   <AB05>  B key         -> \  ( | with shift )
+//   <AB06>..<AB10> unchanged Colemak: k m , . /
+//
+//   <CAPS>  Caps Lock         -> Shift (left)
+//   <BKSL>  \ key left of Enter -> Shift (right)
+//
+// The ISO < > (LTGT) function is dropped intentionally (redundant in Colemak).
+
+default partial alphanumeric_keys modifier_keys
+xkb_symbols "basic" {
+    include "us(colemak)"
+    name[Group1] = "Colemak ISO (shifted bottom row)";
+
+    // --- bottom row slides one position to the left ---
+    replace key <LSGT> { [ z, Z ] };
+    replace key <AB01> { [ x, X ] };
+    replace key <AB02> { [ c, C ] };
+    replace key <AB03> { [ v, V ] };
+    replace key <AB04> { [ b, B ] };
+    replace key <AB05> { [ backslash, bar ] };   // old B position holds the \ you lost
+
+    // --- two extra Shift keys ---
+    replace key <CAPS> { [ Shift_L, Shift_L ] };
+    replace key <BKSL> { [ Shift_R, Shift_R ] };
+    modifier_map Shift { <CAPS>, <BKSL> };
+
+    // Control/Alt swap (left side) lives in niri config as the stock
+    // `ctrl:swap_lalt_lctl` xkb option, not here.
+};
