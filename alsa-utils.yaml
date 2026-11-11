@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# repository: https://github.com/alsa-project/alsa-utils
+package:
+  name: alsa-utils
+  version: 1.2.16
+  epoch: 0
+  description: Advanced Linux Sound Architecture (ALSA) utilities
+  copyright:
+    - license: GPL-2.0-or-later
+  dependencies:
+    runtime:
+      - alsa-ucm-conf
+environment:
+  contents:
+    packages:
+      - alsa-lib-dev
+      - build-base
+      - busybox
+      - ncurses-dev
+      - pkgconf
+pipeline:
+  - uses: fetch
+    with:
+      uri: https://www.alsa-project.org/files/pub/utils/alsa-utils-${{package.version}}.tar.bz2
+      expected-sha256: 092399d5e8749a1d5e188e393157521cec4b75693b60ebb79bbce728cff2232c
+  - uses: autoconf/configure
+    with:
+      opts: |
+        --sbindir=/usr/bin \
+        --disable-nls \
+        --disable-xmlto \
+        --disable-bat \
+        --with-alsactl-lock-dir=/run/lock \
+        --with-udev-rules-dir=/usr/lib/udev/rules.d \
+        --with-systemdsystemunitdir=/usr/lib/systemd/system
+  - uses: autoconf/make
+  - uses: autoconf/make-install
+  - runs: |
+      rm -rf "${{targets.destdir}}"/var
+      mkdir -p "${{targets.destdir}}"/usr/lib/tmpfiles.d
+      echo 'd /var/lib/alsa 0755 root root -' > "${{targets.destdir}}"/usr/lib/tmpfiles.d/alsa-utils.conf
+  - uses: strip
+subpackages:
+  - name: ${{package.name}}-doc
+    pipeline:
+      - uses: split/manpages
+    description: alsa-utils manpages
+    test:
+      pipeline:
+        - uses: test/docs
+test:
+  pipeline:
+    - uses: test/ver-check
+      with:
+        bins: |
+          alsactl
+          alsaucm
+          amixer
+    - uses: test/help-check
+      with:
+        bins: |
+          alsactl
+          alsaucm
+          amixer
+    - name: udev hook and units installed
+      runs: |
+        set -eu
+        grep -F 'alsactl' /usr/lib/udev/rules.d/90-alsa-restore.rules
+        stat /usr/lib/systemd/system/alsa-restore.service /usr/lib/systemd/system/alsa-state.service
+        grep -Fx 'd /var/lib/alsa 0755 root root -' /usr/lib/tmpfiles.d/alsa-utils.conf
+update:
+  enabled: true
+  github:
+    identifier: alsa-project/alsa-utils
+    strip-prefix: v

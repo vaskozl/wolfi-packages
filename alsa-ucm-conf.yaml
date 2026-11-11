@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: alsa-ucm-conf
+  version: 1.2.16
+  epoch: 0
+  description: ALSA Use Case Manager configuration files
+  copyright:
+    - license: BSD-3-Clause
+  dependencies:
+    runtime:
+      - alsa-lib
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/alsa-project/alsa-ucm-conf
+      tag: v${{package.version}}
+  - runs: |
+      mkdir -p "${{targets.destdir}}"/usr/share/alsa
+      cp -a ucm2 "${{targets.destdir}}"/usr/share/alsa/
+      find "${{targets.destdir}}"/usr/share/alsa/ucm2 -name '*.md' -delete
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        stat /usr/share/alsa/ucm2/ucm.conf
+        stat /usr/share/alsa/ucm2/conf.d/sof-hda-dsp/sof-hda-dsp.conf
+        grep -F 'Dmic0 Capture Switch' /usr/share/alsa/ucm2/Intel/sof-hda-dsp/HiFi.conf
+update:
+  enabled: true
+  github:
+    identifier: alsa-project/alsa-ucm-conf
+    strip-prefix: v
