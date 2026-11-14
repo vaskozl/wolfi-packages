@@ -251,7 +251,7 @@ narwhals==2.28.0 \
     --hash=sha256:1f69d6385ec30e2fa6e1fdeb37c562ecabd0f713f6f3e3b58a668c5c9df9567f \
     --hash=sha256:2d9860c80d6610820826e94c6e42ce4b1d92d89cdd479586e652a8d211dab345
     # via scikit-learn
-networkx==3.6.1 \
+networkx==3.7 \
     --hash=sha256:26b7c357accc0c8cde558ad486283728b65b6a95d85ee1cd66bafab4c8168509 \
     --hash=sha256:d47fbf302e7d9cbbb9e2555a0d267983d2aa476bac30e90dfbe5669bd57f3762
     # via
