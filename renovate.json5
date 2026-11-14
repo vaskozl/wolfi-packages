@@ -102,6 +102,19 @@
   },
   "packageRules": [
     {
+      // decide-export is a uv-compiled lockfile: bump it as one MR, not one
+      // per transitive dep.
+      "matchFileNames": ["decide-export/**"],
+      "groupName": "decide-export python deps"
+    },
+    {
+      // Must match the openvino.yaml runtime build the models are exported
+      // against; bumped together with it by hand.
+      "matchFileNames": ["decide-export/**"],
+      "matchPackageNames": ["openvino", "openvino-tokenizers"],
+      "enabled": false
+    },
+    {
       // Fires on every custom-regex-managed bump (github, codeberg,
       // freedesktop, kernel.org, alpine-base, wolfi-base, go-toolchain):
       // all of them edit package yamls. On a version bump, reset the bumped
