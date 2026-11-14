@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+package:
+  name: forgit
+  version: 26.11.0
+  epoch: 0
+  description: Utility tool for using git interactively, powered by fzf
+  copyright:
+    - license: MIT
+  dependencies:
+    runtime:
+      - bash
+      - fzf
+      - git
+      - perl
+      - zsh
+environment:
+  contents:
+    packages:
+      - busybox
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/wfxr/forgit
+      tag: ${{package.version}}
+  - runs: |
+      plugindir="${{targets.destdir}}"/usr/share/zsh/plugins/forgit
+      install -Dm644 forgit.plugin.zsh -t "$plugindir"
+      install -Dm755 bin/git-forgit -t "$plugindir"/bin
+      install -Dm644 completions/_git-forgit -t "${{targets.destdir}}"/usr/share/zsh/site-functions
+      mkdir -p "${{targets.destdir}}"/usr/bin
+      ln -s ../share/zsh/plugins/forgit/bin/git-forgit "${{targets.destdir}}"/usr/bin/git-forgit
+test:
+  pipeline:
+    - runs: |
+        set -eu
+        plugin=/usr/share/zsh/plugins/forgit/forgit.plugin.zsh
+        zsh -c ". $plugin && typeset -f forgit::log >/dev/null && alias ga >/dev/null"
+        test -f /usr/share/zsh/site-functions/_git-forgit
+
+        repo=$(mktemp -d)
+        cd "$repo"
+        git init -q
+        git config user.name test
+        git config user.email test@example.com
+        echo a > a
+        git add a
+        git commit -qm init
+        FORGIT_LOG_FZF_OPTS=--filter=init git forgit log </dev/null
+        echo b > new.txt
+        FORGIT_ADD_FZF_OPTS=--filter=new.txt git forgit add </dev/null
+        git diff --cached --name-only | grep -Fx new.txt
+update:
+  enabled: true
+  github:
+    identifier: wfxr/forgit
+    use-tag: true
