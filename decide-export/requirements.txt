@@ -362,7 +362,7 @@ numpy==2.4.6 \
     #   scikit-learn
     #   scipy
     #   transformers
-openvino==2026.4.0 \
+openvino==2026.4.1 \
     --hash=sha256:143eec6237323b440b3b499dc3e01364cb8937eac9b233fad2e2e45e189196c8 \
     --hash=sha256:171b876d1e732b2cf1c6a47d48dc6065fe7a36abe3d2a0035c8d3be36c0d67a1 \
     --hash=sha256:186abfe5f355c33f19b50fe48340f9af0110e92fd279b7358a023fcbd225c380 \
