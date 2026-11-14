@@ -2,10 +2,13 @@
 package:
   name: nori-desktop-config
   version: "1"
-  epoch: 0
+  epoch: 1 # depend on forgit
   description: nori's desktop config as system-wide defaults (niri, kitty, nvim, zsh, xkb, git, browser)
   copyright:
     - license: MIT
+  dependencies:
+    runtime:
+      - forgit
 environment:
   contents:
     packages:
@@ -31,6 +34,7 @@ test:
         grep -Fx 'x-scheme-handler/https=chromium.desktop' /etc/xdg/mimeapps.list
         grep -F 'excludesFile = /etc/gitignore' /etc/gitconfig
         grep -F 'source <(fzf --zsh)' /etc/zsh/zshrc.d/nori.zsh
+        zsh -c 'for i in /usr/share/zsh/plugins/*/*.zsh; do . "$i"; done; typeset -f forgit::log >/dev/null'
     - name: colemak-nori layout compiles
       runs: |
         set -eu
