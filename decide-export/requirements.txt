@@ -870,7 +870,7 @@ truststore==0.10.5 \
     # via
     #   httpcore2
     #   httpx2
-typer==0.28.0 \
+typer==0.29.1 \
     --hash=sha256:69ab84ef79fd601cff071bbd2566d855ecadfd93adbc4b3360b9924359bdd857 \
     --hash=sha256:afd18929180b706c5e9a239f53c3c8136903553c0c2d460598bbaa924191d4ab
     # via transformers
