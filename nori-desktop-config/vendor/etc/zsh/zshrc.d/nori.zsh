@@ -1,5 +1,7 @@
 PROMPT='%m:%~%# '
 
+export FORGIT_FZF_DEFAULT_OPTS='--height=100% --preview-window=up:50% --layout=reverse-list'
+
 for i in /usr/share/zsh/plugins/*/*.zsh; do . "$i"; done
 
 alias vi=nvim

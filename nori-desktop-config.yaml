@@ -1,14 +1,11 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: nori-desktop-config
-  version: "1"
-  epoch: 1 # depend on forgit
+  version: "2"
+  epoch: 0
   description: nori's desktop config as system-wide defaults (niri, kitty, nvim, zsh, xkb, git, browser)
   copyright:
     - license: MIT
-  dependencies:
-    runtime:
-      - forgit
 environment:
   contents:
     packages:
