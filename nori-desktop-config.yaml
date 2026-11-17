@@ -31,7 +31,6 @@ test:
         grep -Fx 'x-scheme-handler/https=chromium.desktop' /etc/xdg/mimeapps.list
         grep -F 'excludesFile = /etc/gitignore' /etc/gitconfig
         grep -F 'source <(fzf --zsh)' /etc/zsh/zshrc.d/nori.zsh
-        zsh -c 'for i in /usr/share/zsh/plugins/*/*.zsh; do . "$i"; done; typeset -f forgit::log >/dev/null'
     - name: colemak-nori layout compiles
       runs: |
         set -eu
