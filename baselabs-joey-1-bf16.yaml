@@ -10,7 +10,7 @@
 package:
   name: baselabs-joey-1-bf16
   version: "20261029"
-  epoch: 2 # add the int8 subpackage, record the weight format
+  epoch: 3 # rebuild for decide-export 2.2.0
   description: joey-1 decide model (2B) as an OpenVINO fork graph and vision encoder, bf16 weights
   copyright:
     - license: MIT

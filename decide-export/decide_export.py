@@ -1,12 +1,13 @@
-"""decide-export: export a Base Labs decide model (Qwen3.5 backbone, block-bidirectional
-full attention, slot_lm readout) to an OpenVINO fork graph and vision encoder.
+"""decide-export: export a decide model (Qwen3.5 backbone with bidirectional full attention:
+Base Labs slot_lm or Torchcast decision) to an OpenVINO fork graph and vision encoder.
 
 Decide model format 2
 =====================
 
 A model directory holds fork.xml/fork.bin, vision.xml/vision.bin, openvino_tokenizer.xml/.bin,
-decide.json and the HF metadata (config.json, tokenizer.json, tokenizer_config.json,
-chat_template.jinja, readout.json, generation_config.json, processor_config.json).
+decide.json and the HF metadata: config.json, tokenizer.json, tokenizer_config.json,
+chat_template.jinja, generation_config.json, and readout.json + processor_config.json (Base Labs)
+or preprocessor_config.json + decision_config.json (Torchcast).
 
 fork.xml. B = rows, T = chunk length, P = past length, K = slots, N = image tokens in the
 chunk, H = hidden size; all dynamic but H.
@@ -65,11 +66,16 @@ then call once with the B question suffixes, offset = prefix length, position_id
 continuing from the prefix's final p and read_index = lengths-1. The answer distribution
 is softmax(slot_logits[:, :n_options]).
 
-decide.json: {"format": 2, "slot_ids": [...256 ids, slot label order...],
+With decide.json attention "bidirectional" (a missing key means "block_bidirectional") the
+full-attention layers see the whole prompt, so there is no exact fork: call once per batch
+with empty caches, offset 0, the whole right-padded prompts and read_index = lengths-1.
+
+decide.json: {"format": 2, "slot_ids": [...slot ids, label order: 256 Base Labs labels or A..Z...],
               "past": [{"name": "past.0.conv", "shape": [1, C, W]}, ...],
               "hidden_size": H, "image_token_id": ..., "vision_start_token_id": ...,
               "vision_end_token_id": ...,
               "weights": "bf16" or "int8",
+              "attention": "block_bidirectional" or "bidirectional",
               "vision": {"patch_size": Ps, "temporal_patch_size": Tp, "merge_size": M,
                          "min_pixels": ..., "max_pixels": ..., "resample": "bicubic",
                          "rescale_factor": ..., "image_mean": [...], "image_std": [...]}}
@@ -90,14 +96,16 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 FORMAT = 2
 
 LINEAR, FULL = "linear_attention", "full_attention"
-METADATA = ("config.json", "tokenizer.json", "tokenizer_config.json", "chat_template.jinja",
-            "readout.json", "generation_config.json", "processor_config.json")
+BLOCK_BIDIRECTIONAL, BIDIRECTIONAL = "block_bidirectional", "bidirectional"
+METADATA = ("config.json", "tokenizer.json", "tokenizer_config.json", "chat_template.jinja", "generation_config.json")
 # PIL's resampling filter enum, as processor_config.json stores it.
 RESAMPLE = {0: "nearest", 1: "lanczos", 2: "bilinear", 3: "bicubic", 4: "box", 5: "hamming"}
 
@@ -112,6 +120,10 @@ _NOT_ONE_TOKEN = {"BQ", "BZ", "CJ", "CQ", "CZ", "DQ", "DZ", "EJ", "EY", "FJ", "F
 SLOT_LABELS = tuple(
     list(LETTERS) + [a + b for a in LETTERS for b in LETTERS if a + b not in _NOT_ONE_TOKEN][: 256 - len(LETTERS)])
 
+# torchcast_decision/render.py (jev_render_v3).
+JEV_SYSTEM_PROMPT = "Apply the criterion to the evidence. Choose exactly one listed option. Answer with its letter only."
+THINKING_OFF = "<think>\n\n</think>\n\n"
+
 TOKENIZER_PROBE = "<|im_start|>user\nhi<|im_end|>"
 TOKENIZER_PROBE_IDS = [248045, 846, 198, 5834, 248046]
 
@@ -124,14 +136,16 @@ CHECK_QUESTIONS = (
     "Is the customer asking for a refund?",
     "Is the customer satisfied with the product they received?",
 )
-# 256x320 pixels: within joey's min_pixels, 80 image tokens.
+# 256x320 pixels: within joey's and torchcast's min_pixels, 80 image tokens.
 CHECK_IMAGE = {"height": 256, "width": 320, "seed": 0}
 # bf16 torch reference vs f32 OpenVINO: random weights at joey dims gave 3e-3.
 REAL_TOLERANCE = 2e-2
 # Selftest compares against an f32 torch reference of the same bf16 weights.
 SELFTEST_TOLERANCE = 1e-3
-# int8 is for CI only: its check requires the reference's top slot, not a |dp| bound.
+# int8 is for CI only: after a bf16 check, its check requires the reference's top slot, not a |dp| bound.
 INT8_TOLERANCE = float("inf")
+# When the int8 check is the only one (export --no-check); joey int8 measured 4e-3.
+INT8_ONLY_TOLERANCE = 5e-2
 
 
 def log(msg: str) -> None:
@@ -155,10 +169,19 @@ def fail(msg: str) -> None:
 # --- model -------------------------------------------------------------------------------
 
 
-def validate_source(src: Path) -> dict:
+def validate_source(src: Path) -> tuple[dict, Family]:
     config = json.loads((src / "config.json").read_text())
     if config.get("model_type") != "qwen3_5":
         fail(f"model_type {config.get('model_type')!r} is not qwen3_5")
+    if config.get("vision_config", {}).get("deepstack_visual_indexes"):
+        fail("deepstack vision features are not supported")
+    if (src / "decision_config.json").exists():
+        decision = json.loads((src / "decision_config.json").read_text())
+        if decision.get("attention_mode") != "noncausal_full_attention":
+            fail(f"attention_mode {decision.get('attention_mode')!r} is not noncausal_full_attention")
+        if decision.get("prompt_format") != "jev_render_v3":
+            fail(f"prompt_format {decision.get('prompt_format')!r} is not jev_render_v3")
+        return config, TORCHCAST
     attention = config.get("modeling_overrides", {}).get("attention")
     if attention != {FULL: "block_bidirectional", LINEAR: "causal"}:
         fail(f"modeling_overrides.attention {attention!r} is not block_bidirectional/causal")
@@ -167,13 +190,26 @@ def validate_source(src: Path) -> dict:
         fail(f"readout {readout.get('readout')!r} is not slot_lm")
     if (src / "calibration.json").exists():
         fail("calibration.json is not supported")
-    if config.get("vision_config", {}).get("deepstack_visual_indexes"):
-        fail("deepstack vision features are not supported")
-    return config
+    return config, BASELABS
 
 
-def vision_params(processor: dict) -> dict:
-    ip = processor["image_processor"]
+def baselabs_vision_params(src: Path) -> dict:
+    return vision_params(json.loads((src / "processor_config.json").read_text())["image_processor"])
+
+
+def torchcast_vision_params(src: Path) -> dict:
+    ip = json.loads((src / "preprocessor_config.json").read_text())
+    if ip.get("image_processor_type") != "Qwen2VLImageProcessorFast":
+        fail(f"image processor {ip.get('image_processor_type')!r} is not Qwen2VLImageProcessorFast")
+    # The class defaults of transformers 5.19's Qwen2VLImageProcessor, for the keys the file omits.
+    ip = {"do_convert_rgb": True, "do_rescale": True, "do_normalize": True, "do_resize": True, "resample": 3,
+          "rescale_factor": 1 / 255, **ip, "image_processor_type": "Qwen2VLImageProcessor"}
+    # TorchcastDecision serves with these, not with the file's size.
+    ip["size"] = {"shortest_edge": 65536, "longest_edge": 1048576}
+    return vision_params(ip)
+
+
+def vision_params(ip: dict) -> dict:
     if ip.get("image_processor_type") != "Qwen2VLImageProcessor":
         fail(f"image processor {ip.get('image_processor_type')!r} is not Qwen2VLImageProcessor")
     if not (ip["do_convert_rgb"] and ip["do_rescale"] and ip["do_normalize"] and ip["do_resize"]):
@@ -192,6 +228,7 @@ def load_model(src: Path):
 
     with torch.device("meta"):
         model = mq.Qwen3_5ForConditionalGeneration(Qwen3_5Config.from_pretrained(src))
+    tied = model.config.text_config.tie_word_embeddings
     state = {}
     shards = sorted(src.glob("model*.safetensors"))
     if not shards:
@@ -200,11 +237,11 @@ def load_model(src: Path):
         with safe_open(shard, framework="pt") as f:
             for key in f.keys():
                 # MTP (mtp.*) is not part of the model.
-                if key.startswith("model."):
+                if key.startswith("model.") or key == "lm_head.weight" and not tied:
                     state[key] = f.get_tensor(key).to(torch.bfloat16)
     missing, unexpected = model.load_state_dict(state, strict=False, assign=True)
     del state
-    if set(missing) - {"lm_head.weight"} or unexpected:
+    if set(missing) - ({"lm_head.weight"} if tied else set()) or unexpected:
         fail(f"weights do not match the config: missing {missing}, unexpected {unexpected}")
     return finish_model(model)
 
@@ -213,10 +250,9 @@ def finish_model(model):
     from transformers.models.qwen3_5 import modeling_qwen3_5 as mq
 
     tc = model.config.text_config
-    if not tc.tie_word_embeddings:
-        fail("untied LM head is not supported")
     text = model.model.language_model
-    model.lm_head.weight = text.embed_tokens.weight
+    if tc.tie_word_embeddings:
+        model.lm_head.weight = text.embed_tokens.weight
     # Non-persistent buffers are still on the meta device after a meta-device load, and a
     # dtype cast would round them.
     text.rotary_emb = mq.Qwen3_5TextRotaryEmbedding(tc)
@@ -436,10 +472,11 @@ def convert(lm, out: Path) -> None:
 
     lm_head = [op for op in model.get_ops() if op.get_type_name() == "Constant"
                and list(op.get_output_shape(0)) == [tc.vocab_size, tc.hidden_size]]
-    if len(lm_head) != 1:
-        fail(f"{len(lm_head)} [vocab, hidden] constants: the tied embedding / LM head was duplicated")
-    if lm_head[0].get_element_type() != ov.Type.bf16:
-        fail(f"embedding constant is {lm_head[0].get_element_type()}, not bf16")
+    want = 1 if tc.tie_word_embeddings else 2
+    if len(lm_head) != want:
+        fail(f"{len(lm_head)} [vocab, hidden] constants, want {want}: the embedding or LM head was duplicated or dropped")
+    if any(op.get_element_type() != ov.Type.bf16 for op in lm_head):
+        fail(f"embedding / LM head constants are {[op.get_element_type() for op in lm_head]}, not bf16")
     out.mkdir(parents=True, exist_ok=True)
     ov.save_model(model, out / "fork.xml", compress_to_fp16=False)
     del model, fork
@@ -542,7 +579,8 @@ def rope_positions(ids: list[int], grids: list[list[int]], image_token_id: int, 
 
 
 def reference(model, case: dict, vp: dict) -> list[dict]:
-    """transformers' single forward of each whole prompt, prefix and suffix as blocks 0 and 1."""
+    """transformers' single forward of each whole prompt, prefix and suffix as blocks 0 and 1 (one
+    block when prefix_len is 0)."""
     import numpy as np
     import torch
     from transformers.models.qwen3_5 import modeling_qwen3_5 as mq
@@ -558,7 +596,7 @@ def reference(model, case: dict, vp: dict) -> list[dict]:
     captured = {}
     hook = text.norm.register_forward_hook(lambda mod, args, out: captured.__setitem__("h", out))
     mq.create_causal_mask = create_causal_mask
-    embed = text.embed_tokens.weight
+    head = model.lm_head.weight
     image_token_id = model.config.image_token_id
     prefix_len, slot_ids = case["prefix_len"], case["slot_ids"]
     rows = []
@@ -576,9 +614,9 @@ def reference(model, case: dict, vp: dict) -> list[dict]:
                 model.model.rope_deltas = None
                 model.model(input_ids=x, use_cache=False, **kwargs)
                 h = captured["h"][0, -1].float()
-                slot = embed[slot_ids].float() @ h
-                lse = torch.logsumexp(torch.cat([embed[i:i + 32768].float() @ h
-                                                 for i in range(0, embed.shape[0], 32768)]), dim=0)
+                slot = head[slot_ids].float() @ h
+                lse = torch.logsumexp(torch.cat([head[i:i + 32768].float() @ h
+                                                 for i in range(0, head.shape[0], 32768)]), dim=0)
                 rows.append({"slot_logits": slot.tolist(), "lse": float(lse)})
     finally:
         mq.create_causal_mask = original
@@ -620,9 +658,29 @@ def render_check_prompts(tok, image: bool) -> tuple[list[list[int]], int]:
     return prompts, prefix_len
 
 
-def slot_token_ids(tok) -> list[int]:
+def render_jev_check_prompts(tok, image: bool) -> tuple[list[list[int]], int]:
+    """jev_render_v3 of CHECK_QUESTIONS (yes/no) over CHECK_STATE, with one image token
+    before the state if image. Whole prompts, so prefix_len is 0."""
+    prompts = []
+    for q in CHECK_QUESTIONS:
+        tail = f"\n\nQuestion: {q}\nOptions:\nA) yes\nB) no"
+        if image:
+            messages = [{"role": "system", "content": [{"type": "text", "text": JEV_SYSTEM_PROMPT}]},
+                        {"role": "user", "content": [{"type": "text", "text": "Evidence:\n"}, {"type": "image"},
+                                                     {"type": "text", "text": f"\n\n{CHECK_STATE}{tail}"}]}]
+        else:
+            messages = [{"role": "system", "content": JEV_SYSTEM_PROMPT},
+                        {"role": "user", "content": f"Evidence:\n{CHECK_STATE}{tail}"}]
+        text = tok.apply_chat_template(messages, tokenize=False, add_generation_prompt=True, enable_thinking=False)
+        if not text.endswith(THINKING_OFF):
+            fail("the chat template does not end with the thinking-off prefix")
+        prompts.append(tok.encode(text, add_special_tokens=False))
+    return prompts, 0
+
+
+def slot_token_ids(tok, labels: tuple[str, ...]) -> list[int]:
     ids = []
-    for label in SLOT_LABELS:
+    for label in labels:
         enc = tok.encode(label, add_special_tokens=False)
         if len(enc) != 1 or tok.decode(enc) != label:
             fail(f"slot label {label!r} is not a single round-trip token: {enc}")
@@ -630,6 +688,30 @@ def slot_token_ids(tok) -> list[int]:
     if len(set(ids)) != len(ids):
         fail("slot tokens collide")
     return ids
+
+
+def torchcast_slot_ids(src: Path, tok) -> list[int]:
+    ids = slot_token_ids(tok, tuple(LETTERS))
+    want = json.loads((src / "decision_config.json").read_text())["letter_token_ids"]
+    if ids != want:
+        fail(f"letter tokens {ids} differ from decision_config.json letter_token_ids {want}")
+    return ids
+
+
+@dataclass(frozen=True)
+class Family:
+    """What differs between the model families decide-export knows."""
+    attention: str
+    metadata: tuple[str, ...]
+    vision_params: Callable[[Path], dict]
+    slot_ids: Callable[[Path, object], list[int]]
+    check_prompts: Callable[[object, bool], tuple[list[list[int]], int]]
+
+
+BASELABS = Family(BLOCK_BIDIRECTIONAL, METADATA + ("readout.json", "processor_config.json"), baselabs_vision_params,
+                  lambda src, tok: slot_token_ids(tok, SLOT_LABELS), render_check_prompts)
+TORCHCAST = Family(BIDIRECTIONAL, METADATA + ("preprocessor_config.json", "decision_config.json"),
+                   torchcast_vision_params, torchcast_slot_ids, render_jev_check_prompts)
 
 
 # --- check (OpenVINO side, own process so its peak RSS is its own) -------------------------
@@ -663,6 +745,7 @@ def run_check(model_dir: Path, ref_path: Path, tolerance: float, tokenizer: bool
     vision = core.compile_model(core.read_model(model_dir / "vision.xml"), "CPU", f32).create_infer_request()
     req = compiled.create_infer_request()
     image_token_id, hidden, vp = meta["image_token_id"], meta["hidden_size"], meta["vision"]
+    bidirectional = meta.get("attention", BLOCK_BIDIRECTIONAL) == BIDIRECTIONAL
 
     def image_feed(rows: list[list[int]], specs: list[dict], t: int) -> dict:
         """image_embeds/image_index of a chunk whose rows hold specs' images in order."""
@@ -691,14 +774,19 @@ def run_check(model_dir: Path, ref_path: Path, tolerance: float, tokenizer: bool
         # Prefix images are the leading images of every prompt.
         n_prefix = len(np.flatnonzero(np.diff(np.r_[0, np.array(prompts[0][:p]) == image_token_id]) == 1))
 
-        feed = {"input_ids": np.array([prompts[0][:p]], dtype=np.int64), "lengths": np.array([p], dtype=np.int64),
-                "offset": np.zeros(1, dtype=np.int64), "position_ids": positions[0][:, None, :p],
-                "read_index": np.array([p - 1], dtype=np.int64), "slot_ids": slot_ids,
-                **image_feed([prompts[0][:p]], images[0][:n_prefix], p)}
-        for spec in meta["past"]:
-            feed[spec["name"]] = np.zeros([0 if d == -1 else d for d in spec["shape"]], dtype=np.float32)
-        res = req.infer(feed)
-        prefix_cache = {spec["name"]: res["present" + spec["name"][len("past"):]].copy() for spec in meta["past"]}
+        empty = {spec["name"]: np.zeros([0 if d == -1 else d for d in spec["shape"]], dtype=np.float32)
+                 for spec in meta["past"]}
+        if bidirectional:
+            if p:
+                fail(f"{case['name']}: a bidirectional model has no prefix block, but prefix_len is {p}")
+            prefix_cache = empty
+        else:
+            feed = {"input_ids": np.array([prompts[0][:p]], dtype=np.int64), "lengths": np.array([p], dtype=np.int64),
+                    "offset": np.zeros(1, dtype=np.int64), "position_ids": positions[0][:, None, :p],
+                    "read_index": np.array([p - 1], dtype=np.int64), "slot_ids": slot_ids,
+                    **image_feed([prompts[0][:p]], images[0][:n_prefix], p), **empty}
+            res = req.infer(feed)
+            prefix_cache = {name: res["present" + name[len("past"):]].copy() for name in empty}
 
         suffixes = [ids[p:] for ids in prompts]
         b, t = len(suffixes), max(len(s) for s in suffixes)
@@ -736,22 +824,24 @@ def run_check(model_dir: Path, ref_path: Path, tolerance: float, tokenizer: bool
     log_peak("self-check")
 
 
+def check_cmd(model_dir: Path, ref_path: Path, tolerance: float, tokenizer: bool) -> list[str]:
+    cmd = [sys.executable, os.path.abspath(__file__), "check", "--model", str(model_dir), "--reference",
+           str(ref_path), "--tolerance", str(tolerance)]
+    return cmd if tokenizer else cmd + ["--no-tokenizer"]
+
+
 def spawn_check(model_dir: Path, cases: list[dict], tolerance: float, tokenizer: bool) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         ref_path = Path(tmp) / "reference.json"
         ref_path.write_text(json.dumps(cases))
-        cmd = [sys.executable, os.path.abspath(__file__), "check", "--model", str(model_dir), "--reference",
-               str(ref_path), "--tolerance", str(tolerance)]
-        if not tokenizer:
-            cmd.append("--no-tokenizer")
-        if subprocess.run(cmd).returncode != 0:
+        if subprocess.run(check_cmd(model_dir, ref_path, tolerance, tokenizer)).returncode != 0:
             fail("self-check failed")
 
 
 # --- commands ----------------------------------------------------------------------------
 
 
-def export(model, out: Path, slot_ids: list[int], vp: dict) -> None:
+def export(model, out: Path, slot_ids: list[int], vp: dict, attention: str) -> None:
     lm = text_lm(model)
     convert(lm, out)
     convert_vision(model.model.visual, out)
@@ -759,7 +849,8 @@ def export(model, out: Path, slot_ids: list[int], vp: dict) -> None:
     meta = {"format": FORMAT, "slot_ids": slot_ids, "past": [{"name": n, "shape": s} for n, s in past_specs(tc)],
             "hidden_size": tc.hidden_size, "image_token_id": model.config.image_token_id,
             "vision_start_token_id": model.config.vision_start_token_id,
-            "vision_end_token_id": model.config.vision_end_token_id, "vision": vp, "weights": "bf16"}
+            "vision_end_token_id": model.config.vision_end_token_id, "vision": vp, "weights": "bf16",
+            "attention": attention}
     (out / "decide.json").write_text(json.dumps(meta) + "\n")
 
 
@@ -787,22 +878,23 @@ def compress(src: Path, out: Path) -> None:
     (out / "decide.json").write_text(json.dumps(meta) + "\n")
 
 
-def cmd_export(src: Path, out: Path, reference_out: Path | None) -> None:
+def cmd_export(src: Path, out: Path, reference_out: Path | None, check: bool) -> None:
     from transformers import AutoTokenizer
 
-    config = validate_source(src)
-    vp = vision_params(json.loads((src / "processor_config.json").read_text()))
+    config, family = validate_source(src)
+    vp = family.vision_params(src)
     tok = AutoTokenizer.from_pretrained(src, local_files_only=True)
-    slot_ids = slot_token_ids(tok)
+    slot_ids = family.slot_ids(src, tok)
     m = vp["merge_size"]
     _, grid = check_image(CHECK_IMAGE, vp)
     n_image = grid[0] * grid[1] * grid[2] // (m * m)
     cases = []
     for name, image in (("text", False), ("image", True)):
-        prompts, prefix_len = render_check_prompts(tok, image)
+        prompts, prefix_len = family.check_prompts(tok, image)
         if image:
             prompts = [expand_images(ids, config["image_token_id"], [n_image]) for ids in prompts]
-            prefix_len += n_image - 1
+            if prefix_len:
+                prefix_len += n_image - 1
         cases.append({"name": name, "prompts": prompts, "prefix_len": prefix_len, "slot_ids": slot_ids,
                       "n_options": 2, "images": [[CHECK_IMAGE] if image else [] for _ in prompts]})
         log(f"{name} check prompts: prefix {prefix_len} tokens, suffixes {[len(p) - prefix_len for p in prompts]}")
@@ -817,25 +909,31 @@ def cmd_export(src: Path, out: Path, reference_out: Path | None) -> None:
     model = load_model(src)
     for case in cases:
         case["rows"] = reference(model, case, vp)
-    export(model, out, slot_ids, vp)
+    export(model, out, slot_ids, vp, family.attention)
     del model
     gc.collect()
     log_peak("export")
 
-    for name in METADATA:
+    for name in family.metadata:
         shutil.move(src / name, out / name)
-    spawn_check(out, cases, REAL_TOLERANCE, tokenizer=True)
+    if check:
+        spawn_check(out, cases, REAL_TOLERANCE, tokenizer=True)
     if reference_out:
         reference_out.write_text(json.dumps(cases))
 
 
-def cmd_compress(src: Path, out: Path, reference: Path) -> None:
+def cmd_compress(src: Path, out: Path, reference: Path, bf16_checked: bool) -> None:
     compress(src, out)
     log_peak("compress")
-    spawn_check(out, json.loads(reference.read_text()), INT8_TOLERANCE, tokenizer=True)
+    tolerance = INT8_TOLERANCE if bf16_checked else INT8_ONLY_TOLERANCE
+    # exec, so that nothing compress allocated stays resident under the check.
+    sys.stdout.flush()
+    sys.stderr.flush()
+    cmd = check_cmd(out, reference, tolerance, tokenizer=True)
+    os.execv(cmd[0], cmd)
 
 
-def cmd_selftest() -> None:
+def tiny_model(tied: bool):
     import torch
     from transformers.models.qwen3_5 import modeling_qwen3_5 as mq
     from transformers.models.qwen3_5.configuration_qwen3_5 import Qwen3_5Config
@@ -848,7 +946,7 @@ def cmd_selftest() -> None:
             "vocab_size": 512, "hidden_size": 64, "intermediate_size": 128, "num_hidden_layers": 8,
             "layer_types": [LINEAR, LINEAR, LINEAR, FULL] * 2, "num_attention_heads": 4, "num_key_value_heads": 2,
             "head_dim": 32, "linear_num_key_heads": 2, "linear_num_value_heads": 4, "linear_key_head_dim": 16,
-            "linear_value_head_dim": 16, "linear_conv_kernel_dim": 4, "tie_word_embeddings": True,
+            "linear_value_head_dim": 16, "linear_conv_kernel_dim": 4, "tie_word_embeddings": tied,
             "initializer_range": 0.2,
             "rope_parameters": {"rope_type": "default", "rope_theta": 1e7, "partial_rotary_factor": 0.25,
                                 "mrope_section": [2, 1, 1], "mrope_interleaved": True}},
@@ -858,13 +956,18 @@ def cmd_selftest() -> None:
             "out_hidden_size": 64, "hidden_act": "gelu_pytorch_tanh", "initializer_range": 0.2,
             "deepstack_visual_indexes": []},
         image_token_id=500, video_token_id=501, vision_start_token_id=502, vision_end_token_id=503,
-        tie_word_embeddings=True)
+        tie_word_embeddings=tied)
     model = mq.Qwen3_5ForConditionalGeneration(config).to(torch.bfloat16)
     with torch.no_grad():
         for name, param in model.named_parameters():
             if name.endswith("norm.weight"):
                 param.normal_(0, 0.3)
-    model = finish_model(model)
+    return model
+
+
+def cmd_selftest() -> None:
+    import torch
+
     vp = {"patch_size": 4, "temporal_patch_size": 2, "merge_size": 2, "min_pixels": 64, "max_pixels": 4096,
           "resample": "bicubic", "rescale_factor": 1 / 255, "image_mean": [0.5, 0.4, 0.3], "image_std": [0.2, 0.3, 0.4]}
     slot_ids = list(range(32, 32 + 26))
@@ -877,32 +980,40 @@ def cmd_selftest() -> None:
         _, (t, gh, gw) = check_image(spec, vp)
         return [502] + [500] * (t * gh * gw // 4) + [503]
 
-    # Two prefix images of different shapes; question 0 also has one in its suffix.
     wide, tall, small = {"height": 16, "width": 24, "seed": 1}, {"height": 24, "width": 16, "seed": 2}, \
         {"height": 8, "width": 8, "seed": 3}
+    # Two prefix images of different shapes; question 0 also has one in its suffix.
     text_prefix = text(37)
     prefix = text(9) + image(wide) + text(5) + image(tall) + text(7)
-    cases = [
+    block_cases = [
         {"name": "text", "prompts": [text_prefix + text(n) for n in (11, 6)], "prefix_len": len(text_prefix),
          "images": [[], []]},
         {"name": "image", "prompts": [prefix + text(4) + image(small) + text(3), prefix + text(6)],
          "prefix_len": len(prefix), "images": [[wide, tall, small], [wide, tall]]},
     ]
-
-    # f32 compute over the same bf16-rounded weights isolates graph errors from bf16 rounding.
-    reference_model = finish_model(model.float())
-    for case in cases:
-        case.update(slot_ids=slot_ids, n_options=4)
-        case["rows"] = reference(reference_model, case, vp)
-    model = finish_model(model.to(torch.bfloat16))
-    with tempfile.TemporaryDirectory() as tmp:
-        out = Path(tmp)
-        export(model, out / "bf16", slot_ids, vp)
-        del model, reference_model
-        gc.collect()
-        spawn_check(out / "bf16", cases, SELFTEST_TOLERANCE, tokenizer=False)
-        compress(out / "bf16", out / "int8")
-        spawn_check(out / "int8", cases, INT8_TOLERANCE, tokenizer=False)
+    # Whole prompts of different lengths, so the single call pads; images in both rows.
+    whole_cases = [
+        {"name": "text", "prompts": [text(41), text(23)], "prefix_len": 0, "images": [[], []]},
+        {"name": "image", "prompts": [text(5) + image(wide) + text(9), text(3) + image(small) + text(4) + image(tall)
+                                      + text(17)], "prefix_len": 0, "images": [[wide], [small, tall]]},
+    ]
+    for tied, attention, cases in ((True, BLOCK_BIDIRECTIONAL, block_cases), (False, BIDIRECTIONAL, whole_cases)):
+        log(f"selftest: {attention} attention, {'tied' if tied else 'untied'} LM head")
+        model = tiny_model(tied)
+        # f32 compute over the same bf16-rounded weights isolates graph errors from bf16 rounding.
+        reference_model = finish_model(model.float())
+        for case in cases:
+            case.update(slot_ids=slot_ids, n_options=4)
+            case["rows"] = reference(reference_model, case, vp)
+        model = finish_model(model.to(torch.bfloat16))
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            export(model, out / "bf16", slot_ids, vp, attention)
+            del model, reference_model
+            gc.collect()
+            spawn_check(out / "bf16", cases, SELFTEST_TOLERANCE, tokenizer=False)
+            compress(out / "bf16", out / "int8")
+            spawn_check(out / "int8", cases, INT8_TOLERANCE, tokenizer=False)
     log("selftest ok")
 
 
@@ -915,21 +1026,26 @@ def main() -> None:
     ex.add_argument("--src", type=Path, required=True)
     ex.add_argument("--out", type=Path, required=True)
     ex.add_argument("--reference", type=Path, help="also write the self-check's torch reference here, for compress")
-    co = sub.add_parser("compress", help="compress an exported model directory's weights to int8")
+    ex.add_argument("--no-check", action="store_true",
+                    help="skip the f32 self-check of the bf16 export; compress --no-bf16-check then bounds the int8 one")
+    co = sub.add_parser("compress", help="compress an exported model directory's weights to int8, then check them")
     co.add_argument("--model", type=Path, required=True)
     co.add_argument("--out", type=Path, required=True)
     co.add_argument("--reference", type=Path, required=True, help="export --reference of the model")
-    sub.add_parser("selftest", help="export a tiny random model and check it against transformers")
-    ck = sub.add_parser("check")
+    co.add_argument("--no-bf16-check", action="store_true",
+                    help=f"the model was exported with --no-check: require max |dp| <= {INT8_ONLY_TOLERANCE:g} "
+                         "against the reference, not only its top slot")
+    sub.add_parser("selftest", help="export tiny random models and check them against transformers")
+    ck = sub.add_parser("check", help="check an exported model directory against a torch reference")
     ck.add_argument("--model", type=Path, required=True)
     ck.add_argument("--reference", type=Path, required=True)
     ck.add_argument("--tolerance", type=float, required=True)
     ck.add_argument("--no-tokenizer", action="store_true")
     args = ap.parse_args()
     if args.cmd == "export":
-        cmd_export(args.src, args.out, args.reference)
+        cmd_export(args.src, args.out, args.reference, not args.no_check)
     elif args.cmd == "compress":
-        cmd_compress(args.model, args.out, args.reference)
+        cmd_compress(args.model, args.out, args.reference, not args.no_bf16_check)
     elif args.cmd == "selftest":
         cmd_selftest()
     else:
