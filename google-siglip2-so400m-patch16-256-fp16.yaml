@@ -1,0 +1,129 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# SigLIP 2 So400m (patch 16, 256px) image and text towers, exported at build time to
+# OpenVINO IR with fp16 weights by siglip_export.py, for in-process use through the
+# OpenVINO C API. The weights are pinned by HF commit (vars.revision) and version is that
+# commit's date, so there is no renovate tracking and no bump bot; that is also why the
+# fetch URIs interpolate ${{vars.revision}}. Re-exporting the same weights bumps epoch.
+# Tensor contract (SigLIP model format 1, see siglip_export.py): vision.xml maps
+# pixel_values [N,3,256,256] f32 to image_embeds [N,1152], text.xml maps input_ids [N,64]
+# i64 to text_embeds [N,1152], both pooler_output, not normalised; openvino_tokenizer.xml
+# turns strings into those input_ids.
+# Siblings (other fixed-resolution SigLIP checkpoints): copy this file as google-<slug>-fp16.yaml,
+# then edit only version, description, vars.source, vars.revision and the fetch hashes;
+# the model installs under /usr/share/siglip/models/<slug>/
+package:
+  name: google-siglip2-so400m-patch16-256-fp16
+  version: "20250221"
+  epoch: 0
+  description: SigLIP 2 So400m/16 256px image and text encoders as OpenVINO IR, fp16 weights
+  copyright:
+    - license: Apache-2.0
+  # The content is arch-independent, but melange has no noarch and the openvino
+  # runtime exists only on x86_64.
+  target-architecture:
+    - x86_64
+  resources:
+    cpu: "4"
+    memory: 14Gi
+  dependencies:
+    provides:
+      # Unversioned so models co-install; consumers depend on it and pick a model.
+      - siglip-model-format-1
+    runtime:
+      - openvino-tokenizers
+      - openvino~2026.4
+vars:
+  source: google/siglip2-so400m-patch16-256
+  revision: e8708ab72d125807e45b36fb7d4e0aacbb59f379
+var-transforms:
+  - from: ${{package.name}}
+    match: ^google-(.*)-fp16$
+    replace: $1
+    to: model-dir
+environment:
+  contents:
+    packages:
+      - busybox
+      - decide-export
+  environment:
+    # wget's default dot progress for multi-GB weights overflows the 4 MiB CI job log.
+    WGETRC: /home/build/.wgetrc
+pipeline:
+  - runs: echo 'progress = dot:giga' > /home/build/.wgetrc
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/${{vars.source}}/resolve/${{vars.revision}}/model.safetensors
+      expected-sha256: 810ddc85ac019e6b2738b9130ae3602e41eb093a848a297a0ad296ca1f39dc67
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/${{vars.source}}/resolve/${{vars.revision}}/config.json
+      expected-sha256: 13ee943037e446415ff6e7e406ecf79fd955f482f4ba5b437d3bc10fba7f1362
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/${{vars.source}}/resolve/${{vars.revision}}/preprocessor_config.json
+      expected-sha256: d14ba2ee3fd816f3de8abaddc31953565128eaf37c73ad4bed32101a98465aff
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/${{vars.source}}/resolve/${{vars.revision}}/tokenizer.json
+      expected-sha256: cb9140fae3ac5122c972d37adf83e1248471a38147ad76f8215c8872c6fd8322
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/${{vars.source}}/resolve/${{vars.revision}}/tokenizer.model
+      expected-sha256: 61a7b147390c64585d6c3543dd6fc636906c9af3865a5548f27f31aee1d4c8e2
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/${{vars.source}}/resolve/${{vars.revision}}/tokenizer_config.json
+      expected-sha256: 14afe629fe4959b9e0d51e1852b8d9f7ad074f90a1a7125a4fcdd17f06e78fc8
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/${{vars.source}}/resolve/${{vars.revision}}/special_tokens_map.json
+      expected-sha256: baec30ea10906f16adb8c18af7a34023002c1746542612b8b41c9f09e1351351
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/${{vars.source}}/resolve/${{vars.revision}}/README.md
+      expected-sha256: 5e7619c65e262903dced261eb4d6386252e417a4133cb0f88aec29d6148bab66
+      extract: false
+      timeout: 120
+  - runs: |
+      set -eu
+      /usr/lib/decide-export/bin/python siglip_export.py export --src . \
+        --out "${{targets.destdir}}/usr/share/siglip/models/${{vars.model-dir}}" \
+        --source "${{vars.source}}" --revision "${{vars.revision}}"
+      # The model card carries the Apache-2.0 grant in its metadata.
+      install -Dm644 README.md "${{targets.destdir}}/usr/share/licenses/${{package.name}}/MODEL_CARD.md"
+test:
+  environment:
+    contents:
+      packages:
+        - build-base
+        - go-1.27
+        - openvino-dev
+        - pkgconf
+  pipeline:
+    - name: model directory holds the IR, the tokenizer IR, the reference and the HF metadata
+      runs: |
+        set -eu
+        cd "/usr/share/siglip/models/${{vars.model-dir}}"
+        for f in vision.xml vision.bin text.xml text.bin openvino_tokenizer.xml openvino_tokenizer.bin siglip.json \
+          reference.json config.json preprocessor_config.json tokenizer.json tokenizer.model tokenizer_config.json; do
+          test -s "$f"
+        done
+        grep -qF '"weights": "fp16"' siglip.json
+        test -s "/usr/share/licenses/${{package.name}}/MODEL_CARD.md"
+    - uses: test/siglip-model
+      with:
+        model-dir: /usr/share/siglip/models/${{vars.model-dir}}
