@@ -85,7 +85,6 @@ import bisect
 import gc
 import json
 import os
-import resource
 import shutil
 import subprocess
 import sys
@@ -139,8 +138,10 @@ def log(msg: str) -> None:
 
 
 def log_peak(stage: str) -> None:
-    rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 2**20
-    msg = f"{stage}: peak RSS {rss:.2f} GiB"
+    # ru_maxrss survives execve, so a spawned check would report its parent's peak.
+    status = Path("/proc/self/status").read_text()
+    hwm = int(next(line.split()[1] for line in status.splitlines() if line.startswith("VmHWM:")))
+    msg = f"{stage}: peak RSS {hwm / 2**20:.2f} GiB"
     try:
         msg += f", cgroup memory.peak {int(Path('/sys/fs/cgroup/memory.peak').read_text()) / 2**30:.2f} GiB"
     except (OSError, ValueError):
