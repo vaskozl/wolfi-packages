@@ -7,7 +7,7 @@
 package:
   name: decide-export
   version: "2.1.0"
-  epoch: 0
+  epoch: 1 # report per-process peak RSS
   description: Export Base Labs decide models to an OpenVINO fork graph and vision encoder
   copyright:
     - license: Apache-2.0
