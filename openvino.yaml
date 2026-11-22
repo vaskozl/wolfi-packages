@@ -48,6 +48,14 @@ pipeline:
       curl -sfL "$base/$f.sha256" | sha256sum -c
       tar -xzf "${f##*/}" --strip-components=1
       rm "${f##*/}" archive
+      mkdir tokenizers
+  - uses: fetch
+    with:
+      uri: https://storage.openvinotoolkit.org/repositories/openvino_tokenizers/packages/${{package.version}}.0/openvino_tokenizers_ubuntu24_${{package.version}}.0_x86_64.tar.gz
+      expected-sha256: 2c70de432b034590f92529f316d98b226375242e32013047c2ba35b0a8eaff1c
+      strip-components: 0
+      directory: tokenizers
+      delete: true
   - runs: |
       set -eu
       lib="${{targets.destdir}}/usr/lib"
@@ -124,14 +132,6 @@ subpackages:
   - name: openvino-tokenizers
     description: OpenVINO Tokenizers extension library
     pipeline:
-      - runs: |
-          set -eu
-          f=openvino_tokenizers_ubuntu24_${{package.version}}.0_x86_64.tar.gz
-          curl -sfLO "https://storage.openvinotoolkit.org/repositories/openvino_tokenizers/packages/${{package.version}}.0/$f"
-          curl -sfL "https://storage.openvinotoolkit.org/repositories/openvino_tokenizers/packages/${{package.version}}.0/$f.sha256" | sha256sum -c
-          mkdir -p tokenizers
-          tar -xzf "$f" -C tokenizers
-          rm "$f"
       - runs: |
           set -eu
           install -Dm755 tokenizers/runtime/lib/intel64/libopenvino_tokenizers.so \
