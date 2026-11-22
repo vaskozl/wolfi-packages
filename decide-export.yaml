@@ -7,7 +7,7 @@
 package:
   name: decide-export
   version: "2.1.0"
-  epoch: 1 # install from requirements.in, no lockfile
+  epoch: 2 # log fork.bin sha256
   description: Export Base Labs decide models to an OpenVINO fork graph and vision encoder
   copyright:
     - license: Apache-2.0
