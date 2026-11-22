@@ -1,13 +1,15 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
-# Repackages Intel's official OpenVINO 2026.4.0 build 22959 release archive and
-# the matching openvino_tokenizers archive, CPU inference only.
-# Not tracked by renovate on purpose: rekon's models are exported against this
-# exact build, and the URIs embed a build number and commit hash that a version
-# bump can't refresh.
+# Repackages Intel's official OpenVINO release archive and the matching
+# openvino_tokenizers archive, CPU inference only.
+# The toolkit archive name embeds a build number and commit hash, so it is
+# resolved from storage.openvinotoolkit.org/filetree.json at build time.
+# Model packages depend on openvino~X.Y: IR exported by decide-export must run
+# on the same minor, so a minor bump also needs decide-export and the models
+# bumped together.
 # oneTBB comes from Wolfi's libtbb (so:libtbb.so.12), not the bundled copy.
 package:
   name: openvino
-  version: "2026.4.0"
+  version: "2026.4.1"
   epoch: 0
   description: OpenVINO inference runtime (C/C++ API, CPU plugin, IR frontend)
   copyright:
@@ -20,12 +22,32 @@ environment:
   contents:
     packages:
       - busybox
+      - ca-certificates-bundle
+      - curl
+      - jq
 pipeline:
-  - uses: fetch
-    with:
-      uri: https://storage.openvinotoolkit.org/repositories/openvino/packages/2026.4/linux/openvino_toolkit_ubuntu24_2026.4.0.22959.99c81491cc3_x86_64.tgz
-      expected-sha256: 0bd86d578beb1e8805655f593315c69bf909008e212f801ed76e3a350927736f
-      delete: true
+  - runs: |
+      set -eu
+      v='${{package.version}}'
+      base=https://storage.openvinotoolkit.org/repositories/openvino/packages
+      # x.y.0 releases live under x.y/, patch releases under x.y.z/.
+      curl -sfL https://storage.openvinotoolkit.org/filetree.json |
+        jq -r --arg v "$v" --arg mm "${v%.*}" '
+          .children[] | select(.name == "repositories") |
+          .children[] | select(.name == "openvino") |
+          .children[] | select(.name == "packages") |
+          .children[] | select(.name == $v or .name == $mm) | .name as $d |
+          .children[] | select(.name == "linux") |
+          .children[] | .name |
+          select(test("^openvino_toolkit_ubuntu24_" + ($v | gsub("\\."; "\\.")) + "\\.[0-9]+\\.[0-9a-f]+_x86_64\\.tgz$")) |
+          "\($d)/linux/\(.)"' >archive
+      cat archive
+      [ "$(wc -l <archive)" -eq 1 ] || { echo "want exactly one toolkit archive for $v" >&2; exit 1; }
+      f=$(cat archive)
+      curl -sfL -o "${f##*/}" "$base/$f"
+      curl -sfL "$base/$f.sha256" | sha256sum -c
+      tar -xzf "${f##*/}" --strip-components=1
+      rm "${f##*/}" archive
   - runs: |
       set -eu
       lib="${{targets.destdir}}/usr/lib"
@@ -38,8 +60,10 @@ pipeline:
         libopenvino_ir_frontend.so.${{package.version}} libopenvino_intel_cpu_plugin.so; do
         install -m755 "$f" "$lib/"
       done
-      cp -P libopenvino.so.2640 libopenvino.so libopenvino_c.so.2640 libopenvino_c.so \
-        libopenvino_ir_frontend.so.2640 "$lib/"
+      so=$(readlink libopenvino.so)
+      so=${so##*.so.}
+      cp -P libopenvino.so.$so libopenvino.so libopenvino_c.so.$so libopenvino_c.so \
+        libopenvino_ir_frontend.so.$so "$lib/"
       cd -
       cp -r runtime/include/openvino "${{targets.destdir}}/usr/include/"
       cd docs/licensing
@@ -100,14 +124,14 @@ subpackages:
   - name: openvino-tokenizers
     description: OpenVINO Tokenizers extension library
     pipeline:
-      - runs: mkdir -p tokenizers
-      - uses: fetch
-        with:
-          uri: https://storage.openvinotoolkit.org/repositories/openvino_tokenizers/packages/2026.4.0.0/openvino_tokenizers_ubuntu24_2026.4.0.0_x86_64.tar.gz
-          expected-sha256: 7a5fd99b8fe8da22342c58bca83072db2b53020a58a84c56c16a18ad2649ea2d
-          strip-components: 0
-          directory: tokenizers
-          delete: true
+      - runs: |
+          set -eu
+          f=openvino_tokenizers_ubuntu24_${{package.version}}.0_x86_64.tar.gz
+          curl -sfLO "https://storage.openvinotoolkit.org/repositories/openvino_tokenizers/packages/${{package.version}}.0/$f"
+          curl -sfL "https://storage.openvinotoolkit.org/repositories/openvino_tokenizers/packages/${{package.version}}.0/$f.sha256" | sha256sum -c
+          mkdir -p tokenizers
+          tar -xzf "$f" -C tokenizers
+          rm "$f"
       - runs: |
           set -eu
           install -Dm755 tokenizers/runtime/lib/intel64/libopenvino_tokenizers.so \
@@ -238,3 +262,7 @@ test:
         EOF
         cc $(pkg-config --cflags openvino-c) -o t t.c $(pkg-config --libs openvino-c)
         ./t '${{package.version}}-'
+update:
+  enabled: true
+  github:
+    identifier: openvinotoolkit/openvino
