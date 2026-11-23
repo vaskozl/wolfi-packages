@@ -6,8 +6,8 @@
 # upstream at build time. openvino follows the apk within its minor.
 package:
   name: decide-export
-  version: "2.1.0"
-  epoch: 2 # per-process peak RSS, fork.bin sha256
+  version: "2.2.0"
+  epoch: 0
   description: Export Base Labs decide models to an OpenVINO fork graph and vision encoder
   copyright:
     - license: Apache-2.0

@@ -140,6 +140,18 @@ subpackages:
           lic="${{targets.contextdir}}/usr/share/licenses/${{vars.int8-package}}"
           install -Dm644 README.md "$lic/MODEL_CARD.md"
           install -Dm644 LICENSE "$lic/LICENSE.Qwen3.5"
+      - name: quantize-on-load export matches compress
+        runs: |
+          set -eu
+          # The export moved the HF metadata into the bf16 model directory.
+          src=$(mktemp -d)
+          tmp=$(mktemp -d)
+          ln -s "$PWD/model.safetensors" "$src/"
+          cp "${{targets.destdir}}/usr/share/decide/models/${{vars.model-dir}}"/*.json \
+            "${{targets.destdir}}/usr/share/decide/models/${{vars.model-dir}}/chat_template.jinja" "$src/"
+          decide-export export --weights int8 --src "$src" --out "$tmp/int8"
+          decide-export compare "${{targets.contextdir}}/usr/share/decide/models/${{vars.int8-model-dir}}" "$tmp/int8"
+          rm -rf "$src" "$tmp"
     test:
       environment:
         contents:
