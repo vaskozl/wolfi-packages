@@ -1,13 +1,13 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 # Build-time exporter for the baselabs-* decide model packages: HF checkpoint ->
 # OpenVINO fork graph and vision encoder (decide model format 2, see decide_export.py).
-# Not tracked by renovate on purpose: requirements.txt pins openvino to the exact
-# openvino apk build and transformers/tokenizers to the models' training stack.
-# Regenerate it from requirements.in with the command in its header.
+# No lockfile: requirements.in pins only the direct deps that shape the
+# exported IR (bumped by hand, kept off renovate) and transitive deps float to
+# upstream at build time. openvino follows the apk within its minor.
 package:
   name: decide-export
   version: "2.1.0"
-  epoch: 0
+  epoch: 1 # install from requirements.in, no lockfile
   description: Export Base Labs decide models to an OpenVINO fork graph and vision encoder
   copyright:
     - license: Apache-2.0
@@ -29,8 +29,9 @@ pipeline:
       set -eu
       lib="${{targets.destdir}}/usr/lib/${{package.name}}"
       uv venv --relocatable --python /usr/bin/python3.13 "$lib"
-      VIRTUAL_ENV="$lib" uv pip install --require-hashes --no-deps --no-cache \
-        --index-strategy unsafe-best-match --compile-bytecode -r requirements.txt
+      VIRTUAL_ENV="$lib" uv pip install --no-cache --compile-bytecode \
+        --extra-index-url https://download.pytorch.org/whl/cpu \
+        --index-strategy unsafe-best-match -r requirements.in
       # uv leaves a world-writable lock file in the venv root.
       rm -f "$lib/.lock"
       install -m644 decide_export.py ov_gdn.py "$lib/"
