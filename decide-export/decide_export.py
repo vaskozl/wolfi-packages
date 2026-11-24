@@ -379,16 +379,20 @@ def int8_modules():
         """A u8 weight and NNCF's torch decompressor for it, traced as the
         u8 -> Convert -> Subtract -> Multiply -> Convert f32 pattern nncf.compress_weights writes."""
 
-        def __init__(self, w, shape=None):
+        def __init__(self, w, shape=None, shared=False):
             super().__init__()
             q, scale, zp = quantize_int8(w, shape)
             self.register_buffer("weight", q)
             self.decompressor = INT8AsymmetricWeightsDecompressor(scale, zp, torch.float32)
+            self.shared = shared
             self.cache = None
 
         def forward(self):
             # A tied embedding and LM head share one decompression, as in NNCF's IR: tracing it
             # twice would fold it into an f32 constant. The fork clears the cache per forward.
+            # Caching the others would hold the whole model in f32 for the traced forward.
+            if not self.shared:
+                return self.decompressor(self.weight)
             if self.cache is None:
                 self.cache = self.decompressor(self.weight)
             return self.cache
@@ -442,7 +446,7 @@ def int8_lm(src: Path):
     load_params(model, ckpt, lambda _, p: id(p) not in heavy and id(p) not in visual)
 
     # The embedding and LM head first, while little else is held: they are the largest tensors.
-    embed = Int8Weight(ckpt.get("model.language_model.embed_tokens.weight"))
+    embed = Int8Weight(ckpt.get("model.language_model.embed_tokens.weight"), shared=ckpt.tied)
     text.embed_tokens = Int8Embedding(embed)
     head = embed if ckpt.tied else Int8Weight(ckpt.get("lm_head.weight"))
     model.lm_head = Int8Linear(head, None)
