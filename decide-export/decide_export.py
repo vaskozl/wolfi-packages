@@ -75,16 +75,22 @@ decide.json: {"format": 2, "slot_ids": [...256 ids, slot label order...],
                          "rescale_factor": ..., "image_mean": [...], "image_std": [...]}}
 with B=1 and -1 only for P in past.
 weights is the storage type of the fork and vision weights. int8 is NNCF's INT8_ASYM
-weight-only compression of a bf16 export (decide-export compress); activations keep the
-runtime's inference precision.
+weight-only compression, of a bf16 export (decide-export compress) or quantized as the
+checkpoint loads (decide-export export --weights int8); activations keep the runtime's
+inference precision. A quantized-on-load fork.xml sets rt_info
+runtime_options.DYNAMIC_QUANTIZATION_GROUP_SIZE; the CPU plugin applies dynamic quantization
+only to f32 activations, so on AMX it needs INFERENCE_PRECISION_HINT f32.
 """
 from __future__ import annotations
 
 import argparse
+import atexit
 import bisect
 import gc
 import hashlib
 import json
+import math
+import mmap
 import os
 import shutil
 import subprocess
@@ -92,7 +98,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 FORMAT = 2
 
 LINEAR, FULL = "linear_attention", "full_attention"
@@ -130,8 +136,14 @@ CHECK_IMAGE = {"height": 256, "width": 320, "seed": 0}
 REAL_TOLERANCE = 2e-2
 # Selftest compares against an f32 torch reference of the same bf16 weights.
 SELFTEST_TOLERANCE = 1e-3
-# int8 is for CI only: its check requires the reference's top slot, not a |dp| bound.
-INT8_TOLERANCE = float("inf")
+# int8 vs a bf16 torch reference: joey measured 4e-3.
+INT8_TOLERANCE = 5e-2
+# Tiny random models quantize badly: their int8 check requires the reference's top slot only.
+SELFTEST_INT8_TOLERANCE = float("inf")
+# The CPU plugin's default, a multiple of its 16-wide SIMD as its oneDNN path requires.
+DQ_GROUP_SIZE = 32
+# Elements per quantize_int8 chunk.
+QUANT_CHUNK = 2**26
 
 
 def log(msg: str) -> None:
@@ -144,11 +156,49 @@ def size_digest(path: Path) -> str:
     return f"{path.stat().st_size / 2**30:.2f} GiB, sha256 {digest}"
 
 
+# Samples the parent's RssAnon from another process: a thread could not run while OpenVINO
+# holds the GIL. Exits once the parent is gone or a zombie (no RssAnon line).
+_ANON_WATCHER = """
+import os, sys, time
+pid, out, peak = int(sys.argv[1]), sys.argv[2], 0
+while os.getppid() == pid:
+    try:
+        status = open(f"/proc/{pid}/status").read()
+    except OSError:
+        break
+    anon = next((int(l.split()[1]) for l in status.splitlines() if l.startswith("RssAnon:")), None)
+    if anon is None:
+        break
+    if anon > peak:
+        peak = anon
+        with open(out + ".tmp", "w") as f:
+            f.write(str(peak))
+        os.replace(out + ".tmp", out)
+    time.sleep(0.02)
+"""
+_anon_peak_file: Path | None = None
+
+
+def watch_anon() -> None:
+    global _anon_peak_file
+    fd, path = tempfile.mkstemp(prefix="decide-export-anon.")
+    os.close(fd)
+    _anon_peak_file = Path(path)
+    atexit.register(_anon_peak_file.unlink, missing_ok=True)
+    subprocess.Popen([sys.executable, "-I", "-c", _ANON_WATCHER, str(os.getpid()), path])
+
+
 def log_peak(stage: str) -> None:
-    # ru_maxrss survives execve, so a spawned check would report its parent's peak.
-    status = Path("/proc/self/status").read_text()
-    hwm = int(next(line.split()[1] for line in status.splitlines() if line.startswith("VmHWM:")))
-    msg = f"{stage}: peak RSS {hwm / 2**20:.2f} GiB"
+    # VmHWM counts mmapped fork.bin pages too, which the kernel can reclaim; anonymous memory
+    # is what an OOM kill counts. ru_maxrss survives execve, so it would report the parent's peak.
+    status = {line.split(":")[0]: int(line.split()[1]) for line in
+              Path("/proc/self/status").read_text().splitlines() if line.endswith(" kB")}
+    msg = f"{stage}: peak RSS {status['VmHWM'] / 2**20:.2f} GiB"
+    try:
+        msg += f", sampled peak anon {int(_anon_peak_file.read_text() or 0) / 2**20:.2f} GiB"
+    except (AttributeError, OSError, ValueError):
+        pass
+    msg += f"; now anon {status['RssAnon'] / 2**20:.2f}, file {status['RssFile'] / 2**20:.2f} GiB"
     try:
         msg += f", cgroup memory.peak {int(Path('/sys/fs/cgroup/memory.peak').read_text()) / 2**30:.2f} GiB"
     except (OSError, ValueError):
@@ -200,6 +250,7 @@ def load_model(src: Path):
 
     with torch.device("meta"):
         model = mq.Qwen3_5ForConditionalGeneration(Qwen3_5Config.from_pretrained(src))
+    tied = model.config.text_config.tie_word_embeddings
     state = {}
     shards = sorted(src.glob("model*.safetensors"))
     if not shards:
@@ -208,23 +259,288 @@ def load_model(src: Path):
         with safe_open(shard, framework="pt") as f:
             for key in f.keys():
                 # MTP (mtp.*) is not part of the model.
-                if key.startswith("model."):
+                if key.startswith("model.") or key == "lm_head.weight" and not tied:
                     state[key] = f.get_tensor(key).to(torch.bfloat16)
     missing, unexpected = model.load_state_dict(state, strict=False, assign=True)
     del state
-    if set(missing) - {"lm_head.weight"} or unexpected:
+    if set(missing) - ({"lm_head.weight"} if tied else set()) or unexpected:
         fail(f"weights do not match the config: missing {missing}, unexpected {unexpected}")
     return finish_model(model)
 
 
+class Checkpoint:
+    """The safetensors shards of src, read one tensor at a time with pread rather than mmap,
+    so a tensor's pages count against the process only while it is held."""
+
+    DTYPES = {"BF16": "bfloat16", "F16": "float16", "F32": "float32"}
+
+    def __init__(self, src: Path, tied: bool):
+        import struct
+
+        self.tied, self.index = tied, {}
+        shards = sorted(src.glob("model*.safetensors"))
+        if not shards:
+            fail(f"no safetensors in {src}")
+        for shard in shards:
+            with open(shard, "rb") as f:
+                n = struct.unpack("<Q", f.read(8))[0]
+                header = json.loads(f.read(n))
+            for key, info in header.items():
+                # MTP (mtp.*) is not part of the model.
+                if key.startswith("model.") or key == "lm_head.weight" and not tied:
+                    begin, end = info["data_offsets"]
+                    self.index[key] = (shard, 8 + n + begin, end - begin, info["dtype"], info["shape"])
+
+    def check(self, names: set[str]) -> None:
+        want = names - ({"lm_head.weight"} if self.tied else set())
+        if want != set(self.index):
+            fail(f"weights do not match the config: missing {sorted(want - set(self.index))}, "
+                 f"unexpected {sorted(set(self.index) - want)}")
+
+    def get(self, name: str):
+        import torch
+
+        key = "model.language_model.embed_tokens.weight" if name == "lm_head.weight" and self.tied else name
+        shard, offset, size, dtype, shape = self.index[key]
+        if dtype not in self.DTYPES:
+            fail(f"{key}: unsupported dtype {dtype}")
+        buf = bytearray(size)
+        fd = os.open(shard, os.O_RDONLY)
+        try:
+            view, done = memoryview(buf), 0
+            while done < size:
+                n = os.preadv(fd, [view[done:]], offset + done)
+                if n <= 0:
+                    fail(f"{shard}: short read of {key}")
+                done += n
+            os.posix_fadvise(fd, offset, size, os.POSIX_FADV_DONTNEED)
+        finally:
+            os.close(fd)
+        t = torch.frombuffer(buf, dtype=getattr(torch, self.DTYPES[dtype])).reshape(shape) if size else \
+            torch.empty(shape, dtype=getattr(torch, self.DTYPES[dtype]))
+        return t.to(torch.bfloat16)
+
+
+def meta_model(src: Path):
+    import torch
+    from transformers.models.qwen3_5 import modeling_qwen3_5 as mq
+    from transformers.models.qwen3_5.configuration_qwen3_5 import Qwen3_5Config
+
+    with torch.device("meta"):
+        model = mq.Qwen3_5ForConditionalGeneration(Qwen3_5Config.from_pretrained(src))
+    ckpt = Checkpoint(src, model.config.text_config.tie_word_embeddings)
+    ckpt.check({n for n, _ in model.named_parameters(remove_duplicate=False)})
+    return model, ckpt
+
+
+def set_params(module, prefix: str, load) -> None:
+    """Replace every parameter of module (named prefix + its name) with load(full name)."""
+    import torch
+
+    for name, p in list(module.named_parameters()):
+        owner, _, attr = name.rpartition(".")
+        sub = module.get_submodule(owner)
+        setattr(sub, attr, torch.nn.Parameter(load(prefix + name, p), requires_grad=False))
+
+
+def load_params(model, ckpt: Checkpoint, want) -> None:
+    """Read the parameters for which want(name, param) holds from ckpt."""
+    import torch
+
+    for name, p in list(model.named_parameters()):
+        if want(name, p):
+            owner, _, attr = name.rpartition(".")
+            setattr(model.get_submodule(owner), attr, torch.nn.Parameter(ckpt.get(name), requires_grad=False))
+
+
+def unload(module) -> None:
+    import torch
+
+    set_params(module, "", lambda _, p: torch.empty_like(p, device="meta"))
+
+
+def layered_model(src: Path):
+    """The bf16 model with each decoder layer, the token embedding and the vision encoder
+    read from the checkpoint as it runs and freed after it: peak memory is about one of them.
+    Returns the model and the LM head weight's loader."""
+    model, ckpt = meta_model(src)
+    text = model.model.language_model
+    units = [text.embed_tokens, *text.layers, model.model.visual]
+    in_units = {id(p) for u in units for p in u.parameters()}
+    load_params(model, ckpt, lambda name, p: id(p) not in in_units and name != "lm_head.weight")
+    prefixes = {id(m): n + "." for n, m in model.named_modules()}
+    for unit in units:
+        unit.register_forward_pre_hook(lambda m, args: set_params(m, prefixes[id(m)], lambda n, _: ckpt.get(n)))
+        unit.register_forward_hook(lambda m, args, out: unload(m))
+    model.lm_head.weight = None
+    finish_model(model)
+    return model, lambda: ckpt.get("lm_head.weight")
+
+
+def quantize_int8(w, shape=None):
+    """NNCF's INT8_ASYM compression of a [rows, ...] weight along all but rows, as
+    nncf.compress_weights computes it on the bf16 IR: from the f32 values, through the same
+    function. Returns the u8 weight in shape (default [rows, cols]), scale and zero point. Rows
+    are independent, so large weights go in row chunks to bound the f32 copy; every chunk stays
+    above NNCF's size threshold for its OpenVINO-backed implementation."""
+    import numpy as np
+    import torch
+    from nncf.common.utils.caching import disable_results_caching
+    from nncf.openvino.optimized_functions.models import OV_MODEL_CACHE
+    from nncf.parameters import CompressWeightsMode
+    from nncf.quantization.algorithms.weight_compression.config import WeightCompressionConfig
+    from nncf.quantization.algorithms.weight_compression.weight_lowering import compress_weight
+    from nncf.tensor import Tensor
+
+    config = WeightCompressionConfig(mode=CompressWeightsMode.INT8_ASYM)
+    rows = w.shape[0]
+    w = w.reshape(rows, -1)
+    shape = list(shape or w.shape)
+    per_row = [rows] + [1] * (len(shape) - 1)
+    n = max(1, w.numel() // QUANT_CHUNK)
+    q, scale, zp = [], [], []
+    with disable_results_caching(OV_MODEL_CACHE):
+        for i in range(n):
+            chunk = w[rows * i // n:rows * (i + 1) // n].float().numpy()
+            cw = compress_weight(Tensor(chunk), (1,), config)
+            q.append(np.asarray(cw.tensor.data, np.uint8))
+            scale.append(np.asarray(cw.scale.data, np.float32))
+            zp.append(np.asarray(cw.zero_point.data))
+            del chunk, cw
+    return (torch.from_numpy(np.concatenate(q)).reshape(shape), torch.from_numpy(np.concatenate(scale)).reshape(per_row),
+            torch.from_numpy(np.concatenate(zp)).reshape(per_row))
+
+
+def int8_modules():
+    import torch
+    import torch.nn.functional as F
+    from nncf.torch.quantization.layers import INT8AsymmetricWeightsDecompressor
+
+    class Int8Weight(torch.nn.Module):
+        """A u8 weight and NNCF's torch decompressor for it, traced as the
+        u8 -> Convert -> Subtract -> Multiply -> Convert f32 pattern nncf.compress_weights writes."""
+
+        def __init__(self, w, shape=None, shared=False):
+            super().__init__()
+            q, scale, zp = quantize_int8(w, shape)
+            self.register_buffer("weight", q)
+            self.decompressor = INT8AsymmetricWeightsDecompressor(scale, zp, torch.float32)
+            self.shared = shared
+            self.cache = None
+
+        def forward(self):
+            # A tied embedding and LM head share one decompression, as in NNCF's IR: tracing it
+            # twice would fold it into an f32 constant. The fork clears the cache per forward.
+            # Caching the others would hold the whole model in f32 for the traced forward.
+            if not self.shared:
+                return self.decompressor(self.weight)
+            if self.cache is None:
+                self.cache = self.decompressor(self.weight)
+            return self.cache
+
+    class Int8Linear(torch.nn.Module):
+        def __init__(self, weight: Int8Weight, bias):
+            super().__init__()
+            self.int8 = weight
+            self.bias = bias
+
+        def forward(self, x):
+            return F.linear(x, self.int8(), self.bias)
+
+    class Int8Embedding(torch.nn.Module):
+        def __init__(self, weight: Int8Weight):
+            super().__init__()
+            self.int8 = weight
+
+        def forward(self, ids):
+            return F.embedding(ids, self.int8())
+
+    class Int8Conv1d(torch.nn.Module):
+        """A depthwise Conv1d's weight for ov_causal_conv1d, quantized in the [C, 1, 1, K] layout
+        of the GroupConvolution weight that NNCF compresses."""
+
+        def __init__(self, conv):
+            super().__init__()
+            c, i, k = conv.weight.shape
+            self.shape = (c, i, k)
+            self.int8 = Int8Weight(conv.weight, (c, 1, i, k))
+            self.bias = conv.bias
+
+        @property
+        def weight(self):
+            return self.int8().reshape(self.shape)
+
+    return Int8Weight, Int8Linear, Int8Embedding, Int8Conv1d
+
+
+def int8_decompress_extensions() -> list:
+    """Trace NNCF's decompressors as one op that converts to their u8 -> Convert -> Subtract ->
+    Multiply -> Convert f32 pattern, without computing the f32 weight: run for real, each
+    decompression is about 6 bytes per weight, and the LM head's alone pushes a 9B model past
+    the 16Gi build."""
+    import openvino as ov
+    import openvino.opset14 as ops
+    import torch
+    from nncf.torch.quantization.layers import INT8AsymmetricWeightsDecompressor
+    from openvino.frontend.pytorch import ConversionExtension, ModuleExtension
+
+    def evaluate(m, w, *_):
+        # Zeros in a private anonymous mapping: reads map the kernel's zero page, so the weight
+        # is never resident. Tracing keeps the graph, not these values.
+        shape = [int(d) for d in w.shape]
+        n = math.prod(shape)
+        buf = mmap.mmap(-1, max(4, 4 * n), flags=mmap.MAP_PRIVATE | mmap.MAP_ANONYMOUS)
+        return torch.frombuffer(buf, dtype=torch.float32, count=n).view(shape)
+
+    def convert(ctx):
+        w, scale, zp = (ctx.get_input(i) for i in range(3))
+        x = ops.multiply(ops.subtract(ops.convert(w, ov.Type.f16), ops.convert(zp, ov.Type.f16)), scale)
+        return [ops.convert(x, ov.Type.f32).output(0)]
+
+    return [ModuleExtension(INT8AsymmetricWeightsDecompressor, "Int8DecompressOp", evaluate=evaluate,
+                            convert=lambda m, op, w: op(w, m._scale, m._zero_point)),
+            ConversionExtension("Int8DecompressOp", convert)]
+
+
+def int8_lm(src: Path):
+    """The text model and LM head with NNCF INT8_ASYM weights, quantized tensor by tensor as the
+    checkpoint is read: the bf16 model is never held. The vision encoder stays on the meta device."""
+    import torch
+
+    Int8Weight, Int8Linear, Int8Embedding, Int8Conv1d = int8_modules()
+    model, ckpt = meta_model(src)
+    text = model.model.language_model
+    linears = [(n, m) for n, m in text.layers.named_modules() if isinstance(m, torch.nn.Linear)]
+    heavy = {id(m.weight) for _, m in linears} | {id(text.embed_tokens.weight), id(model.lm_head.weight)}
+    visual = {id(p) for p in model.model.visual.parameters()}
+    load_params(model, ckpt, lambda _, p: id(p) not in heavy and id(p) not in visual)
+
+    # The embedding and LM head first, while little else is held: they are the largest tensors.
+    embed = Int8Weight(ckpt.get("model.language_model.embed_tokens.weight"), shared=ckpt.tied)
+    text.embed_tokens = Int8Embedding(embed)
+    head = embed if ckpt.tied else Int8Weight(ckpt.get("lm_head.weight"))
+    model.lm_head = Int8Linear(head, None)
+    for name, m in linears:
+        owner, _, attr = name.rpartition(".")
+        w = ckpt.get(f"model.language_model.layers.{name}.weight")
+        setattr(text.layers.get_submodule(owner), attr, Int8Linear(Int8Weight(w), m.bias))
+        del w
+        gc.collect()
+    for layer in text.layers:
+        if hasattr(layer, "linear_attn"):
+            layer.linear_attn.conv1d = Int8Conv1d(layer.linear_attn.conv1d)
+    return finish_model(model)
+
+
 def finish_model(model):
+    import torch
     from transformers.models.qwen3_5 import modeling_qwen3_5 as mq
 
     tc = model.config.text_config
-    if not tc.tie_word_embeddings:
-        fail("untied LM head is not supported")
     text = model.model.language_model
-    model.lm_head.weight = text.embed_tokens.weight
+    # Quantized and layered models hold no bf16 LM head to tie.
+    if tc.tie_word_embeddings and isinstance(getattr(model.lm_head, "weight", None), torch.nn.Parameter):
+        model.lm_head.weight = text.embed_tokens.weight
     # Non-persistent buffers are still on the meta device after a meta-device load, and a
     # dtype cast would round them.
     text.rotary_emb = mq.Qwen3_5TextRotaryEmbedding(tc)
@@ -323,6 +639,10 @@ def make_fork(lm):
 
         def forward(self, input_ids, lengths, offset, position_ids, image_embeds, image_index, read_index, slot_ids,
                     *past):
+            # Int8Weight decompressions are cached per call, see int8_modules.
+            for w in self.modules():
+                if hasattr(w, "cache"):
+                    w.cache = None
             m = self.lm.model
             b, t = input_ids.shape
             h = m.embed_tokens(input_ids)
@@ -403,7 +723,7 @@ def make_vision(visual):
     return Vision().eval()
 
 
-def convert(lm, out: Path) -> None:
+def convert(lm, out: Path, weights: str = "bf16") -> None:
     import openvino as ov
     import torch
     from openvino.frontend.pytorch import ConversionExtension, ModuleExtension
@@ -416,6 +736,10 @@ def convert(lm, out: Path) -> None:
     fork = make_fork(lm)
     # Linear and Embedding keep their 16-bit weights as graph constants; activations trace in f32.
     getattr(patch_model, "__make_16bit_traceable")(fork)
+    # It also casts other modules' 16-bit buffers to f32; NNCF's decompressors keep f16 scales.
+    for m in fork.modules():
+        if hasattr(m, "_scale"):
+            m._scale.data = m._scale.data.half()
 
     b, t, p = 2, 3, 2
     i64, f32 = torch.int64, torch.float32
@@ -438,16 +762,22 @@ def convert(lm, out: Path) -> None:
             example_input=tuple(example),
             input=[(ov.PartialShape(s), ty) for s, ty in zip(shapes, types)],
             extension=[ModuleExtension(RecurrentAttentionCell, "RecurrentAttentionCellOp"),
-                       ConversionExtension("RecurrentAttentionCellOp", convert_recurrent_attention_cell)],
+                       ConversionExtension("RecurrentAttentionCellOp", convert_recurrent_attention_cell)]
+            + (int8_decompress_extensions() if weights == "int8" else []),
         )
+    log_peak("convert")
     name_ports(model, names, ["slot_logits", "lse"] + ["present" + n[len("past"):] for n, _ in specs])
 
     lm_head = [op for op in model.get_ops() if op.get_type_name() == "Constant"
                and list(op.get_output_shape(0)) == [tc.vocab_size, tc.hidden_size]]
-    if len(lm_head) != 1:
-        fail(f"{len(lm_head)} [vocab, hidden] constants: the tied embedding / LM head was duplicated")
-    if lm_head[0].get_element_type() != ov.Type.bf16:
-        fail(f"embedding constant is {lm_head[0].get_element_type()}, not bf16")
+    want = 1 if tc.tie_word_embeddings else 2
+    if len(lm_head) != want:
+        fail(f"{len(lm_head)} [vocab, hidden] constants, want {want}: the embedding or LM head was duplicated or dropped")
+    etype = ov.Type.bf16 if weights == "bf16" else ov.Type.u8
+    if any(op.get_element_type() != etype for op in lm_head):
+        fail(f"embedding / LM head constants are {[op.get_element_type() for op in lm_head]}, not {etype}")
+    if weights == "int8":
+        model.set_rt_info(str(DQ_GROUP_SIZE), ["runtime_options", "DYNAMIC_QUANTIZATION_GROUP_SIZE"])
     out.mkdir(parents=True, exist_ok=True)
     ov.save_model(model, out / "fork.xml", compress_to_fp16=False)
     del model, fork
@@ -549,8 +879,9 @@ def rope_positions(ids: list[int], grids: list[list[int]], image_token_id: int, 
 # --- reference ---------------------------------------------------------------------------
 
 
-def reference(model, case: dict, vp: dict) -> list[dict]:
-    """transformers' single forward of each whole prompt, prefix and suffix as blocks 0 and 1."""
+def reference(model, case: dict, vp: dict, head=None) -> list[dict]:
+    """transformers' single forward of each whole prompt, prefix and suffix as blocks 0 and 1.
+    head is the LM head weight, by default model.lm_head.weight."""
     import numpy as np
     import torch
     from transformers.models.qwen3_5 import modeling_qwen3_5 as mq
@@ -566,7 +897,7 @@ def reference(model, case: dict, vp: dict) -> list[dict]:
     captured = {}
     hook = text.norm.register_forward_hook(lambda mod, args, out: captured.__setitem__("h", out))
     mq.create_causal_mask = create_causal_mask
-    embed = text.embed_tokens.weight
+    head = model.lm_head.weight if head is None else head
     image_token_id = model.config.image_token_id
     prefix_len, slot_ids = case["prefix_len"], case["slot_ids"]
     rows = []
@@ -584,9 +915,9 @@ def reference(model, case: dict, vp: dict) -> list[dict]:
                 model.model.rope_deltas = None
                 model.model(input_ids=x, use_cache=False, **kwargs)
                 h = captured["h"][0, -1].float()
-                slot = embed[slot_ids].float() @ h
-                lse = torch.logsumexp(torch.cat([embed[i:i + 32768].float() @ h
-                                                 for i in range(0, embed.shape[0], 32768)]), dim=0)
+                slot = head[slot_ids].float() @ h
+                lse = torch.logsumexp(torch.cat([head[i:i + 32768].float() @ h
+                                                 for i in range(0, head.shape[0], 32768)]), dim=0)
                 rows.append({"slot_logits": slot.tolist(), "lse": float(lse)})
     finally:
         mq.create_causal_mask = original
@@ -661,15 +992,29 @@ def run_check(model_dir: Path, ref_path: Path, tolerance: float, tokenizer: bool
         log(f"tokenizer IR: probe -> {ids}")
 
     f32 = {"INFERENCE_PRECISION_HINT": "f32"}
-    compiled = core.compile_model(core.read_model(model_dir / "fork.xml"), "CPU", f32)
-    want = sum(1 for p in meta["past"] if p["name"].endswith(".recurrent"))
-    fused = sum(1 for op in compiled.get_runtime_model().get_ordered_ops()
-                if op.get_rt_info()["layerType"].astype(str) == "GatedDeltaNet")
-    if fused != want:
-        fail(f"{fused} GatedDeltaNet nodes in the compiled model, want {want} (one per linear-attention layer)")
-    log(f"GatedDeltaNet fusion: {fused}/{want}")
     vision = core.compile_model(core.read_model(model_dir / "vision.xml"), "CPU", f32).create_infer_request()
-    req = compiled.create_infer_request()
+
+    def fork_request(config: dict):
+        compiled = core.compile_model(core.read_model(model_dir / "fork.xml"), "CPU", config)
+        ops = compiled.get_runtime_model().get_ordered_ops()
+        want = sum(1 for p in meta["past"] if p["name"].endswith(".recurrent"))
+        fused = sum(1 for op in ops if op.get_rt_info()["layerType"].astype(str) == "GatedDeltaNet")
+        if fused != want:
+            fail(f"{fused} GatedDeltaNet nodes in the compiled model, want {want} (one per linear-attention layer)")
+        log(f"GatedDeltaNet fusion: {fused}/{want}")
+        if meta["weights"] == "int8":
+            counts = {}
+            for op in ops:
+                kind = op.get_rt_info()["layerType"].astype(str)
+                if kind in ("FullyConnected", "Gather"):
+                    w = op.input_value(1 if kind == "FullyConnected" else 0).get_node().get_rt_info()
+                    u8 = w["outputPrecisions"].astype(str) == "u8" if "outputPrecisions" in w else False
+                    total, n_u8 = counts.get(kind, (0, 0))
+                    counts[kind] = (total + 1, n_u8 + u8)
+            (fc, fc_u8), (_, gather_u8) = counts.get("FullyConnected", (0, 0)), counts.get("Gather", (0, 0))
+            log(f"runtime graph: FullyConnected {fc_u8}/{fc} with u8 weights, Gather {gather_u8} with u8 data")
+        return compiled.create_infer_request()
+
     image_token_id, hidden, vp = meta["image_token_id"], meta["hidden_size"], meta["vision"]
 
     def image_feed(rows: list[list[int]], specs: list[dict], t: int) -> dict:
@@ -689,58 +1034,73 @@ def run_check(model_dir: Path, ref_path: Path, tolerance: float, tokenizer: bool
         e = np.exp(x - x.max())
         return e / e.sum()
 
-    for case in cases:
-        slot_ids = np.array(case["slot_ids"], dtype=np.int64)
-        p, prompts, images = case["prefix_len"], case["prompts"], case["images"]
-        positions = []
-        for ids, specs in zip(prompts, images):
-            grids = [check_image(s, vp)[1] for s in specs]
-            positions.append(np.array(rope_positions(ids, grids, image_token_id, vp["merge_size"]), np.int64))
-        # Prefix images are the leading images of every prompt.
-        n_prefix = len(np.flatnonzero(np.diff(np.r_[0, np.array(prompts[0][:p]) == image_token_id]) == 1))
+    def run_cases(req, label: str) -> None:
+        for case in cases:
+            case_name = case["name"] + label
+            slot_ids = np.array(case["slot_ids"], dtype=np.int64)
+            p, prompts, images = case["prefix_len"], case["prompts"], case["images"]
+            positions = []
+            for ids, specs in zip(prompts, images):
+                grids = [check_image(s, vp)[1] for s in specs]
+                positions.append(np.array(rope_positions(ids, grids, image_token_id, vp["merge_size"]), np.int64))
+            # Prefix images are the leading images of every prompt.
+            n_prefix = len(np.flatnonzero(np.diff(np.r_[0, np.array(prompts[0][:p]) == image_token_id]) == 1))
 
-        feed = {"input_ids": np.array([prompts[0][:p]], dtype=np.int64), "lengths": np.array([p], dtype=np.int64),
-                "offset": np.zeros(1, dtype=np.int64), "position_ids": positions[0][:, None, :p],
-                "read_index": np.array([p - 1], dtype=np.int64), "slot_ids": slot_ids,
-                **image_feed([prompts[0][:p]], images[0][:n_prefix], p)}
-        for spec in meta["past"]:
-            feed[spec["name"]] = np.zeros([0 if d == -1 else d for d in spec["shape"]], dtype=np.float32)
-        res = req.infer(feed)
-        prefix_cache = {spec["name"]: res["present" + spec["name"][len("past"):]].copy() for spec in meta["past"]}
+            feed = {"input_ids": np.array([prompts[0][:p]], dtype=np.int64), "lengths": np.array([p], dtype=np.int64),
+                    "offset": np.zeros(1, dtype=np.int64), "position_ids": positions[0][:, None, :p],
+                    "read_index": np.array([p - 1], dtype=np.int64), "slot_ids": slot_ids,
+                    **image_feed([prompts[0][:p]], images[0][:n_prefix], p)}
+            for spec in meta["past"]:
+                feed[spec["name"]] = np.zeros([0 if d == -1 else d for d in spec["shape"]], dtype=np.float32)
+            res = req.infer(feed)
+            prefix_cache = {spec["name"]: res["present" + spec["name"][len("past"):]].copy() for spec in meta["past"]}
 
-        suffixes = [ids[p:] for ids in prompts]
-        b, t = len(suffixes), max(len(s) for s in suffixes)
-        pos = np.zeros((3, b, t), np.int64)
-        for i, s in enumerate(suffixes):
-            pos[:, i, :len(s)] = positions[i][:, p:]
-        feed = {"input_ids": np.array([s + [0] * (t - len(s)) for s in suffixes], dtype=np.int64),
-                "lengths": np.array([len(s) for s in suffixes], dtype=np.int64),
-                "offset": np.full(b, p, dtype=np.int64), "position_ids": pos,
-                "read_index": np.array([len(s) - 1 for s in suffixes], dtype=np.int64),
-                "slot_ids": slot_ids,
-                **image_feed(suffixes, [s for specs in images for s in specs[n_prefix:]], t)}
-        for name, cache in prefix_cache.items():
-            feed[name] = np.repeat(cache, b, axis=0)
-        res = req.infer(feed)
-        got_slots, got_lse = res["slot_logits"], res["lse"]
+            suffixes = [ids[p:] for ids in prompts]
+            b, t = len(suffixes), max(len(s) for s in suffixes)
+            pos = np.zeros((3, b, t), np.int64)
+            for i, s in enumerate(suffixes):
+                pos[:, i, :len(s)] = positions[i][:, p:]
+            feed = {"input_ids": np.array([s + [0] * (t - len(s)) for s in suffixes], dtype=np.int64),
+                    "lengths": np.array([len(s) for s in suffixes], dtype=np.int64),
+                    "offset": np.full(b, p, dtype=np.int64), "position_ids": pos,
+                    "read_index": np.array([len(s) - 1 for s in suffixes], dtype=np.int64),
+                    "slot_ids": slot_ids,
+                    **image_feed(suffixes, [s for specs in images for s in specs[n_prefix:]], t)}
+            for name, cache in prefix_cache.items():
+                feed[name] = np.repeat(cache, b, axis=0)
+            res = req.infer(feed)
+            got_slots, got_lse = res["slot_logits"], res["lse"]
 
-        n = case["n_options"]
-        worst_dp, worst_logit, worst_lse = 0.0, 0.0, 0.0
-        for i, row in enumerate(case["rows"]):
-            want_logits = np.array(row["slot_logits"])
-            pw, pg = softmax(want_logits[:n]), softmax(got_slots[i, :n].astype(np.float64))
-            log(f"{case['name']} question {i}: torch p={np.round(pw, 4).tolist()} openvino p={np.round(pg, 4).tolist()}")
-            if pw.argmax() != pg.argmax():
-                fail(f"{case['name']} question {i}: top slot {pg.argmax()} != reference {pw.argmax()}")
-            worst_dp = max(worst_dp, float(np.abs(pw - pg).max()))
-            worst_logit = max(worst_logit, float(np.abs(want_logits - got_slots[i]).max()))
-            worst_lse = max(worst_lse, abs(row["lse"] - float(got_lse[i])))
-        log(f"{case['name']} fork exactness: max |dp| {worst_dp:.3e} (tolerance {tolerance:.0e}), "
-            f"max |dlogit| {worst_logit:.3e} over {len(slot_ids)} slots, max |dlse| {worst_lse:.3e}")
-        if not np.isfinite(got_slots).all() or not np.isfinite(got_lse).all():
-            fail(f"{case['name']}: non-finite outputs")
-        if worst_dp > tolerance:
-            fail(f"{case['name']}: max |dp| {worst_dp:.3e} exceeds {tolerance:.0e}")
+            n = case["n_options"]
+            worst_dp, worst_logit, worst_lse = 0.0, 0.0, 0.0
+            for i, row in enumerate(case["rows"]):
+                want_logits = np.array(row["slot_logits"])
+                pw, pg = softmax(want_logits[:n]), softmax(got_slots[i, :n].astype(np.float64))
+                log(f"{case_name} question {i}: torch p={np.round(pw, 4).tolist()} openvino p={np.round(pg, 4).tolist()}")
+                if pw.argmax() != pg.argmax():
+                    fail(f"{case_name} question {i}: top slot {pg.argmax()} != reference {pw.argmax()}")
+                worst_dp = max(worst_dp, float(np.abs(pw - pg).max()))
+                worst_logit = max(worst_logit, float(np.abs(want_logits - got_slots[i]).max()))
+                worst_lse = max(worst_lse, abs(row["lse"] - float(got_lse[i])))
+            log(f"{case_name} fork exactness: max |dp| {worst_dp:.3e} (tolerance {tolerance:.0e}), "
+                f"max |dlogit| {worst_logit:.3e} over {len(slot_ids)} slots, max |dlse| {worst_lse:.3e}")
+            if not np.isfinite(got_slots).all() or not np.isfinite(got_lse).all():
+                fail(f"{case_name}: non-finite outputs")
+            if worst_dp > tolerance:
+                fail(f"{case_name}: max |dp| {worst_dp:.3e} exceeds {tolerance:.0e}")
+
+    if meta["weights"] != "int8":
+        run_cases(fork_request(f32), "")
+    else:
+        # Dynamic quantization needs VNNI; without it the forced run measures the plain int8 path.
+        flags = set(next((line.split(":", 1)[1].split() for line in Path("/proc/cpuinfo").read_text().splitlines()
+                          if line.startswith("flags")), []))
+        log(f"CPU VNNI: avx_vnni {'avx_vnni' in flags}, avx512_vnni {'avx512_vnni' in flags}")
+        for label, dq in (("", 0), (f" (dynamic quantization {DQ_GROUP_SIZE})", DQ_GROUP_SIZE)):
+            req = fork_request({**f32, "DYNAMIC_QUANTIZATION_GROUP_SIZE": dq})
+            run_cases(req, label)
+            del req
+            gc.collect()
     log_peak("self-check")
 
 
@@ -759,23 +1119,52 @@ def spawn_check(model_dir: Path, cases: list[dict], tolerance: float, tokenizer:
 # --- commands ----------------------------------------------------------------------------
 
 
-def export(model, out: Path, slot_ids: list[int], vp: dict) -> None:
-    lm = text_lm(model)
-    convert(lm, out)
-    convert_vision(model.model.visual, out)
-    tc = model.config.text_config
+def write_meta(config, out: Path, slot_ids: list[int], vp: dict, weights: str) -> None:
+    tc = config.text_config
     meta = {"format": FORMAT, "slot_ids": slot_ids, "past": [{"name": n, "shape": s} for n, s in past_specs(tc)],
-            "hidden_size": tc.hidden_size, "image_token_id": model.config.image_token_id,
-            "vision_start_token_id": model.config.vision_start_token_id,
-            "vision_end_token_id": model.config.vision_end_token_id, "vision": vp, "weights": "bf16"}
+            "hidden_size": tc.hidden_size, "image_token_id": config.image_token_id,
+            "vision_start_token_id": config.vision_start_token_id,
+            "vision_end_token_id": config.vision_end_token_id, "vision": vp, "weights": weights}
     (out / "decide.json").write_text(json.dumps(meta) + "\n")
+
+
+def export(model, out: Path, slot_ids: list[int], vp: dict) -> None:
+    convert(text_lm(model), out)
+    convert_vision(model.model.visual, out)
+    write_meta(model.config, out, slot_ids, vp, "bf16")
+
+
+def compress_graph(src: Path, out: Path) -> None:
+    import nncf
+    import openvino as ov
+
+    model = nncf.compress_weights(ov.Core().read_model(src), mode=nncf.CompressWeightsMode.INT8_ASYM)
+    ov.save_model(model, out, compress_to_fp16=False)
+    del model
+    gc.collect()
+    log(f"{out.stem}.bin int8: {size_digest(out.with_suffix('.bin'))}")
+
+
+def export_int8(src: Path, out: Path, slot_ids: list[int], vp: dict) -> None:
+    """The int8 model directory straight from the checkpoint: the fork quantized on load, the
+    small vision encoder exported in bf16 and compressed."""
+    model, ckpt = meta_model(src)
+    load_params(model, ckpt, lambda name, _: name.startswith("model.visual."))
+    model = finish_model(model)
+    out.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        convert_vision(model.model.visual, Path(tmp))
+        del model, ckpt
+        gc.collect()
+        compress_graph(Path(tmp) / "vision.xml", out / "vision.xml")
+    model = int8_lm(src)
+    log_peak("quantize")
+    convert(text_lm(model), out, "int8")
+    write_meta(model.config, out, slot_ids, vp, "int8")
 
 
 def compress(src: Path, out: Path) -> None:
     """src's bf16 model directory with int8 fork and vision weights, into out."""
-    import nncf
-    import openvino as ov
-
     meta = json.loads((src / "decide.json").read_text())
     if meta.get("weights") != "bf16":
         fail(f"{src} has {meta.get('weights')!r} weights, not bf16")
@@ -784,23 +1173,41 @@ def compress(src: Path, out: Path) -> None:
     for f in src.iterdir():
         if f.stem not in graphs and f.name != "decide.json":
             shutil.copy2(f, out / f.name)
-    core = ov.Core()
     for name in graphs:
-        model = nncf.compress_weights(core.read_model(src / f"{name}.xml"), mode=nncf.CompressWeightsMode.INT8_ASYM)
-        ov.save_model(model, out / f"{name}.xml", compress_to_fp16=False)
-        del model
-        gc.collect()
-        log(f"{name}.bin int8: {size_digest(out / f'{name}.bin')}")
+        compress_graph(src / f"{name}.xml", out / f"{name}.xml")
     meta["weights"] = "int8"
     (out / "decide.json").write_text(json.dumps(meta) + "\n")
 
 
-def cmd_export(src: Path, out: Path, reference_out: Path | None) -> None:
-    from transformers import AutoTokenizer
+def compare_int8(a: Path, b: Path) -> bool:
+    """Whether two int8 model directories hold the same compressed weights: u8 weights and zero
+    points, f16 scales. Logs what differs; fails if the graphs' constants do not pair up."""
+    import numpy as np
+    import openvino as ov
 
-    config = validate_source(src)
-    vp = vision_params(json.loads((src / "processor_config.json").read_text()))
-    tok = AutoTokenizer.from_pretrained(src, local_files_only=True)
+    core, same = ov.Core(), True
+    for name in ("fork", "vision"):
+        consts = []
+        for d in (a, b):
+            ops = core.read_model(d / f"{name}.xml").get_ordered_ops()
+            consts.append([op for op in ops if op.get_type_name() == "Constant"
+                           and op.get_element_type() in (ov.Type.u8, ov.Type.f16)])
+        if [(c.get_element_type(), list(c.get_output_shape(0))) for c in consts[0]] != \
+                [(c.get_element_type(), list(c.get_output_shape(0))) for c in consts[1]]:
+            fail(f"{name}: u8/f16 constants do not pair up: {len(consts[0])} vs {len(consts[1])}")
+        n_u8 = sum(c.get_element_type() == ov.Type.u8 for c in consts[0])
+        diff = [(ca, cb) for ca, cb in zip(*consts) if not np.array_equal(ca.data, cb.data)]
+        for ca, cb in diff[:10]:
+            d = np.abs(ca.data.astype(np.float64) - cb.data.astype(np.float64))
+            log(f"{name}: {ca.get_friendly_name()} {ca.get_element_type()} {list(ca.get_output_shape(0))}: "
+                f"{int((d > 0).sum())} values differ, max {d.max():g}")
+        log(f"{name}: {len(consts[0]) - len(diff)}/{len(consts[0])} u8/f16 constants identical "
+            f"({n_u8} u8)")
+        same = same and not diff
+    return same
+
+
+def check_cases(tok, image_token_id: int, vp: dict) -> tuple[list[int], list[dict]]:
     slot_ids = slot_token_ids(tok)
     m = vp["merge_size"]
     _, grid = check_image(CHECK_IMAGE, vp)
@@ -809,11 +1216,30 @@ def cmd_export(src: Path, out: Path, reference_out: Path | None) -> None:
     for name, image in (("text", False), ("image", True)):
         prompts, prefix_len = render_check_prompts(tok, image)
         if image:
-            prompts = [expand_images(ids, config["image_token_id"], [n_image]) for ids in prompts]
+            prompts = [expand_images(ids, image_token_id, [n_image]) for ids in prompts]
             prefix_len += n_image - 1
         cases.append({"name": name, "prompts": prompts, "prefix_len": prefix_len, "slot_ids": slot_ids,
                       "n_options": 2, "images": [[CHECK_IMAGE] if image else [] for _ in prompts]})
         log(f"{name} check prompts: prefix {prefix_len} tokens, suffixes {[len(p) - prefix_len for p in prompts]}")
+    return slot_ids, cases
+
+
+def layered_reference(src: Path, cases: list[dict], vp: dict) -> None:
+    model, head = layered_model(src)
+    head = head()
+    for case in cases:
+        case["rows"] = reference(model, case, vp, head)
+    del model, head
+    gc.collect()
+
+
+def cmd_export(src: Path, out: Path, reference_out: Path | None, weights: str, remove_weights: bool) -> None:
+    from transformers import AutoTokenizer
+
+    config = validate_source(src)
+    vp = vision_params(json.loads((src / "processor_config.json").read_text()))
+    tok = AutoTokenizer.from_pretrained(src, local_files_only=True)
+    slot_ids, cases = check_cases(tok, config["image_token_id"], vp)
 
     out.mkdir(parents=True, exist_ok=True)
     import openvino as ov
@@ -822,17 +1248,27 @@ def cmd_export(src: Path, out: Path, reference_out: Path | None) -> None:
     ov.save_model(convert_tokenizer(tok, with_detokenizer=False), out / "openvino_tokenizer.xml")
     del tok
 
-    model = load_model(src)
-    for case in cases:
-        case["rows"] = reference(model, case, vp)
-    export(model, out, slot_ids, vp)
-    del model
+    if weights == "bf16":
+        model = load_model(src)
+        for case in cases:
+            case["rows"] = reference(model, case, vp)
+        export(model, out, slot_ids, vp)
+        del model
+        tolerance = REAL_TOLERANCE
+    else:
+        layered_reference(src, cases, vp)
+        log_peak("reference")
+        export_int8(src, out, slot_ids, vp)
+        tolerance = INT8_TOLERANCE
     gc.collect()
     log_peak("export")
+    if remove_weights:
+        for shard in src.glob("model*.safetensors"):
+            shard.unlink()
 
     for name in METADATA:
         shutil.move(src / name, out / name)
-    spawn_check(out, cases, REAL_TOLERANCE, tokenizer=True)
+    spawn_check(out, cases, tolerance, tokenizer=True)
     if reference_out:
         reference_out.write_text(json.dumps(cases))
 
@@ -843,7 +1279,7 @@ def cmd_compress(src: Path, out: Path, reference: Path) -> None:
     spawn_check(out, json.loads(reference.read_text()), INT8_TOLERANCE, tokenizer=True)
 
 
-def cmd_selftest() -> None:
+def tiny_model(tied: bool):
     import torch
     from transformers.models.qwen3_5 import modeling_qwen3_5 as mq
     from transformers.models.qwen3_5.configuration_qwen3_5 import Qwen3_5Config
@@ -856,7 +1292,7 @@ def cmd_selftest() -> None:
             "vocab_size": 512, "hidden_size": 64, "intermediate_size": 128, "num_hidden_layers": 8,
             "layer_types": [LINEAR, LINEAR, LINEAR, FULL] * 2, "num_attention_heads": 4, "num_key_value_heads": 2,
             "head_dim": 32, "linear_num_key_heads": 2, "linear_num_value_heads": 4, "linear_key_head_dim": 16,
-            "linear_value_head_dim": 16, "linear_conv_kernel_dim": 4, "tie_word_embeddings": True,
+            "linear_value_head_dim": 16, "linear_conv_kernel_dim": 4, "tie_word_embeddings": tied,
             "initializer_range": 0.2,
             "rope_parameters": {"rope_type": "default", "rope_theta": 1e7, "partial_rotary_factor": 0.25,
                                 "mrope_section": [2, 1, 1], "mrope_interleaved": True}},
@@ -866,13 +1302,34 @@ def cmd_selftest() -> None:
             "out_hidden_size": 64, "hidden_act": "gelu_pytorch_tanh", "initializer_range": 0.2,
             "deepstack_visual_indexes": []},
         image_token_id=500, video_token_id=501, vision_start_token_id=502, vision_end_token_id=503,
-        tie_word_embeddings=True)
+        tie_word_embeddings=tied)
     model = mq.Qwen3_5ForConditionalGeneration(config).to(torch.bfloat16)
     with torch.no_grad():
         for name, param in model.named_parameters():
             if name.endswith("norm.weight"):
                 param.normal_(0, 0.3)
-    model = finish_model(model)
+    return model
+
+
+def save_checkpoint(model, src: Path) -> None:
+    """model as a HF checkpoint directory: config.json and one safetensors shard."""
+    from safetensors.torch import save_file
+
+    src.mkdir(parents=True)
+    model.config.save_pretrained(src)
+    tied = model.config.text_config.tie_word_embeddings
+    state = {k: v.contiguous().clone() for k, v in model.state_dict().items() if not (tied and k == "lm_head.weight")}
+    save_file(state, src / "model.safetensors")
+
+
+def cmd_selftest() -> None:
+    import copy
+
+    import torch
+
+    global QUANT_CHUNK
+    # Small enough that the embedding quantizes in two chunks, each above NNCF's size threshold.
+    QUANT_CHUNK = 2**14
     vp = {"patch_size": 4, "temporal_patch_size": 2, "merge_size": 2, "min_pixels": 64, "max_pixels": 4096,
           "resample": "bicubic", "rescale_factor": 1 / 255, "image_mean": [0.5, 0.4, 0.3], "image_std": [0.2, 0.3, 0.4]}
     slot_ids = list(range(32, 32 + 26))
@@ -890,32 +1347,54 @@ def cmd_selftest() -> None:
         {"height": 8, "width": 8, "seed": 3}
     text_prefix = text(37)
     prefix = text(9) + image(wide) + text(5) + image(tall) + text(7)
-    cases = [
+    prompts = [
         {"name": "text", "prompts": [text_prefix + text(n) for n in (11, 6)], "prefix_len": len(text_prefix),
-         "images": [[], []]},
+         "images": [[], []], "slot_ids": slot_ids, "n_options": 4},
         {"name": "image", "prompts": [prefix + text(4) + image(small) + text(3), prefix + text(6)],
-         "prefix_len": len(prefix), "images": [[wide, tall, small], [wide, tall]]},
+         "prefix_len": len(prefix), "images": [[wide, tall, small], [wide, tall]], "slot_ids": slot_ids,
+         "n_options": 4},
     ]
 
-    # f32 compute over the same bf16-rounded weights isolates graph errors from bf16 rounding.
-    reference_model = finish_model(model.float())
-    for case in cases:
-        case.update(slot_ids=slot_ids, n_options=4)
-        case["rows"] = reference(reference_model, case, vp)
-    model = finish_model(model.to(torch.bfloat16))
-    with tempfile.TemporaryDirectory() as tmp:
-        out = Path(tmp)
-        export(model, out / "bf16", slot_ids, vp)
-        del model, reference_model
-        gc.collect()
-        spawn_check(out / "bf16", cases, SELFTEST_TOLERANCE, tokenizer=False)
-        compress(out / "bf16", out / "int8")
-        spawn_check(out / "int8", cases, INT8_TOLERANCE, tokenizer=False)
+    for tied in (True, False):
+        log(f"selftest: {'tied' if tied else 'untied'} LM head")
+        model = tiny_model(tied)
+        cases = copy.deepcopy(prompts)
+        # f32 compute over the same bf16-rounded weights isolates graph errors from bf16 rounding.
+        reference_model = finish_model(model.float())
+        for case in cases:
+            case["rows"] = reference(reference_model, case, vp)
+        model = finish_model(model.to(torch.bfloat16))
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            save_checkpoint(model, out / "src")
+            full = [reference(model, case, vp) for case in cases]
+            layered = copy.deepcopy(prompts)
+            layered_reference(out / "src", layered, vp)
+            if full != [case["rows"] for case in layered]:
+                fail("the layer-by-layer reference differs from the whole model's")
+            log("layer-by-layer reference: identical to the whole model's")
+
+            export(model, out / "bf16", slot_ids, vp)
+            del model, reference_model
+            gc.collect()
+            spawn_check(out / "bf16", cases, SELFTEST_TOLERANCE, tokenizer=False)
+            compress(out / "bf16", out / "int8")
+            spawn_check(out / "int8", cases, SELFTEST_INT8_TOLERANCE, tokenizer=False)
+            export_int8(out / "src", out / "int8-load", slot_ids, vp)
+            if not compare_int8(out / "int8", out / "int8-load"):
+                fail("quantize-on-load weights differ from nncf.compress_weights'")
+            spawn_check(out / "int8-load", cases, SELFTEST_INT8_TOLERANCE, tokenizer=False)
     log("selftest ok")
+
+
+def cmd_compare(a: Path, b: Path) -> None:
+    if not compare_int8(a, b):
+        fail(f"{a} and {b} hold different int8 weights")
 
 
 def main() -> None:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    watch_anon()
     ap = argparse.ArgumentParser(prog="decide-export", description=__doc__.split("\n\n")[0])
     ap.add_argument("--version", action="version", version=f"decide-export {__version__} (format {FORMAT})")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -923,11 +1402,18 @@ def main() -> None:
     ex.add_argument("--src", type=Path, required=True)
     ex.add_argument("--out", type=Path, required=True)
     ex.add_argument("--reference", type=Path, help="also write the self-check's torch reference here, for compress")
+    ex.add_argument("--weights", choices=("bf16", "int8"), default="bf16",
+                    help="int8 quantizes the checkpoint as it loads, never holding the bf16 model")
+    ex.add_argument("--remove-weights", action="store_true",
+                    help="delete the checkpoint's safetensors once the IR is written, before the self-check")
     co = sub.add_parser("compress", help="compress an exported model directory's weights to int8")
     co.add_argument("--model", type=Path, required=True)
     co.add_argument("--out", type=Path, required=True)
     co.add_argument("--reference", type=Path, required=True, help="export --reference of the model")
     sub.add_parser("selftest", help="export a tiny random model and check it against transformers")
+    cm = sub.add_parser("compare", help="compare the compressed weights of two int8 model directories, failing if they differ")
+    cm.add_argument("a", type=Path)
+    cm.add_argument("b", type=Path)
     ck = sub.add_parser("check")
     ck.add_argument("--model", type=Path, required=True)
     ck.add_argument("--reference", type=Path, required=True)
@@ -935,11 +1421,13 @@ def main() -> None:
     ck.add_argument("--no-tokenizer", action="store_true")
     args = ap.parse_args()
     if args.cmd == "export":
-        cmd_export(args.src, args.out, args.reference)
+        cmd_export(args.src, args.out, args.reference, args.weights, args.remove_weights)
     elif args.cmd == "compress":
         cmd_compress(args.model, args.out, args.reference)
     elif args.cmd == "selftest":
         cmd_selftest()
+    elif args.cmd == "compare":
+        cmd_compare(args.a, args.b)
     else:
         run_check(args.model, args.reference, args.tolerance, not args.no_tokenizer)
 

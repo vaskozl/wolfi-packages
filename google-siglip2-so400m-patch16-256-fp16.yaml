@@ -14,7 +14,7 @@
 package:
   name: google-siglip2-so400m-patch16-256-fp16
   version: "20250221"
-  epoch: 1 # rebuild for openvino 2026.4.1, unlocked decide-export
+  epoch: 2 # rebuild for decide-export 2.2.0
   description: SigLIP 2 So400m/16 256px image and text encoders as OpenVINO IR, fp16 weights
   copyright:
     - license: Apache-2.0

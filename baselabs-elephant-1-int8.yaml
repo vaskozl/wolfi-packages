@@ -1,0 +1,147 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
+# elephant-1 decide model (Qwen3.5-9B finetune, untied LM head), exported at build time
+# to an OpenVINO fork graph and vision encoder by decide-export, with int8 weights
+# quantized as the checkpoint loads: the bf16 model would not fit the 16Gi build. The
+# weights are pinned by HF commit (vars.revision), so there is no renovate tracking and no
+# bump bot; that is also why the fetch URIs interpolate ${{vars.revision}}. Re-exporting
+# the same weights bumps epoch.
+package:
+  name: baselabs-elephant-1-int8
+  version: "20261120"
+  epoch: 0
+  description: elephant-1 decide model (9B) as an OpenVINO fork graph and vision encoder, int8 weights
+  copyright:
+    - license: MIT
+    - license: Apache-2.0
+  # The content is arch-independent, but melange has no noarch and the openvino
+  # runtime exists only on x86_64.
+  target-architecture:
+    - x86_64
+  resources:
+    cpu: "4"
+    memory: 16Gi
+  dependencies:
+    provides:
+      # Unversioned so models co-install; consumers depend on it and pick a model.
+      - decide-model-format-2
+    runtime:
+      - openvino-tokenizers
+      - openvino~2026.4
+vars:
+  revision: 2e80345f1e41b2c1eaff8ae2538c0ac657210c44
+var-transforms:
+  - from: ${{package.name}}
+    match: ^baselabs-
+    replace: ""
+    to: model-dir
+environment:
+  contents:
+    packages:
+      - busybox
+      - decide-export
+  environment:
+    # wget's default dot progress for multi-GB weights overflows the 4 MiB CI job log.
+    WGETRC: /home/build/.wgetrc
+pipeline:
+  - runs: echo 'progress = dot:giga' > /home/build/.wgetrc
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/elephant-1/resolve/${{vars.revision}}/model.safetensors
+      expected-sha256: 682f02348dfe4617dd21bba2915c12e805de8cf16327a61e895a831ea681d0ba
+      extract: false
+      timeout: 600
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/elephant-1/resolve/${{vars.revision}}/tokenizer.json
+      expected-sha256: a5cd9732badce41de57e6efce8302930ded1c1188c5f81feb2bd6c24c4a1941f
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/elephant-1/resolve/${{vars.revision}}/config.json
+      expected-sha256: f26324589d15932e2742dbb13dbc7c561865ce4f80990af3b7dff05efe4dadab
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/elephant-1/resolve/${{vars.revision}}/tokenizer_config.json
+      expected-sha256: 2984c03425a28d242744e234a5003786fd289b3713db79fe0958c65eb59d85b2
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/elephant-1/resolve/${{vars.revision}}/chat_template.jinja
+      expected-sha256: a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/elephant-1/resolve/${{vars.revision}}/readout.json
+      expected-sha256: 96ea8a5c6ecfc30c20cdd369762db5997c5f4fb9821ce0a0318941343eb5e8ba
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/elephant-1/resolve/${{vars.revision}}/generation_config.json
+      expected-sha256: 290866a6d7d4a4442fe83ba2434a31517446f40a01de500ff97b4354e7e5d082
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/elephant-1/resolve/${{vars.revision}}/processor_config.json
+      expected-sha256: bfbc24af59a3e73a9cd0653b8d4ae758dfaec4e3e6c15dfb1c6c8ee8d5683c85
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/elephant-1/resolve/${{vars.revision}}/LICENSE
+      expected-sha256: bd914b96f2ca553c34128c512c90a6424a3080a4cf6e6b3266db42ec9577a850
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/elephant-1/resolve/${{vars.revision}}/NOTICE
+      expected-sha256: 381c909b9514c7fcb96f7e6d6764070597c7e8c3f0f7d1ab3a4ca5b9bb9f3db7
+      extract: false
+      timeout: 120
+  - uses: fetch
+    with:
+      uri: https://huggingface.co/baselabs/elephant-1/resolve/${{vars.revision}}/README.md
+      expected-sha256: 6a09c8d8418ba15efb9093e3c2a2bfbdac12432495793bbf42ed841000b4c09c
+      extract: false
+      timeout: 120
+  - runs: |
+      set -eu
+      # --remove-weights frees the 18.8 GB checkpoint before the self-check, keeping the
+      # workspace under ~30 GB.
+      decide-export export --weights int8 --remove-weights --src . \
+        --out "${{targets.destdir}}/usr/share/decide/models/${{vars.model-dir}}"
+      lic="${{targets.destdir}}/usr/share/licenses/${{package.name}}"
+      install -Dm644 LICENSE "$lic/LICENSE"
+      install -Dm644 NOTICE "$lic/NOTICE"
+      install -Dm644 README.md "$lic/MODEL_CARD.md"
+test:
+  environment:
+    contents:
+      packages:
+        - build-base
+        - go-1.27
+        - openvino-dev
+        - pkgconf
+  pipeline:
+    - name: model directory holds the int8 IR, the tokenizer IR and the HF metadata
+      runs: |
+        set -eu
+        cd "/usr/share/decide/models/${{vars.model-dir}}"
+        for f in fork.xml fork.bin vision.xml vision.bin openvino_tokenizer.xml openvino_tokenizer.bin decide.json \
+          config.json tokenizer.json tokenizer_config.json chat_template.jinja readout.json generation_config.json \
+          processor_config.json; do
+          test -s "$f"
+        done
+        grep -qF '"weights": "int8"' decide.json
+        for f in LICENSE NOTICE MODEL_CARD.md; do
+          test -s "/usr/share/licenses/${{package.name}}/$f"
+        done
+    - uses: test/decide-model
+      with:
+        model-dir: /usr/share/decide/models/${{vars.model-dir}}
