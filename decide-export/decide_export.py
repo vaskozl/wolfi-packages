@@ -84,6 +84,7 @@ only to f32 activations, so on AMX it needs INFERENCE_PRECISION_HINT f32.
 from __future__ import annotations
 
 import argparse
+import atexit
 import bisect
 import gc
 import hashlib
@@ -155,11 +156,49 @@ def size_digest(path: Path) -> str:
     return f"{path.stat().st_size / 2**30:.2f} GiB, sha256 {digest}"
 
 
+# Samples the parent's RssAnon from another process: a thread could not run while OpenVINO
+# holds the GIL. Exits once the parent is gone or a zombie (no RssAnon line).
+_ANON_WATCHER = """
+import os, sys, time
+pid, out, peak = int(sys.argv[1]), sys.argv[2], 0
+while os.getppid() == pid:
+    try:
+        status = open(f"/proc/{pid}/status").read()
+    except OSError:
+        break
+    anon = next((int(l.split()[1]) for l in status.splitlines() if l.startswith("RssAnon:")), None)
+    if anon is None:
+        break
+    if anon > peak:
+        peak = anon
+        with open(out + ".tmp", "w") as f:
+            f.write(str(peak))
+        os.replace(out + ".tmp", out)
+    time.sleep(0.02)
+"""
+_anon_peak_file: Path | None = None
+
+
+def watch_anon() -> None:
+    global _anon_peak_file
+    fd, path = tempfile.mkstemp(prefix="decide-export-anon.")
+    os.close(fd)
+    _anon_peak_file = Path(path)
+    atexit.register(_anon_peak_file.unlink, missing_ok=True)
+    subprocess.Popen([sys.executable, "-I", "-c", _ANON_WATCHER, str(os.getpid()), path])
+
+
 def log_peak(stage: str) -> None:
-    # ru_maxrss survives execve, so a spawned check would report its parent's peak.
-    status = Path("/proc/self/status").read_text()
-    hwm = int(next(line.split()[1] for line in status.splitlines() if line.startswith("VmHWM:")))
-    msg = f"{stage}: peak RSS {hwm / 2**20:.2f} GiB"
+    # VmHWM counts mmapped fork.bin pages too, which the kernel can reclaim; anonymous memory
+    # is what an OOM kill counts. ru_maxrss survives execve, so it would report the parent's peak.
+    status = {line.split(":")[0]: int(line.split()[1]) for line in
+              Path("/proc/self/status").read_text().splitlines() if line.endswith(" kB")}
+    msg = f"{stage}: peak RSS {status['VmHWM'] / 2**20:.2f} GiB"
+    try:
+        msg += f", sampled peak anon {int(_anon_peak_file.read_text() or 0) / 2**20:.2f} GiB"
+    except (AttributeError, OSError, ValueError):
+        pass
+    msg += f"; now anon {status['RssAnon'] / 2**20:.2f}, file {status['RssFile'] / 2**20:.2f} GiB"
     try:
         msg += f", cgroup memory.peak {int(Path('/sys/fs/cgroup/memory.peak').read_text()) / 2**30:.2f} GiB"
     except (OSError, ValueError):
@@ -1355,6 +1394,7 @@ def cmd_compare(a: Path, b: Path) -> None:
 
 def main() -> None:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    watch_anon()
     ap = argparse.ArgumentParser(prog="decide-export", description=__doc__.split("\n\n")[0])
     ap.add_argument("--version", action="version", version=f"decide-export {__version__} (format {FORMAT})")
     sub = ap.add_subparsers(dest="cmd", required=True)
