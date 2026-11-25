@@ -27,7 +27,7 @@ pipeline:
     with:
       repository: https://gitlab.com/kernel-firmware/linux-firmware
       tag: ${{package.version}}
-      expected-commit: a2dcb924f0897368b0b4f305cbf9808cdda90ce0
+      expected-commit: c46910a4cbd8332ac45205424c5383dfbcb99ac5
   - runs: |
       set -eux
       export ZSTD_NBTHREADS=4 ZSTD_CLEVEL=19
