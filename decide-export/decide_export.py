@@ -1350,7 +1350,7 @@ def cmd_selftest() -> None:
 
 def cmd_compare(a: Path, b: Path) -> None:
     if not compare_int8(a, b):
-        log(f"{a} and {b} hold different int8 weights")
+        fail(f"{a} and {b} hold different int8 weights")
 
 
 def main() -> None:
@@ -1371,7 +1371,7 @@ def main() -> None:
     co.add_argument("--out", type=Path, required=True)
     co.add_argument("--reference", type=Path, required=True, help="export --reference of the model")
     sub.add_parser("selftest", help="export a tiny random model and check it against transformers")
-    cm = sub.add_parser("compare", help="compare the compressed weights of two int8 model directories")
+    cm = sub.add_parser("compare", help="compare the compressed weights of two int8 model directories, failing if they differ")
     cm.add_argument("a", type=Path)
     cm.add_argument("b", type=Path)
     ck = sub.add_parser("check")
