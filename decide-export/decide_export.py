@@ -694,6 +694,7 @@ def convert(lm, out: Path, weights: str = "bf16") -> None:
             extension=[ModuleExtension(RecurrentAttentionCell, "RecurrentAttentionCellOp"),
                        ConversionExtension("RecurrentAttentionCellOp", convert_recurrent_attention_cell)],
         )
+    log_peak("convert")
     name_ports(model, names, ["slot_logits", "lse"] + ["present" + n[len("past"):] for n, _ in specs])
 
     lm_head = [op for op in model.get_ops() if op.get_type_name() == "Constant"
