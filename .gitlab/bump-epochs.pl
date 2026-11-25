@@ -7,8 +7,11 @@
 # --check fails on violations instead of fixing (used by CI). Default
 # applies fixes in place.
 #
-# $BASE_REF defaults to HEAD~1. Renovate sets HEAD (pre-commit working tree);
-# CI sets origin/main (full MR).
+# $BASE_REF defaults to the merge-base of HEAD and origin/main (HEAD when that
+# does not resolve), so uncommitted edits and every commit on the branch are
+# covered. HEAD~1 is wrong on a merge commit: its first parent predates
+# whatever the merge brought in, which then reads as new and goes unbumped.
+# Renovate sets HEAD (pre-commit working tree); CI sets origin/main (full MR).
 #
 # Requires: melange, git, perl-yaml-pp.
 
@@ -23,7 +26,7 @@ use YAML::PP;
 $| = 1;
 
 my $check_mode = 0;
-my $base_ref   = $ENV{BASE_REF} // 'HEAD~1';
+my $base_ref   = $ENV{BASE_REF};
 
 GetOptions(
     'check'      => \$check_mode,
@@ -33,6 +36,8 @@ GetOptions(
 ) or die "bad args (see --help)\n";
 
 chdir abs_path(dirname(__FILE__) . '/..') or die "chdir: $!";
+
+$base_ref //= default_base_ref();
 
 my $ypp = YAML::PP->new;
 
@@ -66,6 +71,17 @@ sub git_blob {
     local $/;
     my $out = <$fh>;
     return close($fh) ? $out : undef;
+}
+
+sub default_base_ref {
+    my $pid = open my $fh, '-|';
+    return 'HEAD' unless defined $pid;
+    if (!$pid) {
+        open STDERR, '>', '/dev/null';
+        exec 'git', 'merge-base', 'HEAD', 'origin/main' or exit 127;
+    }
+    chomp(my $sha = <$fh> // '');
+    return close($fh) && length $sha ? $sha : 'HEAD';
 }
 
 sub run_capture_lines {
