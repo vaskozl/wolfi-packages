@@ -83,9 +83,9 @@ from __future__ import annotations
 import argparse
 import bisect
 import gc
+import hashlib
 import json
 import os
-import resource
 import shutil
 import subprocess
 import sys
@@ -138,9 +138,17 @@ def log(msg: str) -> None:
     print(f"decide-export: {msg}", file=sys.stderr, flush=True)
 
 
+def size_digest(path: Path) -> str:
+    with path.open("rb") as f:
+        digest = hashlib.file_digest(f, "sha256").hexdigest()
+    return f"{path.stat().st_size / 2**30:.2f} GiB, sha256 {digest}"
+
+
 def log_peak(stage: str) -> None:
-    rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 2**20
-    msg = f"{stage}: peak RSS {rss:.2f} GiB"
+    # ru_maxrss survives execve, so a spawned check would report its parent's peak.
+    status = Path("/proc/self/status").read_text()
+    hwm = int(next(line.split()[1] for line in status.splitlines() if line.startswith("VmHWM:")))
+    msg = f"{stage}: peak RSS {hwm / 2**20:.2f} GiB"
     try:
         msg += f", cgroup memory.peak {int(Path('/sys/fs/cgroup/memory.peak').read_text()) / 2**30:.2f} GiB"
     except (OSError, ValueError):
@@ -443,7 +451,7 @@ def convert(lm, out: Path) -> None:
     out.mkdir(parents=True, exist_ok=True)
     ov.save_model(model, out / "fork.xml", compress_to_fp16=False)
     del model, fork
-    log(f"fork.bin: {(out / 'fork.bin').stat().st_size / 2**30:.2f} GiB")
+    log(f"fork.bin: {size_digest(out / 'fork.bin')}")
 
 
 def convert_vision(visual, out: Path) -> None:
@@ -782,7 +790,7 @@ def compress(src: Path, out: Path) -> None:
         ov.save_model(model, out / f"{name}.xml", compress_to_fp16=False)
         del model
         gc.collect()
-        log(f"{name}.bin: {(out / f'{name}.bin').stat().st_size / 2**30:.2f} GiB int8")
+        log(f"{name}.bin int8: {size_digest(out / f'{name}.bin')}")
     meta["weights"] = "int8"
     (out / "decide.json").write_text(json.dumps(meta) + "\n")
 
