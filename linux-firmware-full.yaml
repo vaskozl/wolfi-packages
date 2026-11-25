@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: linux-firmware-full
-  version: "20261019"
+  version: "20261124"
   epoch: 0
   description: Firmware files for Linux, single unsplit package with zstd-compressed, deduplicated blobs
   copyright:
@@ -27,7 +27,7 @@ pipeline:
     with:
       repository: https://gitlab.com/kernel-firmware/linux-firmware
       tag: ${{package.version}}
-      expected-commit: a2dcb924f0897368b0b4f305cbf9808cdda90ce0
+      expected-commit: c46910a4cbd8332ac45205424c5383dfbcb99ac5
   - runs: |
       set -eux
       export ZSTD_NBTHREADS=4 ZSTD_CLEVEL=19
