@@ -88,6 +88,8 @@ import bisect
 import gc
 import hashlib
 import json
+import math
+import mmap
 import os
 import shutil
 import subprocess
@@ -432,6 +434,35 @@ def int8_modules():
     return Int8Weight, Int8Linear, Int8Embedding, Int8Conv1d
 
 
+def int8_decompress_extensions() -> list:
+    """Trace NNCF's decompressors as one op that converts to their u8 -> Convert -> Subtract ->
+    Multiply -> Convert f32 pattern, without computing the f32 weight: run for real, each
+    decompression is about 6 bytes per weight, and the LM head's alone pushes a 9B model past
+    the 16Gi build."""
+    import openvino as ov
+    import openvino.opset14 as ops
+    import torch
+    from nncf.torch.quantization.layers import INT8AsymmetricWeightsDecompressor
+    from openvino.frontend.pytorch import ConversionExtension, ModuleExtension
+
+    def evaluate(m, w, *_):
+        # Zeros in a private anonymous mapping: reads map the kernel's zero page, so the weight
+        # is never resident. Tracing keeps the graph, not these values.
+        shape = [int(d) for d in w.shape]
+        n = math.prod(shape)
+        buf = mmap.mmap(-1, max(4, 4 * n), flags=mmap.MAP_PRIVATE | mmap.MAP_ANONYMOUS)
+        return torch.frombuffer(buf, dtype=torch.float32, count=n).view(shape)
+
+    def convert(ctx):
+        w, scale, zp = (ctx.get_input(i) for i in range(3))
+        x = ops.multiply(ops.subtract(ops.convert(w, ov.Type.f16), ops.convert(zp, ov.Type.f16)), scale)
+        return [ops.convert(x, ov.Type.f32).output(0)]
+
+    return [ModuleExtension(INT8AsymmetricWeightsDecompressor, "Int8DecompressOp", evaluate=evaluate,
+                            convert=lambda m, op, w: op(w, m._scale, m._zero_point)),
+            ConversionExtension("Int8DecompressOp", convert)]
+
+
 def int8_lm(src: Path):
     """The text model and LM head with NNCF INT8_ASYM weights, quantized tensor by tensor as the
     checkpoint is read: the bf16 model is never held. The vision encoder stays on the meta device."""
@@ -692,7 +723,8 @@ def convert(lm, out: Path, weights: str = "bf16") -> None:
             example_input=tuple(example),
             input=[(ov.PartialShape(s), ty) for s, ty in zip(shapes, types)],
             extension=[ModuleExtension(RecurrentAttentionCell, "RecurrentAttentionCellOp"),
-                       ConversionExtension("RecurrentAttentionCellOp", convert_recurrent_attention_cell)],
+                       ConversionExtension("RecurrentAttentionCellOp", convert_recurrent_attention_cell)]
+            + (int8_decompress_extensions() if weights == "int8" else []),
         )
     log_peak("convert")
     name_ports(model, names, ["slot_logits", "lse"] + ["present" + n[len("past"):] for n, _ in specs])
