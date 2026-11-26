@@ -2,7 +2,7 @@
 package:
   name: kitty
   version: "0.51.1"
-  epoch: 0
+  epoch: 1
   description: Modern, hackable, featureful, OpenGL based terminal emulator
   copyright:
     - license: GPL-3.0-only
@@ -14,8 +14,6 @@ environment:
   contents:
     packages:
       - build-base
-      - ca-certificates-bundle
-      - curl
       - dbus-dev
       - fontconfig-dev
       - freetype-dev
@@ -33,9 +31,11 @@ environment:
       - libxrandr-dev
       - mesa-dev
       - ncurses
+      - nerd-fonts-symbols
       - openssl-dev
       - py3-setuptools
       - python3-dev
+      - simde-dev
       - wayland-dev
       - wayland-protocols
       - wayland-protocols-dev
@@ -47,55 +47,57 @@ pipeline:
     with:
       repository: https://github.com/kovidgoyal/kitty
       tag: v${{package.version}}
-  - uses: patch
+  # kitty compiles its shaders with slangc at build time and no Wolfi or
+  # Alpine package ships it; fetch the release kitty pins in
+  # bypy/sources.json.
+  - runs: mkdir -p .slang
+  - if: ${{build.arch}} == 'x86_64'
+    uses: fetch
     with:
-      patches: disable-docs.patch
+      uri: https://github.com/shader-slang/slang/releases/download/v2026.14.1/slang-2026.14.1-linux-x86_64.tar.gz
+      expected-sha256: 21f2d7847385a770e569fb61b1507a7794d742d97850bce0432bff0032ca005f
+      directory: .slang
+      strip-components: 0
+  - if: ${{build.arch}} == 'aarch64'
+    uses: fetch
+    with:
+      uri: https://github.com/shader-slang/slang/releases/download/v2026.14.1/slang-2026.14.1-linux-aarch64.tar.gz
+      expected-sha256: 438325c6529ba658f571614d9d551cdff09e730836d29c26c290afc8ed996985
+      directory: .slang
+      strip-components: 0
   - runs: |
       set -eu
-      # setup.py embeds SymbolsNerdFontMono-Regular.ttf at build time; if the
-      # file already exists in fonts/ it skips the fontconfig lookup entirely.
-      # Pre-download the font so the build doesn't need system nerd-fonts.
+      # setup.py skips the fontconfig lookup when the font is already in fonts/.
       mkdir -p fonts
-      curl -fsSL -o fonts/SymbolsNerdFontMono-Regular.ttf \
-        https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/patched-fonts/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf
-      echo "f0f624d9b474bea1662cf7e862d44aebe1ae1f6c7f9cb7a0ca5d0e5ac9561c60  fonts/SymbolsNerdFontMono-Regular.ttf" | sha256sum -c -
-      # kitty compiles its shaders with slangc at build time and no Wolfi or
-      # Alpine package ships it; fetch the release kitty pins in
-      # bypy/sources.json.
-      slang_version=2026.14.1
-      case "${{build.arch}}" in
-        x86_64) slang_sha256=21f2d7847385a770e569fb61b1507a7794d742d97850bce0432bff0032ca005f ;;
-        aarch64) slang_sha256=438325c6529ba658f571614d9d551cdff09e730836d29c26c290afc8ed996985 ;;
-      esac
-      slang_dir=$(mktemp -d)
-      curl -fsSL -o "$slang_dir/slang.tar.gz" \
-        "https://github.com/shader-slang/slang/releases/download/v${slang_version}/slang-${slang_version}-linux-${{build.arch}}.tar.gz"
-      echo "$slang_sha256  $slang_dir/slang.tar.gz" | sha256sum -c -
-      tar -xzf "$slang_dir/slang.tar.gz" -C "$slang_dir"
-      export SLANGC="$slang_dir/bin/slangc"
-      export LDFLAGS="${LDFLAGS:-} -Wl,-z,stack-size=2097152"
-      export CFLAGS="${CFLAGS:-} -DKITTY_NO_SIMD"
+      cp /usr/share/fonts/nerd-fonts-symbols/SymbolsNerdFontMono-Regular.ttf fonts/
+      # setup.py only runs the sphinx docs build when docs/_build/html is
+      # missing; the empty dirs it then copies are removed after install.
+      mkdir -p docs/_build/man docs/_build/html
+      export SLANGC="$PWD/.slang/bin/slangc"
       python3 setup.py linux-package \
         --ignore-compiler-warnings \
         --update-check-interval=0 \
         --prefix="${{targets.destdir}}/usr"
       find "${{targets.destdir}}" -name '*.opt-?.pyc' -delete
+      rm -rf "${{targets.destdir}}/usr/share/doc/kitty"
+      find "${{targets.destdir}}/usr/share" -type d -empty -delete
   - runs: |
+      set -eu
       # setup.py linux-package does not install shell completions for bash/zsh/fish.
       # Generate them using the built kitten binary (pure CLI, no display required).
       KITTEN="${{targets.destdir}}/usr/bin/kitten"
 
       mkdir -p "${{targets.destdir}}/usr/share/bash-completion/completions"
       "$KITTEN" __complete__ setup bash \
-        > "${{targets.destdir}}/usr/share/bash-completion/completions/kitty" 2>/dev/null || true
+        > "${{targets.destdir}}/usr/share/bash-completion/completions/kitty"
 
       mkdir -p "${{targets.destdir}}/usr/share/zsh/site-functions"
       "$KITTEN" __complete__ setup zsh \
-        > "${{targets.destdir}}/usr/share/zsh/site-functions/_kitty" 2>/dev/null || true
+        > "${{targets.destdir}}/usr/share/zsh/site-functions/_kitty"
 
       mkdir -p "${{targets.destdir}}/usr/share/fish/vendor_completions.d"
       "$KITTEN" __complete__ setup fish \
-        > "${{targets.destdir}}/usr/share/fish/vendor_completions.d/kitty.fish" 2>/dev/null || true
+        > "${{targets.destdir}}/usr/share/fish/vendor_completions.d/kitty.fish"
   - uses: strip
 subpackages:
   - name: "${{package.name}}-terminfo"
@@ -114,10 +116,6 @@ subpackages:
             mv "${{targets.destdir}}/usr/share/bash-completion/completions" \
                "${{targets.subpkgdir}}/usr/share/bash-completion/completions"
           fi
-    dependencies:
-      runtime:
-        - merged-usrsbin
-        - wolfi-baselayout
   - name: "${{package.name}}-zsh-completion"
     description: zsh completion for kitty
     pipeline:
@@ -128,10 +126,6 @@ subpackages:
             mv "${{targets.destdir}}/usr/share/zsh/site-functions" \
                "${{targets.subpkgdir}}/usr/share/zsh/site-functions"
           fi
-    dependencies:
-      runtime:
-        - merged-usrsbin
-        - wolfi-baselayout
   - name: "${{package.name}}-fish-completion"
     description: fish completion for kitty
     pipeline:
@@ -142,10 +136,6 @@ subpackages:
             mv "${{targets.destdir}}/usr/share/fish/vendor_completions.d" \
                "${{targets.subpkgdir}}/usr/share/fish/vendor_completions.d"
           fi
-    dependencies:
-      runtime:
-        - merged-usrsbin
-        - wolfi-baselayout
   - name: "${{package.name}}-dbg"
     pipeline:
       - uses: split/debug
@@ -155,6 +145,9 @@ test:
       packages:
         - kitty-terminfo
   pipeline:
+    - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
     - uses: test/ver-check
       with:
         bins: |
@@ -169,7 +162,7 @@ test:
         set -eu
         # Terminfo is shipped by the -terminfo subpackage; assert it landed.
         infocmp xterm-kitty >/dev/null
-        # Sanity: kitty should report its config path without a TTY.
+        # The bundled python runtime must import cleanly without a TTY.
         kitty +runpy 'import kitty; print(kitty.__file__)'
 update:
   enabled: true
