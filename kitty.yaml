@@ -2,7 +2,7 @@
 package:
   name: kitty
   version: "0.51.1"
-  epoch: 0
+  epoch: 1
   description: Modern, hackable, featureful, OpenGL based terminal emulator
   copyright:
     - license: GPL-3.0-only
@@ -146,6 +146,8 @@ test:
         - kitty-terminfo
   pipeline:
     - uses: test/ldd-check
+      with:
+        packages: ${{package.name}}
     - uses: test/ver-check
       with:
         bins: |
