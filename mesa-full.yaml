@@ -2,7 +2,7 @@
 package:
   name: mesa-full
   version: "26.3.1"
-  epoch: 1 # rebuild against wolfi glslang, spirv-tools
+  epoch: 1 # llvm: 19->23, wolfi glslang, spirv-tools
   description: Mesa DRI OpenGL/Vulkan, single unsplit package with Intel drivers (x86_64)
   copyright:
     - license: MIT AND SGI-B-2.0 AND BSL-1.0
@@ -16,7 +16,7 @@ package:
       - libglvnd
       - spirv-tools
 vars:
-  llvm-ver: 19
+  llvm-ver: 23
   py-version: "3.13"
 environment:
   contents:
@@ -44,6 +44,7 @@ environment:
       - libvdpau-dev
       - libx11-dev
       - libxcb-dev
+      - libxdamage-dev
       - libxext-dev
       - libxfixes-dev
       - libxml2-dev
@@ -62,8 +63,9 @@ environment:
       - py${{vars.py-version}}-pyyaml
       - py${{vars.py-version}}-setuptools
       - python-${{vars.py-version}}
-      # Pin to the 19.1 stream: mesa requires LLVMSPIRVLib < 19.2
-      - spirv-llvm-translator-dev<19.2
+      # mesa requires LLVMSPIRVLib to match llvm-ver major.minor; our
+      # spirv-llvm-translator tracks the same LLVM stream.
+      - spirv-llvm-translator-dev
       - spirv-tools-dev
       - systemd-dev
       - vulkan-loader
