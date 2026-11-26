@@ -206,9 +206,12 @@ CI uses a generated child pipeline. `.gitlab/gen-dag.sh` introspects every `*.ya
 
 - Create a feature branch for each change
 - Format: `<package-name>: <concise description>`
+- For multiple related packages, separate with commas: `pkg1, pkg2: <description>`
 - For version updates: `<package-name>/<version> package update`
 - Use imperative mood ("Add feature" not "Added feature")
+- Keep the first line under 72 characters
 - Describe what changed and why, not how
+- When fixing a build failure, explain its cause and the fix
 
 ## MR and Issue Comments
 
@@ -251,6 +254,7 @@ The bar: every package's `test:` section must exercise the actual functionality,
 
 ### Rules
 
+- **Read `pipelines/test/` first** to see which test pipelines exist (`test/tw/*` are the vendored Wolfi test-tools wrappers).
 - **`set -eu`** at the top of every multi-line `runs:` block.
 - **Test the actual package**, not its deps. Loading `Foo::Bar` is a smoke test, not a real test — also assert behaviour.
 - **Loose version checks**: `--version` / `--help` exit-code is enough; never assert the output string format. Patch releases reformat output, suffixes get added, and the test breaks for no reason.
@@ -368,5 +372,6 @@ When run with a specific yaml path as argument, these focus the agent on a singl
 | `/go-package <pkg>.yaml` | Enforce Go version stream consistency |
 | `/epoch-bump <pkg>.yaml` | Bump epoch (or reset to 0 on version bump) |
 | `/apply-skills <pkg>.yaml` | Run all of the above against one package |
+| `/shared-library <pkg>.yaml` | Rename library subpackages to the `lib<name><soversion>` pattern (not part of `/apply-skills`) |
 
 Each is defined under `.claude/commands/` and refers back to the rules in this file.
