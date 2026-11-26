@@ -3,7 +3,7 @@ package:
   name: spirv-llvm-translator
   # Major tracks the LLVM major; keep in sync with the llvm-N build deps.
   version: "23.1.2"
-  epoch: 0 # rebuild against local spirv-tools
+  epoch: 1 # rebuild against wolfi spirv-tools
   description: Khronos SPIR-V translator for the LLVM toolchain (LLVM 23)
   copyright:
     - license: NCSA AND Apache-2.0 WITH LLVM-exception

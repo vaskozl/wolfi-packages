@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/chainguard-dev/melange/refs/heads/main/pkg/config/schema.json
 package:
   name: libclc
-  # Must stay on the 22.x series: Wolfi ships no llvm-23/clang-23 yet.
-  # datasource: wolfi-base packageName: llvm-22
-  version: "22.1.8"
-  epoch: 1 # rebuild for spirv-llvm-translator 23.1.1
-  description: OpenCL C library implementation for the LLVM toolchain (LLVM 22)
+  # Tracks the Wolfi llvm-23 stream, matching spirv-llvm-translator and mesa-full.
+  # datasource: wolfi-base packageName: llvm-23
+  version: "23.1.6"
+  epoch: 0
+  description: OpenCL C library implementation for the LLVM toolchain (LLVM 23)
   copyright:
     - license: Apache-2.0 WITH LLVM-exception
   target-architecture:
@@ -16,9 +16,9 @@ environment:
       - build-base
       - busybox
       - ca-certificates-bundle
-      - clang-22
+      - clang-23
       - cmake
-      - llvm-22-dev
+      - llvm-23-dev
       - python-3.13
       - samurai
       - spirv-llvm-translator
@@ -26,17 +26,33 @@ pipeline:
   - uses: fetch
     with:
       uri: https://github.com/llvm/llvm-project/releases/download/llvmorg-${{package.version}}/llvm-project-${{package.version}}.src.tar.xz
-      expected-sha256: 922f1817a0df7b1489272d18134ee0087a8b068828f87ac63b9861b1a9965888
+      expected-sha256: d3b86ab29cfb4445a6652e5c2642ccc75e04e38084dde3701d323320f35a31da
   - runs: |
       set -eu
-      cmake -B build -G Ninja -S libclc \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_INSTALL_PREFIX=/usr \
-        -DLIBCLC_TARGETS_TO_BUILD="spirv-mesa3d-;spirv64-mesa3d-" \
-        -DLLVM_DIR=/usr/lib/llvm-22/lib/cmake/llvm \
-        -DLLVM_SPIRV=/usr/bin/llvm-spirv
-      cmake --build build
-      DESTDIR="${{targets.destdir}}" cmake --install build
+      # Since LLVM 23 libclc builds one target per configure, taken from
+      # LLVM_DEFAULT_TARGET_TRIPLE, and installs clc/<triple>/libclc.spv. mesa
+      # loads spirv{32,64}-unknown-unknown/libclc.spv from libclc.pc's libexecdir.
+      for triple in spirv32-unknown-unknown spirv64-unknown-unknown; do
+        cmake -B "build-$triple" -G Ninja -S libclc \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=/usr \
+          -DCMAKE_CLC_COMPILER=/usr/lib/llvm-23/bin/clang \
+          -DLLVM_DEFAULT_TARGET_TRIPLE="$triple" \
+          -DLLVM_DIR=/usr/lib/llvm-23/lib/cmake/llvm \
+          -DLLVM_SPIRV=/usr/bin/llvm-spirv
+        cmake --build "build-$triple"
+        DESTDIR="${{targets.destdir}}" cmake --install "build-$triple"
+      done
+      # libclc 23 no longer installs libclc.pc; mesa finds libclc through it.
+      mkdir -p "${{targets.destdir}}"/usr/share/pkgconfig
+      cat > "${{targets.destdir}}"/usr/share/pkgconfig/libclc.pc <<EOF
+      libexecdir=/usr/share/clc
+
+      Name: libclc
+      Description: Library requirements of the OpenCL C programming language
+      Version: ${{package.version}}
+      Libs: -L\${libexecdir}
+      EOF
 test:
   pipeline:
     - uses: test/pkgconf
@@ -45,10 +61,11 @@ test:
         set -eu
         pkgconf --exists libclc
         pkgconf --modversion libclc
-        test -f /usr/share/clc/spirv-mesa3d-.spv
-        test -f /usr/share/clc/spirv64-mesa3d-.spv
+        test -s /usr/share/clc/spirv32-unknown-unknown/libclc.spv
+        test -s /usr/share/clc/spirv64-unknown-unknown/libclc.spv
+        [ "$(pkgconf --variable=libexecdir libclc)" = /usr/share/clc ]
 update:
   enabled: true
   release-monitor:
     identifier: 376264
-    version-filter-prefix: "22."
+    version-filter-prefix: "23."
